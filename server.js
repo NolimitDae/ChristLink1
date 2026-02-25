@@ -35,7 +35,7 @@ const supabaseAdmin = createClient(
 // ─── CONSTANTS ──────────────────────────────────────────────
 const PLATFORM_ACCOUNT  = process.env.CHRISTLINK_ACCOUNT_ID;
 const PLATFORM_FEE_PCT  = 0.05;
-const HOST_LISTING_FEE  = 2000;   // $20.00
+const HOST_LISTING_FEE  = 1999;   // $19.99
 const STRIPE_PCT        = 0.029;
 const STRIPE_FIXED      = 30;     // 30¢
 
@@ -494,6 +494,7 @@ app.post('/api/charge-listing-fee', requireAuth, paymentLimiter, async (req, res
       description:    `Christ Link listing fee — ${event.name}`,
       metadata:       { type: 'listing_fee', event_id: eventId, host_id: req.userId },
       return_url:     `${process.env.APP_URL}/host/success`,
+      automatic_tax:  { enabled: true },
     }, {
       idempotencyKey: `listing-fee-${eventId}`,
     });
@@ -512,6 +513,45 @@ app.post('/api/charge-listing-fee', requireAuth, paymentLimiter, async (req, res
   } catch (err) {
     console.error('Listing fee error:', err.message);
     res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/tax-estimate
+ * Preview tax amount for a ticket purchase before charging — AUTH REQUIRED
+ * Uses Stripe Tax calculation API
+ */
+app.post('/api/tax-estimate', requireAuth, async (req, res) => {
+  const { amountCents, currency = 'usd', customerEmail } = req.body;
+  if (!amountCents) return res.status(400).json({ error: 'Amount required.' });
+
+  try {
+    // Create a Stripe Tax calculation (no charge, just preview)
+    const calculation = await stripe.tax.calculations.create({
+      currency,
+      line_items: [{
+        amount:    amountCents,
+        reference: 'ticket',
+      }],
+      customer_details: {
+        address_source: 'shipping',
+        // Without a known address Stripe returns $0 tax — real tax
+        // applies once buyer enters their address at checkout
+        address: { country: 'US' },
+        taxability_override: 'none',
+      },
+      expand: ['line_items'],
+    });
+
+    res.json({
+      taxAmountCents:    calculation.tax_amount_exclusive,
+      totalCents:        calculation.amount_total,
+      calculationId:     calculation.id,
+    });
+  } catch (err) {
+    // Tax API not enabled yet — return 0 gracefully
+    console.warn('Tax estimate skipped:', err.message);
+    res.json({ taxAmountCents: 0, totalCents: amountCents, calculationId: null });
   }
 });
 
@@ -575,6 +615,7 @@ app.post('/api/create-payment-intent', requireAuth, paymentLimiter, async (req, 
       currency:      'usd',
       receipt_email: buyerEmail || req.user.email,
       description:   `${qty}x ${ticketType.name} — ${event.name}`,
+      automatic_tax: { enabled: true },
       metadata: {
         event_id:       eventId,
         ticket_type_id: ticketTypeId,
@@ -592,6 +633,9 @@ app.post('/api/create-payment-intent', requireAuth, paymentLimiter, async (req, 
       idempotencyKey,
     });
 
+    // Store tax amount if available
+    const taxAmount = intent.amount_details?.tax?.amount || 0;
+
     // Create a PENDING ticket record in DB
     await supabaseAdmin.from('tickets').insert({
       event_id:               eventId,
@@ -599,7 +643,7 @@ app.post('/api/create-payment-intent', requireAuth, paymentLimiter, async (req, 
       user_id:                req.userId,
       quantity:               qty,
       unit_price_cents:       ticketType.price_cents,
-      total_charged_cents:    amounts.chargeAmount,
+      total_charged_cents:    amounts.chargeAmount + taxAmount,
       platform_fee_cents:     amounts.platformFee,
       stripe_fee_cents:       amounts.stripeFee,
       host_receives_cents:    amounts.hostReceives,
@@ -610,9 +654,9 @@ app.post('/api/create-payment-intent', requireAuth, paymentLimiter, async (req, 
     });
 
     res.json({
-      clientSecret: intent.client_secret,
-      breakdown:    amounts,
-      intentId:     intent.id,
+      clientSecret:  intent.client_secret,
+      breakdown:     { ...amounts, taxAmount },
+      intentId:      intent.id,
     });
   } catch (err) {
     console.error('PaymentIntent error:', err.message);
