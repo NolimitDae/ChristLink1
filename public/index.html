@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Christ Link">
+  <meta name="theme-color" content="#080808">
 <title>Christ Link — Where Faith Gathers</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://js.stripe.com/v3/"></script>
@@ -66,7 +70,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .page.fade-out{opacity:0}
 
 /* ─── NAV ─── */
-nav{position:fixed;top:0;left:0;right:0;z-index:500;padding:18px 48px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(to bottom,rgba(8,8,8,.97),rgba(8,8,8,.8));backdrop-filter:blur(16px);border-bottom:1px solid rgba(201,168,76,.08)}
+nav{position:fixed;top:0;left:0;right:0;padding-top:env(safe-area-inset-top);z-index:500;padding:18px 48px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(to bottom,rgba(8,8,8,.97),rgba(8,8,8,.8));backdrop-filter:blur(16px);border-bottom:1px solid rgba(201,168,76,.08)}
 .logo{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;display:flex;align-items:center;gap:10px;color:var(--text)}
 .logo-cross{color:var(--gold);animation:pulse-cross 3s ease-in-out infinite;font-size:18px}
 @keyframes pulse-cross{0%,100%{text-shadow:0 0 8px var(--gold)}50%{text-shadow:0 0 28px var(--gold-light),0 0 60px var(--gold-glow)}}
@@ -642,14 +646,14 @@ footer p{font-size:13px;color:var(--muted2);max-width:300px;line-height:1.6;marg
     <h1>Where <em>Faith</em><br>Gathers</h1>
     <p class="hero-sub">Discover worship nights, bible studies, retreats & celebrations—all in one place built for believers.</p>
     <div class="hero-search">
-      <span style="color:var(--muted);font-size:16px">🔍</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A7060" stroke-width="2.5" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="heroSearch" placeholder="Search events, ministries, or cities..." onkeydown="if(event.key==='Enter')heroSearchGo()">
       <button class="btn btn-gold" onclick="heroSearchGo()">Find Events</button>
     </div>
     <div style="display:flex;gap:24px;margin-top:32px;flex-wrap:wrap;justify-content:center;animation:fadeUp .8s ease .5s both">
       <div style="font-size:13px;color:var(--muted2);display:flex;align-items:center;gap:8px"><span style="color:var(--gold)">✓</span>Free to join</div>
-      <div style="font-size:13px;color:var(--muted2);display:flex;align-items:center;gap:8px"><span style="color:var(--gold)">✓</span>12,000+ believers</div>
-      <div style="font-size:13px;color:var(--muted2);display:flex;align-items:center;gap:8px"><span style="color:var(--gold)">✓</span>340+ events monthly</div>
+      <div style="font-size:13px;color:var(--muted2);display:flex;align-items:center;gap:8px"><span style="color:var(--gold)">✓</span>Growing community</div>
+      <div style="font-size:13px;color:var(--muted2);display:flex;align-items:center;gap:8px"><span style="color:var(--gold)">✓</span>Events near you</div>
     </div>
   </section>
 
@@ -669,10 +673,10 @@ footer p{font-size:13px;color:var(--muted2);max-width:300px;line-height:1.6;marg
   </div>
 
   <div class="stats-bar">
-    <div class="stat"><div class="stat-num">12K+</div><div class="stat-label">Believers Connected</div></div>
-    <div class="stat"><div class="stat-num">340+</div><div class="stat-label">Events This Month</div></div>
-    <div class="stat"><div class="stat-num">85+</div><div class="stat-label">Cities Reached</div></div>
-    <div class="stat"><div class="stat-num">200+</div><div class="stat-label">Host Ministries</div></div>
+    <div class="stat"><div class="stat-num">—</div><div class="stat-label">Believers Connected</div></div>
+    <div class="stat"><div class="stat-num">—</div><div class="stat-label">Events This Month</div></div>
+    <div class="stat"><div class="stat-num">—</div><div class="stat-label">Cities Reached</div></div>
+    <div class="stat"><div class="stat-num">—</div><div class="stat-label">Host Ministries</div></div>
   </div>
 
   <section class="verse-section">
@@ -944,13 +948,14 @@ footer p{font-size:13px;color:var(--muted2);max-width:300px;line-height:1.6;marg
   <div style="padding:100px 48px 60px;max-width:1200px;margin:0 auto">
     <div class="section-label">Discover Events</div>
     <div class="section-title">Find Your <em>Gathering</em></div>
-    <div style="display:flex;gap:14px;margin:28px 0;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:12px 20px;gap:10px;flex:1;min-width:260px">
-        <span style="color:var(--muted)">🔍</span>
-        <input type="text" id="browseSearch" placeholder="Search events, cities, or types..." style="background:transparent;border:none;padding:0;border-radius:0;box-shadow:none;flex:1" oninput="runBrowseSearch(this.value)" onkeydown="runBrowseSearch(this.value)">
+    <div style="display:flex;gap:12px;margin:28px 0;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:12px 20px;gap:10px;flex:1;min-width:220px;transition:border-color .2s" id="browseSearchWrap" onfocusin="this.style.borderColor='rgba(201,168,76,.4)'" onfocusout="this.style.borderColor=''">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7A7060" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="browseSearch" placeholder="Search events, cities, or types..." style="background:transparent;border:none;padding:0;border-radius:0;box-shadow:none;flex:1;font-size:14px;color:var(--text)" onkeydown="if(event.key==='Enter')runBrowseSearch(this.value)" oninput="if(!isMobile)runBrowseSearch(this.value)">
+        <button onclick="runBrowseSearch(document.getElementById('browseSearch').value)" style="background:var(--gold);border:none;color:#000;font-weight:700;font-size:13px;padding:7px 16px;border-radius:100px;font-family:'Outfit',sans-serif;white-space:nowrap;flex-shrink:0">Search</button>
       </div>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px" id="browseFilters">
+    <div style="display:flex;gap:8px;margin-bottom:24px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none" id="browseFilters">
       <div class="pill active" onclick="browsePill(this,'all')">All</div>
       <div class="pill" onclick="browsePill(this,'worship')">Worship</div>
       <div class="pill" onclick="browsePill(this,'bible study')">Bible Study</div>
@@ -1027,7 +1032,7 @@ footer p{font-size:13px;color:var(--muted2);max-width:300px;line-height:1.6;marg
       <!-- Overview tab -->
       <div class="profile-tab-panel active" id="ptab-overview">
         <div class="profile-stats-grid">
-          <div class="profile-stat-card"><div class="profile-stat-num">24</div><div class="profile-stat-label">Attended</div></div>
+          <div class="profile-stat-card"><div class="profile-stat-num" id="pstat-attended">0</div><div class="profile-stat-label">Attended</div></div>
           <div class="profile-stat-card"><div class="profile-stat-num" id="pstat-hosting">0</div><div class="profile-stat-label">Hosting</div></div>
           <div class="profile-stat-card"><div class="profile-stat-num" id="pstat-revenue">$0</div><div class="profile-stat-label">Revenue</div></div>
         </div>
@@ -1137,7 +1142,7 @@ footer p{font-size:13px;color:var(--muted2);max-width:300px;line-height:1.6;marg
 const SUPABASE_URL  = 'https://iqosvigdelnmarecpkkp.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxb3N2aWdkZWxubWFyZWNwa2twIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MzQ5NTcsImV4cCI6MjA4NzIxMDk1N30.eqyIsbnkxFBdKjHoHKs56dz1-4yDBXv8_-Rt9uq9zlE';
 const STRIPE_PK     = 'pk_test_51SthaL0aSXVBGANHNQAqgYMIQCWfNn70XddpsgR5GiNEY5Pb6kTVkFDQCmnYmqctl3waOMpPN0aeWU5BJ6Bp7mKP00bMnThZ0e';
-const API_BASE      = 'http://localhost:4242'; // → change to Railway URL in production
+const API_BASE      = ''; // Netlify — functions served from same domain via redirects
 
 // ─── CLIENTS ───────────────────────────────────────────────
 const { createClient } = supabase;
@@ -1164,14 +1169,8 @@ let lfCardNumber    = null, lfCardExpiry = null, lfCardCvc = null;
 let resendTimer     = null;
 
 // ─── EVENTS DATA (local until API is connected) ─────────────
-const events = [
-  {id:1,emoji:'🎵',bg:'linear-gradient(135deg,#1A1000,#2E1D00)',type:'⭐ Featured',date:'SAT, MAR 15 · 7PM',location:'Dallas, TX',name:'Night of Worship 2025',desc:'An immersive evening of praise, live worship, and corporate prayer. Come expecting breakthrough.',price:0,isPaid:false,avs:['J','M','A'],extra:42,host:'Victory Chapel Dallas',tags:['✨ Worship','🎵 Live Music','🙏 Prayer']},
-  {id:2,emoji:'🌅',bg:'linear-gradient(135deg,#0D1500,#1F2E00)',type:'🙏 Prayer',date:'SUN, MAR 2 · 6AM',location:'Atlanta, GA',name:'Sunday Sunrise Prayer',desc:'Begin your Sabbath in the presence of God. A peaceful dawn gathering overlooking the city.',price:0,isPaid:false,avs:['R','K'],extra:18,host:'Atlanta Prayer House',tags:['🙏 Prayer','🌅 Dawn']},
-  {id:3,emoji:'🎉',bg:'linear-gradient(135deg,#150010,#2E0025)',type:'🔥 Youth',date:'FRI, MAR 7 · 8PM',location:'Houston, TX',name:'Young Adults Night',desc:'Faith meets community. An electric night of worship, connection, and real talk. Ages 18–30.',price:1000,isPaid:true,avs:['T','S','N'],extra:67,host:'IGNITE Houston',tags:['🔥 Youth','🎉 Social']},
-  {id:4,emoji:'🕊️',bg:'linear-gradient(135deg,#0A0015,#1A0030)',type:'✨ Retreat',date:'MAR 21–23',location:'Nashville, TN',name:'Women of God Retreat',desc:'A three-day immersive retreat to rest, renew, and reconnect with your divine calling.',price:19900,isPaid:true,avs:['L','P'],extra:31,host:'Daughters of Zion',tags:['🕊️ Retreat','👑 Women']},
-  {id:5,emoji:'📖',bg:'linear-gradient(135deg,#001015,#002030)',type:'📖 Bible Study',date:'THU · WEEKLY',location:'Chicago + Online',name:'Bible Study Thursdays',desc:'Deep-dive scripture study with Pastor James. Currently in Acts. All levels welcome.',price:0,isPaid:false,avs:['E','O'],extra:0,host:'Word & Worship Chicago',tags:['📖 Bible','🌐 Hybrid']},
-  {id:6,emoji:'🙌',bg:'linear-gradient(135deg,#0F0A00,#251800)',type:'⛪ Fellowship',date:'SUN, MAR 16 · 4PM',location:'Los Angeles, CA',name:'Kingdom Fellowship BBQ',desc:'Good food, great people, and an even greater God. Casual community and connection.',price:0,isPaid:false,avs:['D','B','C'],extra:28,host:'Kingdom LA',tags:['⛪ Fellowship','🍖 Food']},
-];
+// Events loaded from API — empty until backend is connected
+const events = [];
 
 // ════════════════════════════════════════════════════════════
 // SUPABASE AUTH
@@ -1299,7 +1298,6 @@ async function sendOtp() {
       email,
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: window.location.origin,
         data: { full_name: fullName || email.split('@')[0] },
       },
     });
@@ -1325,7 +1323,7 @@ async function sendOtp() {
 
 async function resendOtp() {
   const email = document.getElementById('auth-email').value.trim();
-  await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: authMode === 'signup' } });
+  await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
   showToast('📬 New code sent!', 'success');
   startResendTimer();
 }
@@ -1495,9 +1493,23 @@ function cardRsvp(btn, evId) {
 
 let browseInitialized = false;
 
+function showEmptyState(grid, msg) {
+  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px">
+    <div style="font-size:48px;margin-bottom:16px;opacity:.4">
+      <svg width="48" height="60" viewBox="0 0 18 22" fill="none"><rect x="7" y="0" width="4" height="22" rx="2" fill="#C9A84C" opacity=".4"/><rect x="0" y="6" width="18" height="4" rx="2" fill="#C9A84C" opacity=".4"/></svg>
+    </div>
+    <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--muted2);margin-bottom:8px">${msg}</div>
+    <div style="font-size:13px;color:var(--muted)">Be the first to host an event in your city.</div>
+    <button class="btn btn-gold" style="margin-top:20px" onclick="goTo('host')">Host an Event →</button>
+  </div>`;
+}
+
 function initGrids() {
   const hg = document.getElementById('homeEventsGrid');
-  if (hg) events.forEach(ev => renderEventCard(ev, hg));
+  if (hg) {
+    if (events.length === 0) showEmptyState(hg, 'No events yet');
+    else events.forEach(ev => renderEventCard(ev, hg));
+  }
   initCommunityFeed();
 }
 
@@ -1869,17 +1881,11 @@ function publishEvent() {
 
 // ─── COMMUNITY FEED ───────────────────────────────────────────
 function initCommunityFeed() {
-  const feed  = document.getElementById('communityFeed');
-  const posts = [
-    { av:'M', name:'Minister Grace', time:'2 hours ago', text:'God is moving powerfully! Last night\'s prayer meeting had 80+ unexpected attendees. <em style="font-family:\'Playfair Display\',serif;font-style:italic;color:var(--gold)">\"When you seek me with all your heart, you will find me.\" — Jer 29:13</em>' },
-    { av:'T', name:'Ty Williams',    time:'5 hours ago', text:'🔥 IGNITE Youth Night this Friday is going to be INCREDIBLE! Surprise worship leaders and the theme is "Unashamed." Who\'s coming?!' },
-  ];
-  posts.forEach(p => {
-    const el = document.createElement('div');
-    el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:16px';
-    el.innerHTML = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#7A5C00);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#000;flex-shrink:0">${p.av}</div><div><div style="font-size:14px;font-weight:600">${p.name}</div><div style="font-size:12px;color:var(--muted)">${p.time}</div></div></div><div style="font-size:14px;line-height:1.65;color:var(--muted2);margin-bottom:12px">${p.text}</div><button onclick="toggleLike(this)" style="background:transparent;border:none;color:var(--muted);font-size:13px;font-weight:500;padding:7px 12px;border-radius:100px;font-family:'Outfit',sans-serif">🙏 Amen (${Math.floor(Math.random()*100+20)})</button>`;
-    feed.appendChild(el);
-  });
+  const feed = document.getElementById('communityFeed');
+  feed.innerHTML = `<div style="text-align:center;padding:48px 20px">
+    <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--muted2);margin-bottom:8px">No posts yet</div>
+    <div style="font-size:13px;color:var(--muted)">Be the first to share a prayer or testimony.</div>
+  </div>`;
 }
 
 function postToFeed() {
@@ -1999,25 +2005,49 @@ function heroSearchGo() {
 // Browse search + filter
 let browseActiveFilter = 'all';
 
-function runBrowseSearch(q) {
+async function runBrowseSearch(q) {
   const query = (q || '').toLowerCase().trim();
   const grid  = document.getElementById('browseGrid');
   if (!grid) return;
-  grid.innerHTML = '';
-  let filtered = events.filter(ev => {
-    const text = (ev.name + ' ' + ev.location + ' ' + ev.type + ' ' + ev.desc + ' ' + (ev.tags||[]).join(' ')).toLowerCase();
-    const matchesQuery  = !query || text.includes(query);
-    const matchesFilter = browseActiveFilter === 'all'
-      ? true
-      : browseActiveFilter === 'free'  ? !ev.isPaid
-      : browseActiveFilter === 'paid'  ?  ev.isPaid
-      : text.includes(browseActiveFilter);
-    return matchesQuery && matchesFilter;
-  });
-  if (filtered.length === 0) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--muted);font-size:15px">No events found. Try a different search.</div>';
-  } else {
-    filtered.forEach(ev => renderEventCard(ev, grid));
+
+  // If we have local events, filter them instantly
+  if (events.length > 0) {
+    grid.innerHTML = '';
+    let filtered = events.filter(ev => {
+      const text = (ev.name + ' ' + ev.location + ' ' + ev.type + ' ' + ev.desc + ' ' + (ev.tags||[]).join(' ')).toLowerCase();
+      const matchesQuery  = !query || text.includes(query);
+      const matchesFilter = browseActiveFilter === 'all'
+        ? true
+        : browseActiveFilter === 'free'  ? !ev.isPaid
+        : browseActiveFilter === 'paid'  ?  ev.isPaid
+        : text.includes(browseActiveFilter);
+      return matchesQuery && matchesFilter;
+    });
+    if (filtered.length === 0) {
+      showEmptyState(grid, 'No events match your search');
+    } else {
+      filtered.forEach(ev => renderEventCard(ev, grid));
+    }
+    return;
+  }
+
+  // No local events — try fetching from API
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)"><div class="spinner spinner-gold" style="margin:0 auto 12px"></div>Loading events...</div>';
+  try {
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (browseActiveFilter !== 'all') params.set('filter', browseActiveFilter);
+    const res  = await fetch(`${API_BASE}/api/events?${params}`);
+    if (!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    grid.innerHTML = '';
+    if (!data.events || data.events.length === 0) {
+      showEmptyState(grid, query ? 'No events match your search' : 'No events yet');
+    } else {
+      data.events.forEach(ev => renderEventCard(ev, grid));
+    }
+  } catch {
+    showEmptyState(grid, 'No events yet');
   }
 }
 
@@ -2299,7 +2329,7 @@ async function saveProfile() {
     if (uploadedAvatarUrl && uploadedAvatarUrl.startsWith('data:')) {
       // Convert base64 to blob and upload
       const blob     = await fetch(uploadedAvatarUrl).then(r => r.blob());
-      const fileName = `avatars/${currentUser.id}-${Date.now()}.jpg`;
+      const fileName = `avatars/${currentUser.id}/avatar-${Date.now()}.jpg`;
       const { data: uploadData, error: uploadErr } = await sb.storage
         .from('avatars')
         .upload(fileName, blob, { upsert: true, contentType: blob.type });
@@ -2404,5 +2434,7 @@ if (!isMobile) {
   document.addEventListener('mouseenter', () => { cur.style.opacity='1'; ring.style.opacity='1'; });
 }
 </script>
+  <!-- Native bridge — only activates inside Capacitor iOS app -->
+  <script src="native-bridge.js"></script>
 </body>
 </html>
