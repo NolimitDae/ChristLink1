@@ -393,6 +393,32 @@ app.post('/api/ticket-types', requireAuth, async (req, res) => {
 // ════════════════════════════════════════════════════════════
 // RSVP
 // ════════════════════════════════════════════════════════════
+app.get('/api/rsvp/:eventId', requireAuth, async (req, res) => {
+  const { data } = await supabaseAdmin.from('rsvps')
+    .select('id, status').eq('event_id', req.params.eventId).eq('user_id', req.userId).single();
+  res.json({ rsvp: data || null });
+});
+
+app.get('/api/my-rsvps', requireAuth, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('rsvps')
+    .select('*, events(id, name, start_date, city, cover_url)')
+    .eq('user_id', req.userId)
+    .eq('status', 'confirmed')
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  const rsvps = (data || []).map(r => ({
+    ...r,
+    event_name:       r.events?.name,
+    event_start_date: r.events?.start_date,
+    event_city:       r.events?.city,
+    event_cover_url:  r.events?.cover_url,
+    event_id:         r.events?.id || r.event_id,
+    type: 'rsvp',
+  }));
+  res.json({ rsvps });
+});
+
 app.post('/api/rsvp', requireAuth, async (req, res) => {
   const { eventId } = req.body;
   if (!eventId) return res.status(400).json({ error: 'Event ID required.' });

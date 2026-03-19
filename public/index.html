@@ -1479,7 +1479,15 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
         </div>
       </div>
     </div>
-    <div style="font-size:14px;line-height:1.7;color:var(--muted2);margin-bottom:20px" id="detailDesc">—</div>
+    <div style="font-size:14px;line-height:1.7;color:var(--muted2);margin-bottom:16px" id="detailDesc">—</div>
+
+    <!-- Attendance count -->
+    <div id="detailAttendance" style="margin-bottom:16px;display:none">
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);border-radius:var(--r-full);padding:6px 14px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        <span id="detailAttendanceCount" style="font-size:13px;font-weight:700;color:var(--green)">0 going</span>
+      </div>
+    </div>
 
     <!-- Forum button -->
     <div id="detailForumBtn" style="display:none;margin-bottom:20px">
@@ -1507,7 +1515,10 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       <div class="detail-price-big" id="detailPriceBig">Free</div>
       <div class="detail-price-sub" id="detailPriceSub">Open to all</div>
     </div>
-    <button class="detail-rsvp-btn" id="detailRsvpBtn" onclick="handleRsvp()">Reserve My Spot →</button>
+    <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0">
+      <button class="detail-rsvp-btn" id="detailRsvpBtn" onclick="handleRsvp()">Reserve My Spot →</button>
+      <button id="detailCancelRsvpBtn" onclick="cancelRsvp()" style="display:none;width:100%;font-size:13px;font-weight:600;color:var(--muted2);background:transparent;border:1px solid var(--border);border-radius:var(--r-full);padding:9px;cursor:pointer;transition:all .2s">Cancel RSVP</button>
+    </div>
   </div>
 </div>
 
@@ -2598,34 +2609,37 @@ async function fetchMyEvents(countOnly = false) {
 async function fetchMyTickets(countOnly = false) {
   if (!currentUser) return;
   try {
-    const res = await fetch(`${API_BASE}/api/my-tickets`, {
-      headers:{ 'Authorization':`Bearer ${currentSession?.access_token}` }
-    });
-    if (!res.ok) throw new Error('failed');
-    const data = await res.json();
-    const tickets = data.tickets || [];
-    document.getElementById('statTickets').textContent = tickets.length;
+    const headers = { 'Authorization': `Bearer ${currentSession?.access_token}` };
+    const [ticketRes, rsvpRes] = await Promise.all([
+      fetch(`${API_BASE}/api/my-tickets`, { headers }),
+      fetch(`${API_BASE}/api/my-rsvps`,   { headers }),
+    ]);
+    const tickets = ticketRes.ok ? (await ticketRes.json()).tickets || [] : [];
+    const rsvps   = rsvpRes.ok  ? (await rsvpRes.json()).rsvps     || [] : [];
+    const total   = tickets.length + rsvps.length;
+    document.getElementById('statTickets').textContent = total;
     if (countOnly) return;
     const container = document.getElementById('myTicketsContainer');
     if (!container) return;
-    if (tickets.length === 0) {
+    if (total === 0) {
       container.innerHTML = `<div class="empty-state">
         <div class="empty-icon">🎟️</div>
         <div class="empty-title">No tickets yet</div>
-        <div class="empty-sub">Tickets you purchase will appear here.</div>
+        <div class="empty-sub">Tickets and RSVPs you register for will appear here.</div>
         <button class="btn btn-gold btn-sm mt-4" onclick="goTo('browse')">Explore Events →</button>
       </div>`;
       return;
     }
     container.innerHTML = '';
     tickets.forEach(t => container.appendChild(makeTicketCard(t)));
+    rsvps.forEach(r   => container.appendChild(makeRsvpCard(r)));
   } catch {
     if (countOnly) return;
     const container = document.getElementById('myTicketsContainer');
     if (container) container.innerHTML = `<div class="empty-state">
       <div class="empty-icon">🎟️</div>
       <div class="empty-title">No tickets yet</div>
-      <div class="empty-sub">Tickets you purchase will appear here.</div>
+      <div class="empty-sub">Tickets and RSVPs will appear here.</div>
       <button class="btn btn-gold btn-sm mt-4" onclick="goTo('browse')">Explore Events →</button>
     </div>`;
   }
@@ -2692,6 +2706,48 @@ function makeTicketCard(t) {
     </div>`;
   el.onclick = () => openTicketViewer(t);
   return el;
+}
+
+function makeRsvpCard(r) {
+  const el = document.createElement('div');
+  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px';
+  const fmtDate = r.event_start_date
+    ? new Date(r.event_start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
+    : 'Date TBD';
+  el.innerHTML = `
+    <div style="display:flex;gap:12px;padding:14px 16px;align-items:center">
+      <div style="width:48px;height:48px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#0E3820,#0F1A15);display:flex;align-items:center;justify-content:center;font-size:22px">
+        ${r.event_cover_url ? `<img src="${r.event_cover_url}" style="width:100%;height:100%;object-fit:cover">` : '✝'}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${r.event_name || 'Event'}</div>
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">${fmtDate} · ${r.event_city || ''}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.05em">✅ Going</span>
+          <span style="font-size:11px;color:var(--muted)">Free</span>
+        </div>
+      </div>
+      <button onclick="cancelRsvpFromTickets('${r.event_id}',this)" style="flex-shrink:0;font-size:12px;font-weight:600;color:var(--muted2);background:transparent;border:1px solid var(--border);padding:7px 12px;border-radius:var(--r-full)">
+        Cancel
+      </button>
+    </div>`;
+  return el;
+}
+
+async function cancelRsvpFromTickets(eventId, btn) {
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const res = await fetch(`${API_BASE}/api/rsvp/${eventId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    if (res.ok) {
+      btn.closest('div[style*="border-radius"]').remove();
+      const cur = parseInt(document.getElementById('statTickets').textContent) || 1;
+      document.getElementById('statTickets').textContent = Math.max(0, cur - 1);
+      showToast('RSVP cancelled');
+    } else { btn.disabled = false; btn.textContent = 'Cancel'; showToast('Could not cancel', 'error'); }
+  } catch { btn.disabled = false; btn.textContent = 'Cancel'; }
 }
 
 function confirmDeleteEvent(id) {
@@ -3439,6 +3495,33 @@ function viewDetail(ev) {
     rsvpBtn.textContent  = 'Reserve My Spot →';
   }
   rsvpBtn.classList.remove('confirmed');
+  document.getElementById('detailCancelRsvpBtn').style.display = 'none';
+
+  // Attendance count
+  const attendanceEl = document.getElementById('detailAttendance');
+  const countEl      = document.getElementById('detailAttendanceCount');
+  const count = ev.confirmed_rsvps || 0;
+  if (count > 0) {
+    countEl.textContent = `${count} going`;
+    attendanceEl.style.display = 'block';
+  } else {
+    attendanceEl.style.display = 'none';
+  }
+
+  // Check if current user has already RSVP'd (free events)
+  if (currentUser && !ev.is_paid) {
+    fetch(`${API_BASE}/api/rsvp/${ev.id}`, {
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` }
+    }).then(r => r.json()).then(data => {
+      if (data.rsvp?.status === 'confirmed') {
+        const btn = document.getElementById('detailRsvpBtn');
+        btn.textContent = '✅ You\'re Going!';
+        btn.classList.add('confirmed');
+        document.getElementById('detailCancelRsvpBtn').style.display = 'block';
+      }
+    }).catch(() => {});
+  }
+
   goTo('event-detail');
 }
 
@@ -3455,16 +3538,55 @@ function handleRsvp() {
   if (!currentUser) { openAuth('signup', () => handleRsvp()); return; }
   if (selectedEvent?.is_paid) { openTicketSheet(); return; }
   const btn = document.getElementById('detailRsvpBtn');
-  btn.textContent = '✅ You\'re Going!';
-  btn.classList.add('confirmed');
-  spawnConfetti();
-  showSuccess('🙌','You\'re Going!',`Spot reserved for ${selectedEvent?.name||'the event'}. See you there!`);
-  // real RSVP
-  fetch(`${API_BASE}/api/rsvp`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
-    body: JSON.stringify({eventId: selectedEvent?.id}),
-  }).catch(()=>{});
+  btn.disabled = true;
+  fetch(`${API_BASE}/api/rsvp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+    body: JSON.stringify({ eventId: selectedEvent?.id }),
+  }).then(async r => {
+    btn.disabled = false;
+    if (r.ok) {
+      btn.textContent = '✅ You\'re Going!';
+      btn.classList.add('confirmed');
+      document.getElementById('detailCancelRsvpBtn').style.display = 'block';
+      // Update attendance count
+      const countEl = document.getElementById('detailAttendanceCount');
+      const cur = parseInt(countEl.textContent) || 0;
+      countEl.textContent = `${cur + 1} going`;
+      document.getElementById('detailAttendance').style.display = 'block';
+      spawnConfetti();
+      showSuccess('🙌', 'You\'re Going!', `Spot reserved for ${selectedEvent?.name || 'the event'}. See you there!`);
+    } else {
+      const d = await r.json().catch(() => ({}));
+      showToast(d.error || 'Could not RSVP', 'error');
+    }
+  }).catch(() => { btn.disabled = false; showToast('Could not RSVP', 'error'); });
+}
+
+async function cancelRsvp() {
+  if (!selectedEvent) return;
+  const btn = document.getElementById('detailCancelRsvpBtn');
+  btn.disabled = true; btn.textContent = 'Cancelling…';
+  try {
+    const res = await fetch(`${API_BASE}/api/rsvp/${selectedEvent.id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    if (res.ok) {
+      const rsvpBtn = document.getElementById('detailRsvpBtn');
+      rsvpBtn.textContent = 'Reserve My Spot →';
+      rsvpBtn.classList.remove('confirmed');
+      btn.style.display = 'none';
+      // Update attendance count
+      const countEl = document.getElementById('detailAttendanceCount');
+      const cur = parseInt(countEl.textContent) || 1;
+      const newCount = Math.max(0, cur - 1);
+      countEl.textContent = `${newCount} going`;
+      if (newCount === 0) document.getElementById('detailAttendance').style.display = 'none';
+      showToast('RSVP cancelled');
+    } else { showToast('Could not cancel RSVP', 'error'); }
+  } catch { showToast('Could not cancel RSVP', 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Cancel RSVP'; }
 }
 
 // ═══════════════════════════════════════════════════════════
