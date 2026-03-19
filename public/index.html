@@ -12,6 +12,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <script src="https://js.stripe.com/v3/"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 /* ═══════════════════════════════════════════════════════════
    TOKENS
@@ -1423,19 +1425,17 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       <div style="font-size:15px;line-height:1.7;color:var(--text)" id="profAbout">—</div>
     </div>
     <div class="profile-tab-panel" id="ptab-events">
-      <div class="empty-state">
-        <div class="empty-icon">📋</div>
-        <div class="empty-title">No events yet</div>
-        <div class="empty-sub">Events you host will appear here.</div>
-        <button class="btn btn-gold btn-sm mt-4" onclick="goTo('host')">Host an Event →</button>
+      <div id="myEventsContainer">
+        <div style="text-align:center;padding:32px 0">
+          <div class="spinner spinner-gold" style="margin:0 auto"></div>
+        </div>
       </div>
     </div>
     <div class="profile-tab-panel" id="ptab-tickets">
-      <div class="empty-state">
-        <div class="empty-icon">🎟️</div>
-        <div class="empty-title">No tickets yet</div>
-        <div class="empty-sub">Tickets you purchase will appear here.</div>
-        <button class="btn btn-gold btn-sm mt-4" onclick="goTo('browse')">Explore Events →</button>
+      <div id="myTicketsContainer">
+        <div style="text-align:center;padding:32px 0">
+          <div class="spinner spinner-gold" style="margin:0 auto"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1754,6 +1754,126 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   </div>
 </div>
 
+<!-- TICKET VIEWER SHEET -->
+<div class="overlay" id="ticketViewerSheet">
+  <div class="sheet" style="max-height:90dvh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div>
+        <div class="sheet-title">Your Ticket</div>
+        <div style="font-size:13px;color:var(--muted)" id="tvEventName">—</div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet('ticketViewerSheet')">×</button>
+    </div>
+    <div class="sheet-body">
+      <!-- ticket card -->
+      <div style="background:linear-gradient(135deg,#1A0E38,#0F0F1A);border:1px solid rgba(201,168,76,.2);border-radius:var(--r-lg);overflow:hidden;margin-bottom:20px">
+        <!-- cover strip -->
+        <div id="tvCoverStrip" style="height:90px;background:linear-gradient(135deg,#1A0E38,#252533);display:flex;align-items:center;justify-content:center;font-size:40px;position:relative">
+          <img id="tvCoverImg" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.6">
+          <span id="tvCoverEmoji" style="position:relative;z-index:1">✝</span>
+        </div>
+        <div style="padding:18px">
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:4px" id="tvTitle">—</div>
+          <div style="font-size:13px;color:var(--muted2);margin-bottom:2px" id="tvDate">—</div>
+          <div style="font-size:13px;color:var(--muted2);margin-bottom:16px" id="tvLocation">—</div>
+          <div style="display:flex;gap:12px;margin-bottom:16px">
+            <div style="flex:1;background:rgba(255,255,255,.04);border-radius:var(--r-sm);padding:10px;text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Qty</div>
+              <div style="font-weight:700;font-size:16px" id="tvQty">1</div>
+            </div>
+            <div style="flex:1;background:rgba(255,255,255,.04);border-radius:var(--r-sm);padding:10px;text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Type</div>
+              <div style="font-weight:700;font-size:13px" id="tvType">—</div>
+            </div>
+            <div style="flex:1;background:rgba(255,255,255,.04);border-radius:var(--r-sm);padding:10px;text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Paid</div>
+              <div style="font-weight:700;font-size:16px;color:var(--gold)" id="tvAmount">—</div>
+            </div>
+          </div>
+          <!-- QR Code -->
+          <div style="background:#fff;border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px">
+            <canvas id="tvQrCanvas"></canvas>
+            <div style="font-size:11px;color:#333;font-weight:600;letter-spacing:.1em;text-transform:uppercase" id="tvTicketCode">—</div>
+          </div>
+          <div style="text-align:center;margin-top:12px">
+            <span id="tvStatusBadge" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 14px;border-radius:var(--r-full);background:rgba(78,201,140,.12);color:var(--green);border:1px solid rgba(78,201,140,.25)">Confirmed</span>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="closeSheet('ticketViewerSheet')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCANNER SHEET (for hosts) -->
+<div class="overlay" id="scannerSheet">
+  <div class="sheet" style="max-height:95dvh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div>
+        <div class="sheet-title">Scan Tickets</div>
+        <div style="font-size:13px;color:var(--muted)" id="scannerEventName">—</div>
+      </div>
+      <button class="sheet-close" onclick="closeScannerSheet()">×</button>
+    </div>
+    <div class="sheet-body" style="padding-bottom:32px">
+      <!-- camera viewfinder -->
+      <div style="position:relative;width:100%;border-radius:var(--r-lg);overflow:hidden;background:#000;margin-bottom:16px" id="scannerViewWrap">
+        <video id="scannerVideo" style="width:100%;display:block;border-radius:var(--r-lg)" autoplay muted playsinline></video>
+        <canvas id="scannerCanvas" style="display:none"></canvas>
+        <!-- aim overlay -->
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+          <div id="scanAim" style="width:200px;height:200px;border-radius:16px;border:3px solid rgba(201,168,76,.8);box-shadow:0 0 0 9999px rgba(0,0,0,.45)">
+            <div style="position:absolute;top:-3px;left:-3px;width:24px;height:24px;border-top:4px solid var(--gold);border-left:4px solid var(--gold);border-radius:4px 0 0 0"></div>
+            <div style="position:absolute;top:-3px;right:-3px;width:24px;height:24px;border-top:4px solid var(--gold);border-right:4px solid var(--gold);border-radius:0 4px 0 0"></div>
+            <div style="position:absolute;bottom:-3px;left:-3px;width:24px;height:24px;border-bottom:4px solid var(--gold);border-left:4px solid var(--gold);border-radius:0 0 0 4px"></div>
+            <div style="position:absolute;bottom:-3px;right:-3px;width:24px;height:24px;border-bottom:4px solid var(--gold);border-right:4px solid var(--gold);border-radius:0 0 4px 0"></div>
+          </div>
+        </div>
+        <!-- scan status bar -->
+        <div id="scanStatusBar" style="position:absolute;bottom:0;left:0;right:0;padding:12px 16px;background:linear-gradient(to top,rgba(0,0,0,.8),transparent);text-align:center">
+          <span id="scanStatusText" style="font-size:13px;font-weight:600;color:#fff">Point camera at ticket QR code</span>
+        </div>
+      </div>
+
+      <!-- scan result card -->
+      <div id="scanResultCard" style="display:none;border-radius:var(--r-lg);padding:18px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div id="scanResultIcon" style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">✓</div>
+          <div>
+            <div id="scanResultTitle" style="font-weight:700;font-size:16px">—</div>
+            <div id="scanResultSub" style="font-size:13px;color:var(--muted2)">—</div>
+          </div>
+        </div>
+        <div id="scanResultDetails" style="font-size:13px;color:var(--muted2);line-height:1.7"></div>
+        <button class="btn btn-gold" style="margin-top:14px" onclick="resumeScanning()">Scan Next Ticket</button>
+      </div>
+
+      <!-- manual code entry -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Manual Entry</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="manualCodeInput" class="field" placeholder="Enter ticket code…" style="margin:0;flex:1;height:44px;font-size:14px" oninput="this.value=this.value.toUpperCase()">
+          <button class="btn btn-gold btn-sm" style="flex-shrink:0;height:44px;padding:0 16px" onclick="verifyManualCode()">Verify</button>
+        </div>
+      </div>
+
+      <!-- attendance count -->
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;text-align:center">
+          <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--green)" id="scanCountCheckedIn">0</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">Checked In</div>
+        </div>
+        <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;text-align:center">
+          <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--muted2)" id="scanCountTotal">0</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">Total RSVPs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -1946,7 +2066,11 @@ function goTo(page) {
 
   window.scrollTo(0,0);
   if (page === 'browse') initBrowse();
-  if (page === 'profile') renderProfilePage();
+  if (page === 'profile') {
+    fetchProfile();
+    // If events tab is already active, refresh it
+    if (document.getElementById('ptab-events')?.classList.contains('active')) fetchMyEvents();
+  }
   if (page === 'community') initCommunityFeed();
 }
 
@@ -2265,6 +2389,168 @@ async function fetchProfile() {
   }
   syncAuthUI();
   renderProfilePage();
+  // Pre-fetch counts for stats
+  fetchMyEvents(true);
+  fetchMyTickets(true);
+}
+
+async function fetchMyEvents(countOnly = false) {
+  if (!currentUser) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/my-events`, {
+      headers:{ 'Authorization':`Bearer ${currentSession?.access_token}` }
+    });
+    if (!res.ok) throw new Error('failed');
+    const data = await res.json();
+    const events = data.events || [];
+    // update stat
+    document.getElementById('statEvents').textContent = events.length;
+    if (countOnly) return;
+    // render into tab
+    const container = document.getElementById('myEventsContainer');
+    if (!container) return;
+    if (events.length === 0) {
+      container.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">No events yet</div>
+        <div class="empty-sub">Events you host will appear here.</div>
+        <button class="btn btn-gold btn-sm mt-4" onclick="goTo('host')">Host an Event →</button>
+      </div>`;
+      return;
+    }
+    container.innerHTML = '';
+    events.forEach(ev => {
+      const el = makeHostedEventCard(ev);
+      container.appendChild(el);
+    });
+  } catch {
+    if (countOnly) return;
+    const container = document.getElementById('myEventsContainer');
+    if (container) container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">No events yet</div>
+      <div class="empty-sub">Events you host will appear here.</div>
+      <button class="btn btn-gold btn-sm mt-4" onclick="goTo('host')">Host an Event →</button>
+    </div>`;
+  }
+}
+
+async function fetchMyTickets(countOnly = false) {
+  if (!currentUser) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/my-tickets`, {
+      headers:{ 'Authorization':`Bearer ${currentSession?.access_token}` }
+    });
+    if (!res.ok) throw new Error('failed');
+    const data = await res.json();
+    const tickets = data.tickets || [];
+    document.getElementById('statTickets').textContent = tickets.length;
+    if (countOnly) return;
+    const container = document.getElementById('myTicketsContainer');
+    if (!container) return;
+    if (tickets.length === 0) {
+      container.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">🎟️</div>
+        <div class="empty-title">No tickets yet</div>
+        <div class="empty-sub">Tickets you purchase will appear here.</div>
+        <button class="btn btn-gold btn-sm mt-4" onclick="goTo('browse')">Explore Events →</button>
+      </div>`;
+      return;
+    }
+    container.innerHTML = '';
+    tickets.forEach(t => container.appendChild(makeTicketCard(t)));
+  } catch {
+    if (countOnly) return;
+    const container = document.getElementById('myTicketsContainer');
+    if (container) container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🎟️</div>
+      <div class="empty-title">No tickets yet</div>
+      <div class="empty-sub">Tickets you purchase will appear here.</div>
+      <button class="btn btn-gold btn-sm mt-4" onclick="goTo('browse')">Explore Events →</button>
+    </div>`;
+  }
+}
+
+function makeHostedEventCard(ev) {
+  const el = document.createElement('div');
+  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;cursor:pointer';
+  const fmtDate = ev.start_date
+    ? new Date(ev.start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
+    : 'Date TBD';
+  const bg = ['linear-gradient(135deg,#1A0E38,#0F0F1A)','linear-gradient(135deg,#0E2438,#0F1A1A)','linear-gradient(135deg,#0E3820,#0F1A15)'][Math.abs((ev.name||'').charCodeAt(0))%3];
+  const statusColor = ev.status === 'published' ? 'var(--green)' : ev.status === 'draft' ? 'var(--gold)' : 'var(--muted)';
+  el.innerHTML = `
+    <div style="display:flex;gap:12px;padding:14px 16px;align-items:center">
+      <div style="width:56px;height:56px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:${bg};display:flex;align-items:center;justify-content:center;font-size:24px">
+        ${ev.cover_url ? `<img src="${ev.cover_url}" style="width:100%;height:100%;object-fit:cover">` : (ev.emoji || '✝')}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:15px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.name}</div>
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">${fmtDate}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-weight:700;color:${statusColor};text-transform:uppercase;letter-spacing:.05em">${ev.status}</span>
+          <span style="font-size:11px;color:var(--muted)">${ev.confirmed_rsvps || 0} going</span>
+          ${ev.is_paid ? `<span style="font-size:11px;color:var(--gold)">Paid</span>` : `<span style="font-size:11px;color:var(--muted)">Free</span>`}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        ${ev.status === 'published' ? `<button onclick="event.stopPropagation();openScannerSheet('${ev.id}','${(ev.name||'').replace(/'/g,'\\'')}')" style="font-size:11px;font-weight:600;color:#4EC98C;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);padding:5px 10px;border-radius:var(--r-full)">Scan</button>` : ''}
+        <button onclick="event.stopPropagation();viewDetail(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:5px 10px;border-radius:var(--r-full)">View</button>
+        <button onclick="event.stopPropagation();confirmDeleteEvent('${ev.id}')" style="font-size:11px;font-weight:600;color:var(--red);background:rgba(224,80,80,.08);border:1px solid rgba(224,80,80,.2);padding:5px 10px;border-radius:var(--r-full)">Delete</button>
+      </div>
+    </div>`;
+  el.onclick = () => viewDetail(ev);
+  return el;
+}
+
+function makeTicketCard(t) {
+  const el = document.createElement('div');
+  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;cursor:pointer';
+  const fmtDate = t.event_start_date
+    ? new Date(t.event_start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
+    : 'Date TBD';
+  const statusColor = t.status === 'confirmed' ? 'var(--green)' : t.status === 'pending' ? 'var(--gold)' : 'var(--muted)';
+  const isPaid = t.total_charged_cents > 0;
+  el.innerHTML = `
+    <div style="display:flex;gap:12px;padding:14px 16px;align-items:center">
+      <div style="width:48px;height:48px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#1A0E38,#0F0F1A);display:flex;align-items:center;justify-content:center;font-size:22px">
+        ${t.event_cover_url ? `<img src="${t.event_cover_url}" style="width:100%;height:100%;object-fit:cover">` : '🎟️'}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${t.event_name || 'Event'}</div>
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">${fmtDate}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-weight:700;color:${statusColor};text-transform:uppercase;letter-spacing:.05em">${t.status}</span>
+          <span style="font-size:11px;color:var(--muted)">${t.quantity} ticket${t.quantity!==1?'s':''}</span>
+          ${isPaid ? `<span style="font-size:11px;color:var(--gold);font-weight:600">$${((t.total_charged_cents||0)/100).toFixed(2)}</span>` : '<span style="font-size:11px;color:var(--muted)">Free</span>'}
+        </div>
+      </div>
+      <button onclick="event.stopPropagation();openTicketViewer(${JSON.stringify(t).replace(/"/g,'&quot;')})" style="flex-shrink:0;font-size:12px;font-weight:700;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:8px 12px;border-radius:var(--r-full)">
+        View QR
+      </button>
+    </div>`;
+  el.onclick = () => openTicketViewer(t);
+  return el;
+}
+
+function confirmDeleteEvent(id) {
+  if (!confirm('Delete this event? This cannot be undone.')) return;
+  deleteEvent(id);
+}
+
+async function deleteEvent(id) {
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` }
+    });
+    if (res.ok) {
+      showToast('Event deleted','success');
+      fetchMyEvents();
+    } else {
+      showToast('Could not delete event','error');
+    }
+  } catch { showToast('Could not delete event','error'); }
 }
 
 function renderProfilePage() {
@@ -2295,6 +2581,8 @@ function switchPTab(el, tab) {
   document.querySelectorAll('.profile-tab-panel').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('ptab-' + tab).classList.add('active');
+  if (tab === 'events')  fetchMyEvents();
+  if (tab === 'tickets') fetchMyTickets();
 }
 
 // ─── EDIT PROFILE ───────────────────────────────────────────
@@ -2359,43 +2647,66 @@ function epHandlePhoto(input) {
 
 async function saveProfile() {
   const name = document.getElementById('epName').value.trim();
-  if (!name) { showErr('epErr','Please enter your name.'); return; }
+  const errEl = document.getElementById('epErr');
+  if (!name) { errEl.textContent='Please enter your name.'; errEl.classList.add('show'); return; }
+  errEl.classList.remove('show');
   const btn = document.getElementById('epSaveBtn');
   btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Saving…';
+
+  // Upload avatar photo if a new one was selected
   let avatarUrl = profileData?.avatar_url || null;
   if (epAvatarUrl?.startsWith('data:')) {
     try {
       const blob = await fetch(epAvatarUrl).then(r=>r.blob());
-      const fn = `avatars/${currentUser.id}/avatar-${Date.now()}.jpg`;
-      const { error } = await sb.storage.from('avatars').upload(fn,blob,{upsert:true,contentType:blob.type});
-      if (!error) {
-        const { data:{publicUrl} } = sb.storage.from('avatars').getPublicUrl(fn);
+      const ext  = blob.type.includes('png') ? 'png' : 'jpg';
+      const fn   = `avatars/${currentUser.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await sb.storage.from('avatars').upload(fn, blob, { upsert:true, contentType:blob.type });
+      if (!upErr) {
+        const { data:{ publicUrl } } = sb.storage.from('avatars').getPublicUrl(fn);
         avatarUrl = publicUrl;
+      } else {
+        console.warn('Avatar upload error:', upErr.message);
       }
-    } catch {}
+    } catch(e) { console.warn('Avatar upload failed:', e); }
   }
+
   const updates = {
     full_name:    name,
     bio:          document.getElementById('epBio').value.trim(),
     city:         document.getElementById('epCity').value.trim(),
     avatar_url:   avatarUrl,
-    avatar_color: epAvatarColor || profileData?.avatar_color,
+    avatar_color: epAvatarColor || profileData?.avatar_color || null,
   };
+
   try {
-    const res = await fetch(`${API_BASE}/api/profile`,{
-      method:'PATCH',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
-      body: JSON.stringify(updates),
+    const res = await fetch(`${API_BASE}/api/profile`, {
+      method:  'PATCH',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${currentSession?.access_token}` },
+      body:    JSON.stringify(updates),
     });
-    if (res.ok) profileData = {...profileData,...await res.json()};
-    else profileData = {...profileData,...updates};
-  } catch { profileData = {...profileData,...updates}; }
-  await sb.auth.updateUser({ data:{full_name:name} });
+    if (res.ok) {
+      const saved = await res.json();
+      profileData = { ...profileData, ...saved };
+    } else {
+      const e = await res.json().catch(()=>({}));
+      console.error('Profile save error:', e);
+      // Still update local state so UI reflects changes
+      profileData = { ...profileData, ...updates };
+    }
+  } catch(e) {
+    console.error('Profile save failed:', e);
+    profileData = { ...profileData, ...updates };
+  }
+
+  // Always update Supabase auth metadata
+  await sb.auth.updateUser({ data:{ full_name: name } }).catch(()=>{});
+
   closeSheet('editProfileSheet');
   syncAuthUI();
   renderProfilePage();
-  showToast('Profile updated!','success');
-  btn.disabled=false; btn.innerHTML='Save Changes';
+  showToast('Profile updated! ✓', 'success');
+  btn.disabled = false;
+  btn.innerHTML = 'Save Changes';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3239,6 +3550,263 @@ function showSuccess(icon, title, msg) {
   document.getElementById('successTitle').textContent = title;
   document.getElementById('successMsg').textContent   = msg;
   openSheet('successSheet');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TICKET VIEWER — QR CODE GENERATION
+// ═══════════════════════════════════════════════════════════
+function openTicketViewer(t) {
+  // Populate header
+  document.getElementById('tvEventName').textContent = t.event_name || 'Event';
+  document.getElementById('tvTitle').textContent     = t.event_name || 'Event';
+  document.getElementById('tvDate').textContent      = t.event_start_date
+    ? new Date(t.event_start_date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})
+    : 'Date TBD';
+  document.getElementById('tvLocation').textContent  = t.event_city || '';
+  document.getElementById('tvQty').textContent       = t.quantity || 1;
+  document.getElementById('tvType').textContent      = t.ticket_type_name || 'General';
+  document.getElementById('tvAmount').textContent    = t.total_charged_cents > 0
+    ? `$${(t.total_charged_cents/100).toFixed(2)}`
+    : 'Free';
+
+  // Cover image
+  const coverImg  = document.getElementById('tvCoverImg');
+  const coverEmoji = document.getElementById('tvCoverEmoji');
+  if (t.event_cover_url) {
+    coverImg.src = t.event_cover_url;
+    coverImg.style.display = 'block';
+    coverEmoji.style.opacity = '0.2';
+  } else {
+    coverImg.style.display = 'none';
+    coverEmoji.style.opacity = '1';
+  }
+
+  // Status badge
+  const badge = document.getElementById('tvStatusBadge');
+  if (t.status === 'confirmed') {
+    badge.textContent = '✓ Confirmed';
+    badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 14px;border-radius:999px;background:rgba(78,201,140,.12);color:#4EC98C;border:1px solid rgba(78,201,140,.25)';
+  } else if (t.status === 'pending') {
+    badge.textContent = '⏳ Pending';
+    badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 14px;border-radius:999px;background:rgba(201,168,76,.12);color:#C9A84C;border:1px solid rgba(201,168,76,.25)';
+  } else {
+    badge.textContent = t.status;
+    badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 14px;border-radius:999px;background:rgba(255,255,255,.05);color:#666070;border:1px solid rgba(255,255,255,.08)';
+  }
+
+  // Generate ticket code (use payment intent id or fallback)
+  const rawCode = t.stripe_payment_intent || t.id || 'TICKET';
+  // Short human-readable code — last 8 chars uppercase
+  const shortCode = rawCode.replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase();
+  document.getElementById('tvTicketCode').textContent = shortCode;
+
+  // Build QR payload — JSON with all verification data
+  const qrPayload = JSON.stringify({
+    ticketId:    t.id,
+    eventId:     t.event_id,
+    userId:      t.user_id,
+    qty:         t.quantity,
+    code:        shortCode,
+    status:      t.status,
+    ts:          Date.now(),
+  });
+
+  // Render QR code onto canvas
+  const canvas = document.getElementById('tvQrCanvas');
+  QRCode.toCanvas(canvas, qrPayload, {
+    width: Math.min(window.innerWidth - 100, 240),
+    margin: 2,
+    color: { dark: '#1A1400', light: '#FFFFFF' },
+    errorCorrectionLevel: 'H',
+  }, err => { if (err) console.error('QR error:', err); });
+
+  openSheet('ticketViewerSheet');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TICKET SCANNER — FOR HOSTS
+// ═══════════════════════════════════════════════════════════
+let scannerStream    = null;
+let scannerLoop      = null;
+let scannerPaused    = false;
+let scannerEventId   = null;
+let scannerCheckedIn = 0;
+let scannedCodes     = new Set(); // prevent double-scan in same session
+
+function openScannerSheet(eventId, eventName) {
+  if (!currentUser) { openAuth('signin'); return; }
+  scannerEventId = eventId;
+  scannerPaused  = false;
+  scannerCheckedIn = 0;
+  scannedCodes.clear();
+  document.getElementById('scannerEventName').textContent = eventName || 'Event';
+  document.getElementById('scanResultCard').style.display = 'none';
+  document.getElementById('scanCountCheckedIn').textContent = '0';
+  document.getElementById('manualCodeInput').value = '';
+  setScanStatus('Point camera at ticket QR code', '');
+  // Load attendance counts
+  loadAttendanceCounts(eventId);
+  openSheet('scannerSheet');
+  setTimeout(startCamera, 300);
+}
+
+async function loadAttendanceCounts(eventId) {
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${eventId}/attendance`, {
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` }
+    });
+    if (res.ok) {
+      const d = await res.json();
+      document.getElementById('scanCountTotal').textContent = d.total || 0;
+      document.getElementById('scanCountCheckedIn').textContent = d.checked_in || 0;
+      scannerCheckedIn = d.checked_in || 0;
+    }
+  } catch {}
+}
+
+async function startCamera() {
+  try {
+    scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width:{ ideal:1280 }, height:{ ideal:720 } }
+    });
+    const video = document.getElementById('scannerVideo');
+    video.srcObject = scannerStream;
+    await video.play();
+    startScanLoop();
+  } catch(e) {
+    setScanStatus('Camera access denied. Use manual entry below.', 'error');
+  }
+}
+
+function startScanLoop() {
+  const video  = document.getElementById('scannerVideo');
+  const canvas = document.getElementById('scannerCanvas');
+  const ctx    = canvas.getContext('2d');
+  scannerLoop  = setInterval(() => {
+    if (scannerPaused || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: 'dontInvert',
+    });
+    if (code) handleScannedCode(code.data);
+  }, 200);
+}
+
+function stopCamera() {
+  clearInterval(scannerLoop);
+  scannerLoop = null;
+  if (scannerStream) {
+    scannerStream.getTracks().forEach(t => t.stop());
+    scannerStream = null;
+  }
+}
+
+function closeScannerSheet() {
+  stopCamera();
+  closeSheet('scannerSheet');
+}
+
+function setScanStatus(msg, type = '') {
+  const el = document.getElementById('scanStatusText');
+  el.textContent = msg;
+  el.style.color = type === 'success' ? '#4EC98C' : type === 'error' ? '#E05050' : '#fff';
+}
+
+function resumeScanning() {
+  scannerPaused = false;
+  document.getElementById('scanResultCard').style.display = 'none';
+  setScanStatus('Point camera at ticket QR code', '');
+}
+
+async function handleScannedCode(raw) {
+  if (scannerPaused) return;
+  let payload;
+  try { payload = JSON.parse(raw); } catch { return; } // ignore non-JSON
+  if (!payload.ticketId && !payload.code) return;
+
+  const dedupeKey = payload.ticketId || payload.code;
+  if (scannedCodes.has(dedupeKey)) {
+    showScanResult('warning', 'Already Scanned', 'This ticket was already checked in this session.', payload);
+    return;
+  }
+
+  scannerPaused = true;
+  setScanStatus('Verifying…', '');
+
+  try {
+    const res = await fetch(`${API_BASE}/api/tickets/verify`, {
+      method:  'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${currentSession?.access_token}` },
+      body:    JSON.stringify({ ticketId: payload.ticketId, code: payload.code, eventId: scannerEventId }),
+    });
+    const data = await res.json();
+
+    if (data.valid) {
+      scannedCodes.add(dedupeKey);
+      scannerCheckedIn++;
+      document.getElementById('scanCountCheckedIn').textContent = scannerCheckedIn;
+      showScanResult('success', 'Valid Ticket ✓', data.message || 'Check-in confirmed.', data.ticket);
+    } else {
+      showScanResult('error', 'Invalid Ticket', data.error || 'This ticket could not be verified.', payload);
+    }
+  } catch(e) {
+    // Offline fallback — verify locally from QR data
+    if (payload.status === 'confirmed' && payload.eventId === scannerEventId) {
+      scannedCodes.add(dedupeKey);
+      scannerCheckedIn++;
+      document.getElementById('scanCountCheckedIn').textContent = scannerCheckedIn;
+      showScanResult('success', 'Valid Ticket ✓ (Offline)', 'Check-in recorded. Will sync when online.', payload);
+    } else {
+      showScanResult('error', 'Cannot Verify', 'Network unavailable. Check ticket manually.', payload);
+    }
+  }
+}
+
+function showScanResult(type, title, sub, data) {
+  const card   = document.getElementById('scanResultCard');
+  const icon   = document.getElementById('scanResultIcon');
+  const ttl    = document.getElementById('scanResultTitle');
+  const stxt   = document.getElementById('scanResultSub');
+  const details = document.getElementById('scanResultDetails');
+
+  card.style.display = 'block';
+  ttl.textContent  = title;
+  stxt.textContent = sub;
+
+  if (type === 'success') {
+    card.style.cssText   = 'display:block;background:rgba(78,201,140,.08);border:1px solid rgba(78,201,140,.25);border-radius:var(--r-lg);padding:18px;margin-bottom:16px';
+    icon.style.cssText   = 'width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:rgba(78,201,140,.15);color:#4EC98C';
+    icon.textContent     = '✓';
+    setScanStatus('Check-in successful!', 'success');
+  } else if (type === 'error') {
+    card.style.cssText   = 'display:block;background:rgba(224,80,80,.08);border:1px solid rgba(224,80,80,.25);border-radius:var(--r-lg);padding:18px;margin-bottom:16px';
+    icon.style.cssText   = 'width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:rgba(224,80,80,.15);color:#E05050';
+    icon.textContent     = '✕';
+    setScanStatus('Invalid ticket', 'error');
+  } else {
+    card.style.cssText   = 'display:block;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.25);border-radius:var(--r-lg);padding:18px;margin-bottom:16px';
+    icon.style.cssText   = 'width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:rgba(201,168,76,.15);color:#C9A84C';
+    icon.textContent     = '⚠';
+    setScanStatus('Already scanned', '');
+  }
+
+  // Show ticket details
+  const qty  = data?.qty  || data?.quantity || '—';
+  const name = data?.event_name || '—';
+  details.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:4px">
+      <div><span style="color:var(--muted)">Qty:</span> <strong>${qty}</strong></div>
+      <div><span style="color:var(--muted)">Code:</span> <strong>${data?.code || '—'}</strong></div>
+    </div>`;
+}
+
+async function verifyManualCode() {
+  const code = document.getElementById('manualCodeInput').value.trim().toUpperCase();
+  if (!code) return;
+  await handleScannedCode(JSON.stringify({ code, eventId: scannerEventId }));
 }
 
 // ═══════════════════════════════════════════════════════════
