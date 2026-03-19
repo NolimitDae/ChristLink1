@@ -15,13 +15,28 @@ const app  = express();
 const PORT = process.env.PORT || 4242;
 
 // ─── CLIENTS ────────────────────────────────────────────────
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+// Validate required env vars — warn but don't crash so /health still responds
+const REQUIRED_VARS = [
+  'SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','STRIPE_SECRET_KEY'
+];
+const missingVars = REQUIRED_VARS.filter(v => !process.env[v]);
+if (missingVars.length) {
+  console.warn(`⚠️  Missing env vars: ${missingVars.join(', ')}`);
+  console.warn('   Some API routes will not work until these are set.');
+}
+
+const supabase = createClient(
+  process.env.SUPABASE_URL      || 'https://placeholder.supabase.co',
+  process.env.SUPABASE_ANON_KEY || 'placeholder'
+);
 const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  process.env.SUPABASE_URL             || 'https://placeholder.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder',
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
+  apiVersion: '2024-04-10',
+});
 
 // ─── CONSTANTS ──────────────────────────────────────────────
 const PLATFORM_FEE_PCT = 0.05;
@@ -71,7 +86,12 @@ async function requireAuth(req, res, next) {
 // ════════════════════════════════════════════════════════════
 // HEALTH
 // ════════════════════════════════════════════════════════════
-app.get('/health', (req, res) => res.json({ status: 'ok', service: 'christlink', ts: new Date().toISOString() }));
+app.get('/health', (req, res) => res.json({
+  status: missingVars.length ? 'degraded' : 'ok',
+  service: 'christlink',
+  ts: new Date().toISOString(),
+  ...(missingVars.length && { missing_vars: missingVars }),
+}));
 
 // ════════════════════════════════════════════════════════════
 // AUTH
@@ -176,7 +196,7 @@ app.get('/api/events/:id', async (req, res) => {
 
 app.post('/api/events', requireAuth, async (req, res) => {
   const {
-    name, description, emoji, event_type, age_group, format,
+    name, description, cover_url, gallery_urls, event_type, age_group, format,
     denomination, tags, is_paid, absorb_stripe_fee,
     start_date, end_date, venue_name, address, city, state, zip, online_url, max_capacity,
   } = req.body;
@@ -184,7 +204,9 @@ app.post('/api/events', requireAuth, async (req, res) => {
   await supabaseAdmin.from('profiles').update({ role: 'host' }).eq('id', req.userId).eq('role', 'attendee');
   const { data, error } = await supabaseAdmin.from('events').insert({
     host_id: req.userId, name, description,
-    emoji: emoji || '✝', event_type,
+    cover_url: cover_url || null,
+    gallery_urls: gallery_urls || [],
+    event_type,
     age_group: age_group || 'All Ages',
     format: format || 'in_person',
     denomination, tags,
