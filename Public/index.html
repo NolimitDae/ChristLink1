@@ -1,0 +1,3149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0A0A0F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Christ Link — Faith Events Near You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════════════════════ */
+:root {
+  --bg:         #0A0A0F;
+  --bg2:        #111118;
+  --surface:    #16161F;
+  --surface2:   #1E1E2A;
+  --surface3:   #252533;
+  --border:     rgba(255,255,255,.07);
+  --border2:    rgba(255,255,255,.12);
+  --gold:       #C9A84C;
+  --gold2:      #E8C97A;
+  --gold-dim:   rgba(201,168,76,.15);
+  --gold-glow:  rgba(201,168,76,.25);
+  --text:       #F0EBE0;
+  --muted:      #666070;
+  --muted2:     #9994A8;
+  --red:        #E05050;
+  --green:      #4EC98C;
+
+  --r-sm:   10px;
+  --r-md:   16px;
+  --r-lg:   22px;
+  --r-xl:   28px;
+  --r-full: 999px;
+
+  --tab-h:  58px;
+  --nav-h:  56px;
+  --safe-t: env(safe-area-inset-top);
+  --safe-b: env(safe-area-inset-bottom);
+
+  --font-display: 'Lora', Georgia, serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+
+  --ease: cubic-bezier(.4,0,.2,1);
+  --spring: cubic-bezier(.175,.885,.32,1.275);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;background:var(--bg);overscroll-behavior:none}
+body{
+  min-height:100%;background:var(--bg);color:var(--text);
+  font-family:var(--font-body);font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:calc(var(--tab-h) + var(--safe-b));
+}
+button,input,textarea,select{
+  font-family:inherit;font-size:inherit;color:inherit;
+  border:none;background:none;outline:none;
+}
+button{cursor:pointer}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════════════════ */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px}
+
+/* ═══════════════════════════════════════════════════════════
+   TOP NAV (desktop) / STATUS BAR (mobile)
+═══════════════════════════════════════════════════════════ */
+#topnav{
+  position:fixed;top:0;left:0;right:0;z-index:400;
+  height:calc(var(--nav-h) + var(--safe-t));
+  padding-top:var(--safe-t);
+  background:rgba(10,10,15,.9);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding-left:20px;padding-right:20px;
+}
+.nav-logo{
+  font-family:var(--font-display);font-weight:700;font-size:19px;
+  color:var(--gold);letter-spacing:-.01em;
+  display:flex;align-items:center;gap:8px;
+}
+.nav-logo-cross{font-size:14px;opacity:.7}
+.nav-auth-row{display:flex;align-items:center;gap:10px}
+.nav-avatar-btn{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),#6B4A00);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;color:#000;
+  border:2px solid rgba(201,168,76,.3);
+  position:relative;
+}
+.nav-badge{
+  display:inline-flex;padding:0 14px;height:34px;border-radius:var(--r-full);
+  align-items:center;justify-content:center;font-weight:600;font-size:13px;
+}
+.nav-badge-outline{border:1px solid var(--border2);color:var(--muted2)}
+.nav-badge-gold{background:var(--gold);color:#0A0A0F;font-weight:700}
+
+/* ═══════════════════════════════════════════════════════════
+   BOTTOM TAB BAR
+═══════════════════════════════════════════════════════════ */
+#tabbar{
+  position:fixed;bottom:0;left:0;right:0;z-index:400;
+  height:calc(var(--tab-h) + var(--safe-b));
+  padding-bottom:var(--safe-b);
+  background:rgba(10,10,15,.95);
+  backdrop-filter:blur(24px);
+  border-top:1px solid var(--border);
+  display:flex;align-items:flex-start;
+  padding-top:6px;
+}
+.tab-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  gap:3px;padding:4px 0;
+  color:var(--muted);font-size:10px;font-weight:500;
+  letter-spacing:.04em;text-transform:uppercase;
+  transition:color .18s var(--ease);
+}
+.tab-item.active{color:var(--gold)}
+.tab-item svg{width:22px;height:22px;transition:transform .18s var(--ease)}
+.tab-item.active svg{transform:translateY(-1px)}
+.tab-host{
+  position:relative;
+  /* special gold host button */
+}
+.tab-host-circle{
+  width:44px;height:44px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),#7A5200);
+  display:flex;align-items:center;justify-content:center;
+  margin-top:-14px;
+  box-shadow:0 0 20px var(--gold-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PAGES
+═══════════════════════════════════════════════════════════ */
+.page{
+  display:none;
+  min-height:100vh;
+  padding-top:calc(var(--nav-h) + var(--safe-t));
+  animation:pageIn .3s var(--ease) both;
+}
+.page.active{display:block}
+@keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO (Home)
+═══════════════════════════════════════════════════════════ */
+.hero{
+  min-height:340px;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:28px 20px 32px;
+  position:relative;overflow:hidden;
+  background:linear-gradient(160deg,#1A0F30 0%,#0A0A0F 60%);
+}
+.hero-cross{
+  position:absolute;top:-20px;right:-30px;
+  width:180px;height:220px;opacity:.05;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 40 60' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='16' y='0' width='8' height='60' fill='%23C9A84C'/%3E%3Crect x='0' y='16' width='40' height='8' fill='%23C9A84C'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.hero-eyebrow{
+  font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:8px;opacity:.8;
+}
+.hero-title{
+  font-family:var(--font-display);font-size:34px;font-weight:700;
+  line-height:1.18;color:var(--text);margin-bottom:6px;
+}
+.hero-title em{font-style:italic;color:var(--gold2)}
+.hero-sub{font-size:14px;color:var(--muted2);margin-bottom:24px;line-height:1.55}
+
+/* ═══════════════════════════════════════════════════════════
+   SEARCH BAR
+═══════════════════════════════════════════════════════════ */
+.search-wrap{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--r-full);padding:0 16px;height:48px;
+}
+.search-wrap svg{flex-shrink:0;color:var(--muted);width:18px;height:18px}
+.search-wrap input{
+  flex:1;background:none;font-size:14px;color:var(--text);
+  font-weight:400;
+}
+.search-wrap input::placeholder{color:var(--muted)}
+.search-btn{
+  height:34px;padding:0 16px;border-radius:var(--r-full);
+  background:var(--gold);color:#000;font-weight:700;font-size:13px;
+  flex-shrink:0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION HEADERS
+═══════════════════════════════════════════════════════════ */
+.section{padding:24px 20px 0}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
+.section-title{font-family:var(--font-display);font-size:20px;font-weight:700}
+.section-link{font-size:13px;color:var(--gold);font-weight:600}
+
+/* ═══════════════════════════════════════════════════════════
+   PILLS
+═══════════════════════════════════════════════════════════ */
+.pills-scroll{
+  display:flex;gap:8px;overflow-x:auto;
+  padding:0 20px;margin-bottom:0;
+  scrollbar-width:none;
+}
+.pills-scroll::-webkit-scrollbar{display:none}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:0 14px;height:34px;border-radius:var(--r-full);
+  background:var(--surface2);border:1px solid var(--border);
+  font-size:13px;font-weight:500;color:var(--muted2);
+  white-space:nowrap;transition:all .18s var(--ease);flex-shrink:0;
+}
+.pill.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
+
+/* ═══════════════════════════════════════════════════════════
+   EVENT CARDS
+═══════════════════════════════════════════════════════════ */
+.events-scroll{
+  display:flex;gap:14px;overflow-x:auto;
+  padding:16px 20px 4px;
+  scrollbar-width:none;
+}
+.events-scroll::-webkit-scrollbar{display:none}
+.events-grid{
+  display:grid;grid-template-columns:1fr;gap:14px;
+  padding:16px 20px;
+}
+@media(min-width:600px){.events-grid{grid-template-columns:1fr 1fr}}
+
+.event-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);overflow:hidden;
+  transition:transform .2s var(--ease),border-color .2s;
+  cursor:pointer;flex-shrink:0;width:260px;
+}
+.events-grid .event-card{width:auto}
+.event-card:active{transform:scale(.98)}
+.event-card:hover{border-color:rgba(201,168,76,.25)}
+
+.card-img{
+  height:130px;display:flex;align-items:center;justify-content:center;
+  font-size:52px;position:relative;
+  background:linear-gradient(135deg,#1E1E2A,#252533);
+}
+.card-badges{
+  position:absolute;top:10px;left:10px;right:10px;
+  display:flex;justify-content:space-between;align-items:flex-start;
+}
+.badge{
+  padding:3px 10px;border-radius:var(--r-full);font-size:11px;font-weight:700;
+  letter-spacing:.03em;backdrop-filter:blur(8px);
+}
+.badge-type{background:rgba(22,22,31,.85);color:var(--muted2);border:1px solid var(--border)}
+.badge-free{background:rgba(78,201,140,.15);color:#4EC98C;border:1px solid rgba(78,201,140,.25)}
+.badge-paid{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.25)}
+
+.card-body{padding:14px 16px 16px}
+.card-date{font-size:11px;color:var(--gold);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
+.card-name{font-family:var(--font-display);font-size:16px;font-weight:700;line-height:1.3;margin-bottom:5px;color:var(--text)}
+.card-loc{font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:4px;margin-bottom:12px}
+.card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-going{font-size:12px;color:var(--muted);font-weight:500}
+.card-btn{
+  height:32px;padding:0 14px;border-radius:var(--r-full);
+  background:var(--gold-dim);color:var(--gold);font-weight:700;font-size:12px;
+  border:1px solid rgba(201,168,76,.3);transition:all .18s;
+}
+.card-btn:active,.card-btn:hover{background:var(--gold);color:#000}
+.card-btn.going{background:rgba(78,201,140,.15);color:var(--green);border-color:rgba(78,201,140,.3)}
+
+/* ═══════════════════════════════════════════════════════════
+   VERSE BANNER
+═══════════════════════════════════════════════════════════ */
+.verse-banner{
+  margin:24px 20px;
+  background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.03));
+  border:1px solid rgba(201,168,76,.18);
+  border-radius:var(--r-lg);padding:24px 20px;
+  position:relative;overflow:hidden;
+}
+.verse-banner::before{
+  content:'';position:absolute;top:-30px;right:-30px;
+  width:100px;height:100px;
+  background:radial-gradient(circle,rgba(201,168,76,.1),transparent 70%);
+}
+.verse-mark{font-size:32px;color:var(--gold);opacity:.4;line-height:1;margin-bottom:12px;font-family:Georgia,serif}
+.verse-text{
+  font-family:var(--font-display);font-style:italic;
+  font-size:16px;line-height:1.65;color:var(--text);
+  margin-bottom:8px;transition:opacity .4s;
+}
+.verse-ref{font-size:12px;color:var(--gold);font-weight:600;transition:opacity .4s}
+.verse-dots{display:flex;gap:6px;margin-top:14px}
+.v-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--surface3);transition:all .3s;border:none;cursor:pointer;padding:0;
+}
+.v-dot.active{background:var(--gold);width:18px;border-radius:3px}
+
+/* ═══════════════════════════════════════════════════════════
+   HOST PROMO
+═══════════════════════════════════════════════════════════ */
+.host-promo{
+  margin:0 20px 24px;
+  background:linear-gradient(135deg,#1A0E38,#0F0F1A);
+  border:1px solid rgba(168,130,255,.18);
+  border-radius:var(--r-lg);padding:22px 20px;
+  display:flex;align-items:center;gap:16px;
+}
+.host-promo-icon{
+  width:52px;height:52px;border-radius:var(--r-md);flex-shrink:0;
+  background:linear-gradient(135deg,#7C3AED,#4C1D95);
+  display:flex;align-items:center;justify-content:center;font-size:24px;
+}
+.host-promo h3{font-family:var(--font-display);font-size:17px;font-weight:700;margin-bottom:3px}
+.host-promo p{font-size:13px;color:var(--muted2);line-height:1.45;margin-bottom:10px}
+.host-promo-btn{
+  display:inline-flex;height:32px;padding:0 14px;border-radius:var(--r-full);
+  background:rgba(168,130,255,.15);border:1px solid rgba(168,130,255,.3);
+  color:#A882FF;font-size:12px;font-weight:700;align-items:center;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BROWSE PAGE
+═══════════════════════════════════════════════════════════ */
+.browse-search{
+  padding:16px 20px 12px;
+  position:sticky;top:calc(var(--nav-h) + var(--safe-t));z-index:10;
+  background:var(--bg);
+}
+.result-count{
+  padding:0 20px;margin-bottom:4px;
+  font-size:12px;color:var(--muted);font-weight:500;
+}
+/* filter bottom sheet */
+.filter-btn{
+  display:flex;align-items:center;gap:6px;
+  height:34px;padding:0 14px;border-radius:var(--r-full);
+  background:var(--surface2);border:1px solid var(--border);
+  font-size:13px;color:var(--muted2);font-weight:500;flex-shrink:0;
+}
+.filter-btn.has-filters{border-color:var(--gold);color:var(--gold)}
+
+/* ═══════════════════════════════════════════════════════════
+   HOST PAGE (form)
+═══════════════════════════════════════════════════════════ */
+.host-form-wrap{padding:0 20px 32px}
+.host-steps{
+  display:flex;align-items:center;gap:0;
+  padding:20px 20px 24px;
+}
+.host-step-item{
+  display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;
+}
+.step-num{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;
+  background:var(--surface3);color:var(--muted);
+  border:2px solid transparent;transition:all .25s;
+}
+.step-num.active{background:var(--gold-dim);color:var(--gold);border-color:var(--gold)}
+.step-num.done{background:var(--gold);color:#000}
+.step-label{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase;transition:color .25s}
+.step-label.active{color:var(--gold)}
+.step-line{flex:1;height:1px;background:var(--border);margin:-18px 0 18px;transition:background .25s}
+.step-line.done{background:var(--gold)}
+
+.form-step{display:none}
+.form-step.active{display:block;animation:pageIn .25s var(--ease) both}
+.field-label{display:block;font-size:12px;font-weight:600;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.field{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r-md);padding:13px 16px;font-size:15px;color:var(--text);
+  transition:border-color .18s;margin-bottom:18px;
+}
+.field:focus{border-color:rgba(201,168,76,.4);background:var(--surface)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+textarea.field{resize:vertical;min-height:90px;line-height:1.5}
+.field-note{font-size:12px;color:var(--muted);margin-top:-12px;margin-bottom:18px}
+
+.toggle-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r-md);margin-bottom:18px;
+}
+.toggle-label h4{font-size:15px;font-weight:600;margin-bottom:2px}
+.toggle-label p{font-size:12px;color:var(--muted2)}
+.toggle-sw{
+  position:relative;width:46px;height:26px;flex-shrink:0;
+}
+.toggle-sw input{opacity:0;width:0;height:0}
+.toggle-sw-track{
+  position:absolute;inset:0;border-radius:13px;
+  background:var(--surface3);transition:background .2s;cursor:pointer;
+}
+.toggle-sw input:checked + .toggle-sw-track{background:var(--gold)}
+.toggle-sw-track::after{
+  content:'';position:absolute;width:20px;height:20px;
+  border-radius:50%;background:#fff;top:3px;left:3px;
+  transition:left .2s;
+}
+.toggle-sw input:checked + .toggle-sw-track::after{left:23px}
+
+.fee-card{
+  background:linear-gradient(135deg,rgba(201,168,76,.06),transparent);
+  border:1px solid rgba(201,168,76,.2);border-radius:var(--r-md);
+  padding:16px;margin-bottom:18px;
+}
+
+/* step nav buttons */
+.step-nav{display:flex;gap:10px;padding-top:8px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:50px;border-radius:var(--r-full);font-weight:700;font-size:15px;
+  padding:0 24px;transition:all .2s var(--ease);width:100%;
+}
+.btn-gold{background:var(--gold);color:#0A0A0F}
+.btn-gold:active{opacity:.85;transform:scale(.98)}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--muted2)}
+.btn-outline:active{border-color:var(--gold);color:var(--gold)}
+.btn-sm{height:40px;font-size:13px;padding:0 18px;width:auto}
+.btn-ghost{background:var(--surface2);color:var(--muted2)}
+
+/* ═══════════════════════════════════════════════════════════
+   TICKET TYPE BUILDER
+═══════════════════════════════════════════════════════════ */
+.ticket-row{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r-md);padding:14px;margin-bottom:10px;
+  display:grid;grid-template-columns:1fr 80px 70px 32px;gap:10px;align-items:end;
+}
+.ticket-row input{
+  background:var(--surface3);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:9px 12px;font-size:14px;color:var(--text);width:100%;
+  transition:border-color .15s;
+}
+.ticket-row input:focus{border-color:rgba(201,168,76,.4)}
+.ticket-row-label{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px}
+.remove-tt{
+  width:32px;height:32px;border-radius:var(--r-sm);
+  background:transparent;border:1px solid var(--border);
+  color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:16px;
+  transition:all .15s;margin-bottom:2px;
+}
+.remove-tt:hover{border-color:var(--red);color:var(--red)}
+.revenue-preview{
+  background:var(--surface3);border-radius:var(--r-sm);padding:14px;
+  margin-top:4px;margin-bottom:18px;
+  display:grid;grid-template-columns:1fr auto;gap:4px 0;
+}
+.rev-row{display:contents}
+.rev-label{font-size:12px;color:var(--muted2)}
+.rev-val{font-size:12px;color:var(--muted2);text-align:right}
+.rev-row.net .rev-label{font-weight:700;color:var(--text);font-size:13px}
+.rev-row.net .rev-val{font-weight:700;color:var(--green);font-size:13px}
+
+/* ═══════════════════════════════════════════════════════════
+   EVENT DETAIL PAGE
+═══════════════════════════════════════════════════════════ */
+#page-event-detail{padding-top:0}
+.detail-hero{
+  height:240px;display:flex;align-items:center;justify-content:center;
+  position:relative;font-size:72px;
+  background:linear-gradient(135deg,#1E1E2A,#252533);
+}
+.detail-back{
+  position:absolute;top:calc(var(--safe-t) + 12px);left:16px;
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(10,10,15,.7);backdrop-filter:blur(10px);
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;color:var(--text);
+}
+.detail-content{padding:20px 20px 120px}
+.detail-host-row{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r-md);margin-bottom:18px;
+}
+.detail-host-av{
+  width:38px;height:38px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),#6B4A00);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:700;color:#000;flex-shrink:0;
+}
+.detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.tag{
+  padding:4px 10px;border-radius:var(--r-full);
+  background:var(--surface2);border:1px solid var(--border);
+  font-size:11px;color:var(--muted2);font-weight:500;
+}
+.detail-meta-list{margin-bottom:18px}
+.detail-meta-row{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 0;border-bottom:1px solid var(--border);
+}
+.detail-meta-row:last-child{border-bottom:none}
+.detail-meta-icon{width:34px;height:34px;border-radius:var(--r-sm);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.detail-meta-text{font-size:14px;color:var(--text)}
+.detail-meta-sub{font-size:12px;color:var(--muted2)}
+
+.detail-sticky{
+  position:fixed;bottom:calc(var(--tab-h) + var(--safe-b));left:0;right:0;
+  padding:12px 20px;background:rgba(10,10,15,.95);
+  backdrop-filter:blur(20px);border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;z-index:300;
+}
+.detail-price-block{flex:1}
+.detail-price-big{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--gold)}
+.detail-price-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.detail-rsvp-btn{
+  flex:1;height:52px;border-radius:var(--r-full);
+  background:linear-gradient(135deg,var(--gold),#9A7000);
+  color:#0A0A0F;font-weight:800;font-size:15px;
+  box-shadow:0 4px 20px var(--gold-glow);
+  transition:all .2s;
+}
+.detail-rsvp-btn:active{transform:scale(.97);box-shadow:none}
+.detail-rsvp-btn.confirmed{background:var(--green);box-shadow:0 4px 20px rgba(78,201,140,.3)}
+
+.qty-row{display:flex;align-items:center;gap:14px;margin:14px 0}
+.qty-btn{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--surface3);border:1px solid var(--border);
+  color:var(--text);font-size:18px;font-weight:300;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.qty-btn:active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
+
+/* ═══════════════════════════════════════════════════════════
+   COMMUNITY PAGE
+═══════════════════════════════════════════════════════════ */
+.community-post-wrap{
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+}
+.post-input-row{
+  display:flex;align-items:flex-start;gap:12px;
+}
+.post-av{
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  background:var(--surface3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;color:var(--muted);
+}
+.post-field{
+  flex:1;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:10px 14px;min-height:42px;
+  font-size:14px;color:var(--text);resize:none;line-height:1.5;
+  transition:border-color .18s;
+}
+.post-field:focus{border-color:rgba(201,168,76,.3);min-height:90px}
+.post-submit{
+  display:flex;justify-content:flex-end;margin-top:10px;
+}
+.community-feed{padding:0 20px 24px}
+.feed-card{
+  padding:18px 0;border-bottom:1px solid var(--border);
+}
+.feed-card:last-child{border-bottom:none}
+.feed-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.feed-av{
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),#6B4A00);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:700;color:#000;
+}
+.feed-name{font-size:14px;font-weight:600}
+.feed-time{font-size:11px;color:var(--muted)}
+.feed-body{font-size:14px;color:var(--muted2);line-height:1.65}
+.feed-reactions{display:flex;gap:8px;margin-top:12px}
+.reaction-btn{
+  height:30px;padding:0 12px;border-radius:var(--r-full);
+  background:var(--surface2);border:1px solid var(--border);
+  font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:4px;
+  transition:all .15s;
+}
+.reaction-btn.active{background:var(--gold-dim);border-color:rgba(201,168,76,.3);color:var(--gold)}
+
+/* ═══════════════════════════════════════════════════════════
+   PROFILE PAGE
+═══════════════════════════════════════════════════════════ */
+.profile-hero{
+  background:linear-gradient(160deg,rgba(201,168,76,.07),transparent);
+  border-bottom:1px solid var(--border);
+  padding:28px 20px 24px;
+}
+.profile-top{display:flex;align-items:flex-start;gap:16px;margin-bottom:16px}
+.profile-av{
+  width:72px;height:72px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),#6B4A00);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:28px;font-weight:700;color:#000;
+  border:3px solid rgba(201,168,76,.25);overflow:hidden;
+}
+.profile-av img{width:100%;height:100%;object-fit:cover}
+.profile-info{flex:1;min-width:0}
+.profile-name{font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:3px}
+.profile-handle{font-size:13px;color:var(--muted2);margin-bottom:8px}
+.profile-joined{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.profile-bio{font-size:14px;color:var(--muted2);line-height:1.6;margin-bottom:14px}
+.profile-edit-btn{
+  display:inline-flex;height:36px;padding:0 16px;border-radius:var(--r-full);
+  border:1px solid var(--border2);color:var(--muted2);font-size:13px;font-weight:600;
+  align-items:center;gap:6px;transition:all .18s;
+}
+.profile-edit-btn:active{border-color:var(--gold);color:var(--gold)}
+.profile-stats{display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden}
+.stat-cell{flex:1;padding:14px 0;text-align:center;border-right:1px solid var(--border)}
+.stat-cell:last-child{border-right:none}
+.stat-num{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--gold)}
+.stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:2px}
+
+.profile-tabs{
+  display:flex;border-bottom:1px solid var(--border);
+  position:sticky;top:calc(var(--nav-h) + var(--safe-t));
+  background:var(--bg);z-index:10;
+}
+.profile-tab{
+  flex:1;padding:14px 0;text-align:center;font-size:13px;font-weight:600;
+  color:var(--muted);border-bottom:2px solid transparent;transition:all .18s;
+}
+.profile-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.profile-tab-panel{display:none;padding:20px}
+.profile-tab-panel.active{display:block;animation:pageIn .2s var(--ease) both}
+.profile-auth-gate{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 32px;text-align:center;gap:16px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODALS / SHEETS
+═══════════════════════════════════════════════════════════ */
+.overlay{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
+  display:none;align-items:flex-end;justify-content:center;
+  padding:0;
+}
+.overlay.open{display:flex;animation:fadeIn .2s var(--ease)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.sheet{
+  background:var(--surface);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;
+  width:100%;max-height:92dvh;overflow-y:auto;
+  animation:sheetUp .3s var(--spring) both;
+  padding-bottom:var(--safe-b);
+}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+.sheet-handle{
+  width:36px;height:4px;border-radius:2px;background:var(--border2);
+  margin:12px auto 0;
+}
+.sheet-head{
+  padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between;
+}
+.sheet-title{font-family:var(--font-display);font-size:20px;font-weight:700}
+.sheet-close{
+  width:34px;height:34px;border-radius:50%;background:var(--surface2);
+  border:1px solid var(--border);color:var(--muted2);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.sheet-body{padding:20px}
+
+/* centered modal (for tablet/desktop) */
+@media(min-width:600px){
+  .overlay{align-items:center;padding:20px}
+  .sheet{
+    border-radius:var(--r-xl);max-width:480px;
+    animation:modalIn .3s var(--spring) both;
+    margin-bottom:0;
+  }
+  @keyframes modalIn{from{opacity:0;transform:scale(.93) translateY(16px)}to{opacity:1;transform:none}}
+}
+
+/* ─── AUTH SHEET ─── */
+.auth-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
+.auth-tab{
+  flex:1;padding:13px 0;text-align:center;font-size:14px;font-weight:600;
+  color:var(--muted);border-bottom:2px solid transparent;transition:all .18s;
+}
+.auth-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.auth-step{display:none}
+.auth-step.active{display:block;animation:pageIn .2s var(--ease) both}
+
+.otp-row{display:flex;gap:10px;justify-content:center;margin:20px 0}
+.otp-box{
+  width:44px;height:52px;border-radius:var(--r-sm);
+  border:1.5px solid var(--border);background:var(--surface2);
+  text-align:center;font-size:22px;font-weight:700;color:var(--text);
+  transition:border-color .18s;
+  -moz-appearance:textfield;
+}
+.otp-box::-webkit-inner-spin-button,.otp-box::-webkit-outer-spin-button{-webkit-appearance:none}
+.otp-box:focus,.otp-box.filled{border-color:var(--gold)}
+.error-msg{
+  font-size:13px;color:var(--red);padding:10px 14px;
+  background:rgba(224,80,80,.08);border:1px solid rgba(224,80,80,.2);
+  border-radius:var(--r-sm);margin-top:-4px;margin-bottom:12px;
+  display:none;
+}
+.error-msg.show{display:block;animation:pageIn .2s var(--ease)}
+.resend-row{text-align:center;margin-top:16px;font-size:13px;color:var(--muted)}
+
+/* ─── FILTER SHEET ─── */
+.filter-group{margin-bottom:20px}
+.filter-group-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.filter-chips{display:flex;flex-wrap:wrap;gap:8px}
+.filter-chip{
+  padding:7px 14px;border-radius:var(--r-full);
+  background:var(--surface2);border:1.5px solid var(--border);
+  font-size:13px;color:var(--muted2);font-weight:500;
+  transition:all .18s;
+}
+.filter-chip.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
+
+/* ─── TICKET PURCHASE SHEET ─── */
+.breakdown-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:11px 0;border-bottom:1px solid var(--border);font-size:14px;
+}
+.breakdown-row:last-child{border-bottom:none;font-weight:700;font-size:15px;color:var(--text)}
+.breakdown-label{color:var(--muted2)}
+
+/* ─── CARD INPUT ─── */
+.card-wrap{
+  background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:var(--r-md);padding:14px;margin-bottom:14px;
+  transition:border-color .18s;
+}
+.card-wrap.focused{border-color:rgba(201,168,76,.4)}
+
+/* ─── ONBOARDING SHEET ─── */
+.ob-avatar-preview{
+  width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),#6B4A00);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:28px;font-weight:700;color:#000;
+  border:3px solid rgba(201,168,76,.25);overflow:hidden;margin:0 auto 16px;
+}
+.ob-color-grid{
+  display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:20px;
+}
+.ob-color-btn{
+  aspect-ratio:1;border-radius:50%;border:3px solid transparent;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff;transition:border-color .18s;
+}
+.ob-color-btn.sel{border-color:var(--gold)}
+
+/* ─── EDIT PROFILE SHEET ─── */
+.av-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:16px}
+.av-btn{
+  aspect-ratio:1;border-radius:50%;border:3px solid transparent;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#fff;transition:border-color .18s;
+}
+.av-btn.sel{border-color:var(--gold)}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════ */
+#toast{
+  position:fixed;bottom:calc(var(--tab-h) + var(--safe-b) + 14px);left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--surface3);border:1px solid var(--border2);
+  border-radius:var(--r-full);padding:12px 20px;
+  font-size:14px;font-weight:600;color:var(--text);
+  white-space:nowrap;z-index:1000;
+  transition:transform .3s var(--spring),opacity .3s;opacity:0;
+  pointer-events:none;max-width:90vw;text-overflow:ellipsis;overflow:hidden;
+}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.success{border-color:rgba(78,201,140,.3);color:var(--green)}
+#toast.error{border-color:rgba(224,80,80,.3);color:var(--red)}
+
+/* ═══════════════════════════════════════════════════════════
+   CONFETTI
+═══════════════════════════════════════════════════════════ */
+.confetti-piece{
+  position:fixed;width:8px;height:8px;z-index:2000;
+  pointer-events:none;animation:confetti-fall linear forwards;
+}
+@keyframes confetti-fall{
+  to{transform:translateY(110vh) rotate(720deg);opacity:0}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SPINNER
+═══════════════════════════════════════════════════════════ */
+.spinner{
+  width:18px;height:18px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.15);
+  border-top-color:#fff;animation:spin .7s linear infinite;
+  display:inline-block;vertical-align:middle;
+}
+.spinner-gold{border-top-color:var(--gold);border-color:rgba(201,168,76,.15)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════════════════════ */
+.text-gold{color:var(--gold)}
+.text-muted{color:var(--muted)}
+.text-muted2{color:var(--muted2)}
+.font-serif{font-family:var(--font-display)}
+.fw-700{font-weight:700}
+.mt-4{margin-top:16px}
+.empty-state{
+  text-align:center;padding:64px 32px;
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.empty-icon{font-size:48px;opacity:.3}
+.empty-title{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--muted2)}
+.empty-sub{font-size:14px;color:var(--muted);line-height:1.6}
+.divider{height:1px;background:var(--border);margin:0 20px}
+.page-head{padding:20px 20px 0}
+.page-h1{font-family:var(--font-display);font-size:26px;font-weight:700;margin-bottom:4px}
+.page-sub{font-size:14px;color:var(--muted2)}
+
+/* nav dropdown */
+#nav-dropdown{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r-lg);min-width:200px;
+  box-shadow:0 12px 40px rgba(0,0,0,.6);overflow:hidden;
+  animation:modalIn .2s var(--spring) both;z-index:500;
+}
+.dd-head{padding:14px 16px;border-bottom:1px solid var(--border)}
+.dd-name{font-size:14px;font-weight:700}
+.dd-email{font-size:12px;color:var(--muted)}
+.dd-item{
+  padding:12px 16px;font-size:14px;font-weight:500;
+  display:flex;align-items:center;gap:10px;transition:background .15s;cursor:pointer;
+}
+.dd-item:hover{background:var(--surface3)}
+.dd-item.danger{color:var(--red)}
+
+/* near-me toggle */
+.near-toggle{
+  display:inline-flex;align-items:center;gap:8px;
+  height:34px;padding:0 14px;border-radius:var(--r-full);
+  background:var(--surface2);border:1px solid var(--border);
+  font-size:13px;color:var(--muted2);font-weight:500;cursor:pointer;
+  transition:all .2s;flex-shrink:0;
+}
+.near-toggle.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
+
+/* Success icon */
+.success-icon{
+  width:72px;height:72px;border-radius:50%;
+  background:rgba(78,201,140,.12);border:2px solid rgba(78,201,140,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;margin:0 auto 16px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════════════ */
+.footer{
+  padding:32px 20px calc(16px + var(--safe-b));
+  border-top:1px solid var(--border);
+  margin-top:24px;
+}
+.footer-logo{
+  font-family:var(--font-display);font-size:18px;font-weight:700;
+  color:var(--gold);margin-bottom:6px;
+}
+.footer-tagline{font-size:13px;color:var(--muted);margin-bottom:20px}
+.footer-links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:20px}
+.footer-links a{font-size:13px;color:var(--muted2);cursor:pointer;transition:color .15s}
+.footer-links a:hover{color:var(--gold)}
+.footer-copy{font-size:12px;color:var(--muted)}
+
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP OVERRIDES
+═══════════════════════════════════════════════════════════ */
+@media(min-width:768px){
+  body{padding-bottom:0}
+  #tabbar{display:none}
+  #topnav .nav-desktop-links{display:flex;align-items:center;gap:28px}
+  .nav-desktop-links a{
+    font-size:13px;font-weight:600;color:var(--muted2);
+    letter-spacing:.05em;text-transform:uppercase;cursor:pointer;
+    transition:color .18s;
+  }
+  .nav-desktop-links a:hover,.nav-desktop-links a.active{color:var(--gold)}
+  .hero{min-height:420px}
+  .events-grid{grid-template-columns:1fr 1fr 1fr}
+  .host-form-wrap{max-width:600px;margin:0 auto}
+}
+@media(max-width:767px){
+  .nav-desktop-links{display:none!important}
+  /* extra safe area for hero on mobile */
+  .page{padding-top:calc(var(--nav-h) + var(--safe-t))}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     TOP NAV
+═══════════════════════════════════════════════════ -->
+<header id="topnav">
+  <div class="nav-logo" onclick="goTo('home')">
+    <span class="nav-logo-cross">✝</span> Christ Link
+  </div>
+  <nav class="nav-desktop-links" id="desktopLinks">
+    <a onclick="goTo('browse')" data-page="browse">Explore</a>
+    <a onclick="goTo('community')" data-page="community">Community</a>
+    <a onclick="goTo('host')" data-page="host">Host</a>
+  </nav>
+  <div class="nav-auth-row">
+    <div id="nav-loggedout" style="display:flex;gap:8px">
+      <button class="nav-badge nav-badge-outline" onclick="openAuth('signin')">Sign In</button>
+      <button class="nav-badge nav-badge-gold" onclick="openAuth('signup')">Join Free</button>
+    </div>
+    <div id="nav-loggedin" style="display:none;position:relative">
+      <div class="nav-avatar-btn" id="navAvatarBtn" onclick="toggleDrop()">?</div>
+      <div id="nav-dropdown" style="display:none">
+        <div class="dd-head">
+          <div class="dd-name" id="dd-name">—</div>
+          <div class="dd-email" id="dd-email">—</div>
+        </div>
+        <div class="dd-item" onclick="goTo('profile');closeDrop()">👤 My Profile</div>
+        <div class="dd-item" onclick="goTo('host');closeDrop()">✝ Host Event</div>
+        <div class="dd-item danger" onclick="signOut()">↩ Sign Out</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════
+     BOTTOM TAB BAR
+═══════════════════════════════════════════════════ -->
+<nav id="tabbar">
+  <div class="tab-item active" id="tab-home" onclick="goTo('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    Home
+  </div>
+  <div class="tab-item" id="tab-browse" onclick="goTo('browse')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    Explore
+  </div>
+  <div class="tab-item tab-host" id="tab-host" onclick="goTo('host')">
+    <div class="tab-host-circle">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="2.5" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </div>
+    Host
+  </div>
+  <div class="tab-item" id="tab-community" onclick="goTo('community')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+    </svg>
+    Community
+  </div>
+  <div class="tab-item" id="tab-profile" onclick="goTo('profile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+    Profile
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════
+     HOME PAGE
+═══════════════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-cross"></div>
+    <div class="hero-eyebrow">✦ Discover Faith Events</div>
+    <h1 class="hero-title">Find Your <em>Community</em>,<br>Deepen Your Faith.</h1>
+    <p class="hero-sub">RSVPs, tickets & gatherings — all in one place.</p>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="heroSearch" type="search" placeholder="City, event type, church…" onkeydown="if(event.key==='Enter')heroSearchGo()">
+      <button class="search-btn" onclick="heroSearchGo()">Go</button>
+    </div>
+  </div>
+
+  <!-- Quick filters -->
+  <div style="padding:16px 0 0">
+    <div class="pills-scroll" id="homePills">
+      <div class="pill active" onclick="homePill(this,'all')">All</div>
+      <div class="pill" onclick="homePill(this,'worship')">Worship</div>
+      <div class="pill" onclick="homePill(this,'bible study')">Bible Study</div>
+      <div class="pill" onclick="homePill(this,'retreat')">Retreat</div>
+      <div class="pill" onclick="homePill(this,'youth')">Youth</div>
+      <div class="pill" onclick="homePill(this,'concert')">Concert</div>
+      <div class="pill" onclick="homePill(this,'prayer')">Prayer</div>
+      <div class="pill" onclick="homePill(this,'conference')">Conference</div>
+    </div>
+  </div>
+
+  <!-- Upcoming events (horizontal scroll) -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Upcoming</div>
+      <button id="nearMeHomeBtn" class="near-toggle" onclick="enableNearMeHome(this)">
+        <svg width="11" height="14" viewBox="0 0 10 13" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg>
+        Near Me
+      </button>
+    </div>
+  </div>
+  <div class="events-scroll" id="homeScroll">
+    <!-- injected -->
+    <div class="empty-state" style="width:100%;padding:40px 20px">
+      <div class="empty-icon">✝</div>
+      <div class="empty-title">No events yet</div>
+      <div class="empty-sub">Be the first to host a gathering.</div>
+      <button class="btn btn-gold btn-sm mt-4" onclick="goTo('host')">Host an Event →</button>
+    </div>
+  </div>
+
+  <!-- Verse -->
+  <div class="verse-banner">
+    <div class="verse-mark">"</div>
+    <div class="verse-text" id="verseText">I can do all things through Christ who strengthens me.</div>
+    <div class="verse-ref" id="verseRef">— Philippians 4:13</div>
+    <div class="verse-dots" id="verseDots"></div>
+  </div>
+
+  <!-- Host promo -->
+  <div class="host-promo">
+    <div class="host-promo-icon">✝</div>
+    <div>
+      <h3>Host a Gathering</h3>
+      <p>Create a free or paid event in minutes. Your community is waiting.</p>
+      <button class="host-promo-btn" onclick="goTo('host')">Start Hosting →</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-logo">✝ Christ Link</div>
+    <div class="footer-tagline">Faith events, made simple.</div>
+    <div class="footer-links">
+      <a onclick="showFooterPage('about')">About</a>
+      <a onclick="showFooterPage('privacy')">Privacy</a>
+      <a onclick="showFooterPage('terms')">Terms</a>
+      <a onclick="showFooterPage('contact')">Contact</a>
+    </div>
+    <div class="footer-copy">© 2025 Christ Link · Built with faith.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     BROWSE PAGE
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-browse">
+  <div class="page-head">
+    <div class="page-h1">Explore Events</div>
+    <div class="page-sub">Discover faith gatherings near you</div>
+  </div>
+  <div class="browse-search">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div class="search-wrap" style="flex:1;border-radius:var(--r-md)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="browseSearch" type="search" placeholder="Search events…" oninput="debounceBrowse(this.value)">
+      </div>
+      <button class="filter-btn" id="filterToggleBtn" onclick="openSheet('filterSheet')">
+        <svg width="15" height="13" viewBox="0 0 15 13" fill="none"><rect y="0" width="15" height="2" rx="1" fill="currentColor"/><rect x="2" y="5.5" width="11" height="2" rx="1" fill="currentColor"/><rect x="4" y="11" width="7" height="2" rx="1" fill="currentColor"/></svg>
+        Filter
+      </button>
+    </div>
+    <!-- active filter chips row -->
+    <div class="pills-scroll" id="activeFiltersRow" style="margin-bottom:0;padding:0;min-height:0;gap:6px"></div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 20px 0">
+    <div class="result-count" id="browseCount" style="padding:0"></div>
+    <div class="near-toggle" id="browseNearToggle" onclick="toggleNearMe()">
+      <svg width="11" height="14" viewBox="0 0 10 13" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg>
+      Near Me
+    </div>
+  </div>
+
+  <div class="events-grid" id="browseGrid">
+    <div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">No events yet</div>
+      <div class="empty-sub">Events you host or discover will appear here.</div>
+    </div>
+  </div>
+
+  <div class="footer" style="margin-top:0">
+    <div class="footer-logo">✝ Christ Link</div>
+    <div class="footer-links">
+      <a onclick="showFooterPage('about')">About</a>
+      <a onclick="showFooterPage('privacy')">Privacy</a>
+      <a onclick="showFooterPage('terms')">Terms</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     HOST PAGE
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-host">
+  <!-- auth gate -->
+  <div id="host-gate" style="display:none">
+    <div class="empty-state" style="padding-top:80px">
+      <div style="font-size:48px">✝</div>
+      <div class="empty-title font-serif">Host a Gathering</div>
+      <div class="empty-sub">Sign in to create your event and reach believers in your city.</div>
+      <button class="btn btn-gold" style="max-width:260px;margin-top:8px" onclick="openAuth('signup')">Create Account →</button>
+      <button class="btn btn-outline" style="max-width:260px" onclick="openAuth('signin')">Sign In</button>
+    </div>
+  </div>
+
+  <!-- form -->
+  <div id="host-form" style="display:block">
+    <!-- step indicators -->
+    <div class="host-steps" id="hostStepIndicators">
+      <div class="host-step-item">
+        <div class="step-num active" id="si-1">1</div>
+        <div class="step-label active" id="sl-1">Details</div>
+      </div>
+      <div class="step-line" id="line-1-2"></div>
+      <div class="host-step-item">
+        <div class="step-num" id="si-2">2</div>
+        <div class="step-label" id="sl-2">Location</div>
+      </div>
+      <div class="step-line" id="line-2-3"></div>
+      <div class="host-step-item">
+        <div class="step-num" id="si-3">3</div>
+        <div class="step-label" id="sl-3">Tickets</div>
+      </div>
+      <div class="step-line" id="line-3-4"></div>
+      <div class="host-step-item">
+        <div class="step-num" id="si-4">4</div>
+        <div class="step-label" id="sl-4">Publish</div>
+      </div>
+    </div>
+
+    <div class="host-form-wrap">
+
+      <!-- STEP 1: Details -->
+      <div class="form-step active" id="host-step-1">
+        <label class="field-label">Event Name *</label>
+        <input type="text" id="evName" class="field" placeholder="Sunday Worship Night" oninput="updateReview()">
+
+        <label class="field-label">Emoji Icon</label>
+        <input type="text" id="evEmoji" class="field" placeholder="✝" maxlength="4" oninput="updateReview()">
+
+        <label class="field-label">Event Type</label>
+        <select id="evType" class="field">
+          <option value="">Select type…</option>
+          <option>Worship</option><option>Bible Study</option><option>Retreat</option>
+          <option>Youth</option><option>Prayer</option><option>Fellowship</option>
+          <option>Conference</option><option>Concert</option><option>Outreach</option>
+        </select>
+
+        <label class="field-label">Format</label>
+        <select id="evFormat" class="field">
+          <option value="in_person">In Person</option>
+          <option value="online">Online</option>
+          <option value="hybrid">Hybrid</option>
+        </select>
+
+        <label class="field-label">Description</label>
+        <textarea id="evDesc" class="field" placeholder="Share what this gathering is about…" rows="3"></textarea>
+
+        <label class="field-label">Start Date & Time</label>
+        <input type="datetime-local" id="evStartDate" class="field">
+
+        <!-- Paid toggle -->
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <h4>Paid Event</h4>
+            <p id="paidDesc">Free — anyone can RSVP</p>
+          </div>
+          <label class="toggle-sw">
+            <input type="checkbox" id="paidToggle" onchange="handlePaidToggle()">
+            <div class="toggle-sw-track"></div>
+          </label>
+        </div>
+
+        <!-- listing fee info (hidden until paid) -->
+        <div id="listingFeeSection" style="display:none">
+          <div class="fee-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="font-weight:700;font-size:15px">Listing Fee</div>
+              <div style="font-size:20px;font-weight:800;color:var(--gold)">$19.99</div>
+            </div>
+            <p style="font-size:13px;color:var(--muted2);margin-bottom:12px">Required to publish a paid event. Christ Link takes 5% per ticket sold.</p>
+            <div id="listingStatus" style="display:none;font-size:13px;color:var(--green);font-weight:600">✅ Listing fee paid — ticketing unlocked</div>
+            <button id="payFeeBtn" class="btn btn-gold btn-sm" onclick="openSheet('listingFeeSheet')">Pay $19.99 to Unlock →</button>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn btn-gold" onclick="hostNext(1)">Next: Location →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Location -->
+      <div class="form-step" id="host-step-2">
+        <label class="field-label">Venue Name</label>
+        <input type="text" id="evVenue" class="field" placeholder="First Baptist Church">
+
+        <label class="field-label">Street Address</label>
+        <input type="text" id="evAddress" class="field" placeholder="123 Main Street">
+
+        <div class="field-row">
+          <div>
+            <label class="field-label">City</label>
+            <input type="text" id="evCity" class="field" placeholder="Wilmington">
+          </div>
+          <div>
+            <label class="field-label">State</label>
+            <input type="text" id="evState" class="field" placeholder="DE" maxlength="2">
+          </div>
+        </div>
+
+        <label class="field-label">End Date & Time</label>
+        <input type="datetime-local" id="evEndDate" class="field">
+
+        <label class="field-label">Max Capacity (optional)</label>
+        <input type="number" id="evCapacity" class="field" placeholder="Leave blank for unlimited" min="1">
+        <div class="field-note">Leave empty for unlimited RSVPs</div>
+
+        <label class="field-label">Online URL (if applicable)</label>
+        <input type="url" id="evOnlineUrl" class="field" placeholder="https://zoom.us/j/...">
+
+        <div class="step-nav">
+          <button class="btn btn-outline" style="flex:0 0 auto;width:auto;padding:0 20px" onclick="hostPrev(2)">←</button>
+          <button class="btn btn-gold" onclick="hostNext(2)">Next: <span id="step3Label">Tickets</span> →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Tickets -->
+      <div class="form-step" id="host-step-3">
+        <!-- free events -->
+        <div id="freeEventSetup">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;margin-bottom:18px">
+            <div style="font-weight:700;margin-bottom:4px">✓ Free Event</div>
+            <div style="font-size:13px;color:var(--muted2)">Attendees RSVP for free. No payment needed.</div>
+          </div>
+        </div>
+        <!-- paid events -->
+        <div id="paidEventSetup" style="display:none">
+          <div style="margin-bottom:12px;font-size:14px;font-weight:600">Ticket Types</div>
+          <div id="ticketBuilder"></div>
+          <button class="btn btn-ghost btn-sm" onclick="addTicketRow()" style="margin-bottom:18px">+ Add Ticket Type</button>
+          <div class="revenue-preview">
+            <div class="rev-row"><span class="rev-label">Ticket face value</span><span class="rev-val" id="prevFace">—</span></div>
+            <div class="rev-row"><span class="rev-label">Platform fee (5%)</span><span class="rev-val" id="prevPf">—</span></div>
+            <div class="rev-row"><span class="rev-label">Stripe fee</span><span class="rev-val" id="prevSf">—</span></div>
+            <div class="rev-row net"><span class="rev-label">You receive</span><span class="rev-val" id="prevNet">—</span></div>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn btn-outline" style="flex:0 0 auto;width:auto;padding:0 20px" onclick="hostPrev(3)">←</button>
+          <button class="btn btn-gold" onclick="hostNext(3)">Review →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Review & Publish -->
+      <div class="form-step" id="host-step-4">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:20px">
+          <div style="font-size:40px;text-align:center;margin-bottom:12px" id="reviewEmoji">✝</div>
+          <div style="font-family:var(--font-display);font-size:22px;font-weight:700;text-align:center;margin-bottom:4px" id="reviewName">Event Name</div>
+          <div style="font-size:13px;color:var(--muted2);text-align:center;margin-bottom:4px" id="reviewType">—</div>
+          <div style="font-size:13px;color:var(--muted);text-align:center" id="reviewMeta">—</div>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:20px">
+          <div class="breakdown-row" style="padding:12px 16px"><span class="breakdown-label">Date</span><span id="reviewDate">—</span></div>
+          <div class="breakdown-row" style="padding:12px 16px"><span class="breakdown-label">Location</span><span id="reviewLocation">—</span></div>
+          <div class="breakdown-row" style="padding:12px 16px;border-bottom:none"><span class="breakdown-label">Pricing</span><span id="reviewPricing">—</span></div>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn btn-outline" style="flex:0 0 auto;width:auto;padding:0 20px" onclick="hostPrev(4)">←</button>
+          <button class="btn btn-gold" id="publishBtn" onclick="publishEvent()">🚀 Publish Event</button>
+        </div>
+      </div>
+
+    </div><!-- /host-form-wrap -->
+  </div><!-- /host-form -->
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     COMMUNITY PAGE
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-community">
+  <div class="page-head" style="margin-bottom:0">
+    <div class="page-h1">Community</div>
+    <div class="page-sub">Prayers, testimonies & encouragement</div>
+  </div>
+
+  <!-- Post box -->
+  <div class="community-post-wrap" style="margin-top:16px">
+    <div id="community-gate" style="display:none;text-align:center;padding:8px 0">
+      <span style="font-size:13px;color:var(--muted2)">
+        <button onclick="openAuth('signup')" style="color:var(--gold);font-weight:600">Sign in</button> to post
+      </span>
+    </div>
+    <div id="community-form">
+      <div class="post-input-row">
+        <div class="post-av" id="commAv">🙏</div>
+        <textarea class="post-field" id="postInput" placeholder="Share a prayer, testimony or encouragement…" rows="1"></textarea>
+      </div>
+      <div class="post-submit" id="postSubmitRow" style="display:none">
+        <button class="btn btn-gold btn-sm" onclick="postToFeed()">Post</button>
+      </div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="community-feed" id="communityFeed">
+    <!-- injected -->
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PROFILE PAGE
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-profile">
+  <!-- auth gate -->
+  <div class="profile-auth-gate" id="prof-gate" style="display:none">
+    <div style="font-size:56px">👤</div>
+    <div class="empty-title font-serif">Your Profile</div>
+    <div class="empty-sub">Sign in to view your events, tickets & settings.</div>
+    <button class="btn btn-gold" style="max-width:260px" onclick="openAuth('signup')">Create Account</button>
+    <button class="btn btn-outline" style="max-width:260px" onclick="openAuth('signin')">Sign In</button>
+  </div>
+
+  <!-- content (hidden until logged in) -->
+  <div id="prof-content" style="display:none">
+    <div class="profile-hero">
+      <div class="profile-top">
+        <div class="profile-av" id="profAv">?</div>
+        <div class="profile-info">
+          <div class="profile-name" id="profName">—</div>
+          <div class="profile-handle" id="profHandle">—</div>
+          <div class="profile-joined" id="profJoined">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Joined
+          </div>
+        </div>
+        <button class="profile-edit-btn" onclick="openSheet('editProfileSheet')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+      </div>
+      <div class="profile-bio" id="profBio">—</div>
+      <div class="profile-stats" id="profStats">
+        <div class="stat-cell"><div class="stat-num" id="statEvents">0</div><div class="stat-label">Events</div></div>
+        <div class="stat-cell"><div class="stat-num" id="statTickets">0</div><div class="stat-label">Tickets</div></div>
+        <div class="stat-cell"><div class="stat-num" id="statCity">—</div><div class="stat-label">City</div></div>
+      </div>
+    </div>
+
+    <div class="profile-tabs">
+      <div class="profile-tab active" onclick="switchPTab(this,'overview')">Overview</div>
+      <div class="profile-tab" onclick="switchPTab(this,'events')">My Events</div>
+      <div class="profile-tab" onclick="switchPTab(this,'tickets')">Tickets</div>
+    </div>
+
+    <div class="profile-tab-panel active" id="ptab-overview">
+      <div style="font-size:14px;color:var(--muted2);margin-bottom:12px;font-weight:600">About</div>
+      <div style="font-size:15px;line-height:1.7;color:var(--text)" id="profAbout">—</div>
+    </div>
+    <div class="profile-tab-panel" id="ptab-events">
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">No events yet</div>
+        <div class="empty-sub">Events you host will appear here.</div>
+        <button class="btn btn-gold btn-sm mt-4" onclick="goTo('host')">Host an Event →</button>
+      </div>
+    </div>
+    <div class="profile-tab-panel" id="ptab-tickets">
+      <div class="empty-state">
+        <div class="empty-icon">🎟️</div>
+        <div class="empty-title">No tickets yet</div>
+        <div class="empty-sub">Tickets you purchase will appear here.</div>
+        <button class="btn btn-gold btn-sm mt-4" onclick="goTo('browse')">Explore Events →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     EVENT DETAIL PAGE
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-event-detail">
+  <div class="detail-hero" id="detailHero">
+    <button class="detail-back" onclick="history.back(); goTo('browse')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span id="detailEmoji" style="position:relative;z-index:1">✝</span>
+  </div>
+  <div class="detail-content">
+    <div class="detail-tags" id="detailTags"></div>
+    <h1 class="font-serif" style="font-size:24px;font-weight:700;margin-bottom:6px" id="detailTitle">—</h1>
+    <div class="detail-host-row">
+      <div class="detail-host-av" id="detailHostAv">?</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="detailHostName">—</div>
+        <div style="font-size:11px;color:var(--muted)">Hosted by</div>
+      </div>
+    </div>
+    <div class="detail-meta-list">
+      <div class="detail-meta-row">
+        <div class="detail-meta-icon">📅</div>
+        <div>
+          <div class="detail-meta-text" id="detailDate">—</div>
+          <div class="detail-meta-sub">Date & Time</div>
+        </div>
+      </div>
+      <div class="detail-meta-row">
+        <div class="detail-meta-icon">📍</div>
+        <div>
+          <div class="detail-meta-text" id="detailLocation">—</div>
+          <div class="detail-meta-sub">Location</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:14px;line-height:1.7;color:var(--muted2);margin-bottom:20px" id="detailDesc">—</div>
+
+    <!-- qty row for paid events -->
+    <div id="detailQtyRow" style="display:none">
+      <div style="font-size:13px;font-weight:600;color:var(--muted2);margin-bottom:8px">Quantity</div>
+      <div class="qty-row">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <span id="qtyVal" style="font-size:16px;font-weight:700;min-width:28px;text-align:center">1</span>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+        <span style="font-size:13px;color:var(--muted2);margin-left:4px" id="qtyPriceNote"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-sticky">
+    <div class="detail-price-block">
+      <div class="detail-price-big" id="detailPriceBig">Free</div>
+      <div class="detail-price-sub" id="detailPriceSub">Open to all</div>
+    </div>
+    <button class="detail-rsvp-btn" id="detailRsvpBtn" onclick="handleRsvp()">Reserve My Spot →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     OVERLAYS / SHEETS
+═══════════════════════════════════════════════════ -->
+
+<!-- AUTH SHEET -->
+<div class="overlay" id="authSheet">
+  <div class="sheet" style="max-height:85dvh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title" id="authTitle">Welcome Back</div>
+      <button class="sheet-close" onclick="closeSheet('authSheet')">×</button>
+    </div>
+    <div class="sheet-body">
+      <div class="auth-tabs" id="authTabRow">
+        <div class="auth-tab active" id="tab-signin" onclick="setAuthMode('signin')">Sign In</div>
+        <div class="auth-tab" id="tab-signup" onclick="setAuthMode('signup')">Join Free</div>
+      </div>
+
+      <div class="auth-step active" id="auth-email">
+        <div id="nameGroup" style="display:none">
+          <label class="field-label">Your Name</label>
+          <input type="text" id="authName" class="field" placeholder="David Johnson" autocomplete="name">
+        </div>
+        <label class="field-label">Email Address</label>
+        <input type="email" id="authEmail" class="field" placeholder="you@example.com" autocomplete="email"
+          onkeydown="if(event.key==='Enter')sendOtp()">
+        <div class="error-msg" id="err-email"></div>
+        <button class="btn btn-gold" id="sendOtpBtn" onclick="sendOtp()">Send Verification Code →</button>
+      </div>
+
+      <div class="auth-step" id="auth-otp">
+        <p style="font-size:14px;color:var(--muted2);margin-bottom:20px">
+          We sent a 6-digit code to <strong id="otpEmailDisplay" style="color:var(--text)">—</strong>
+        </p>
+        <div class="otp-row">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
+        </div>
+        <div class="error-msg" id="err-otp"></div>
+        <button class="btn btn-gold" id="verifyOtpBtn" onclick="verifyOtp()">Verify Code ✓</button>
+        <div class="resend-row">
+          <button id="resendBtn" onclick="resendOtp()" disabled style="color:var(--muted);font-weight:600;background:none;border:none;font-size:13px">Resend code</button>
+          <span id="resendTimer" style="display:none;color:var(--muted);font-size:13px"> in <span id="resendCount">30</span>s</span>
+        </div>
+      </div>
+
+      <div class="auth-step" id="auth-success" style="text-align:center;padding:20px 0 8px">
+        <div class="success-icon">🙌</div>
+        <div class="font-serif" style="font-size:22px;font-weight:700;margin-bottom:6px" id="authSuccessTitle">Welcome!</div>
+        <div style="font-size:14px;color:var(--muted2)" id="authSuccessSub">You're all set.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING SHEET -->
+<div class="overlay" id="onboardingSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Set Up Your Profile</div>
+      <div style="font-size:13px;color:var(--muted)">Step <span id="obStepNum">1</span> of 2</div>
+    </div>
+    <div class="sheet-body">
+      <div id="ob-step-1">
+        <label class="field-label">Your Name *</label>
+        <input type="text" id="obName" class="field" placeholder="Full name" autocomplete="name">
+        <label class="field-label">City</label>
+        <input type="text" id="obCity" class="field" placeholder="Wilmington, DE">
+        <label class="field-label">Short Bio</label>
+        <textarea id="obBio" class="field" placeholder="Tell the community a bit about yourself…" rows="2"></textarea>
+        <div class="error-msg show" id="obErr1" style="display:none"></div>
+        <button class="btn btn-gold" onclick="obNext()">Next: Choose Avatar →</button>
+      </div>
+      <div id="ob-step-2" style="display:none">
+        <div class="ob-avatar-preview" id="obAvatarPreview">?</div>
+        <div style="font-size:13px;font-weight:600;color:var(--muted2);text-align:center;margin-bottom:12px">Choose a color</div>
+        <div class="ob-color-grid" id="obColorGrid"></div>
+        <label class="btn btn-ghost btn-sm" style="display:inline-flex;cursor:pointer;justify-content:center;width:100%;margin-bottom:18px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          &nbsp;Upload Photo
+          <input type="file" accept="image/*" style="display:none" onchange="obHandlePhoto(this)">
+        </label>
+        <div class="step-nav">
+          <button class="btn btn-outline" style="flex:0 0 auto;width:auto;padding:0 20px" onclick="obBack()">←</button>
+          <button class="btn btn-gold" id="obFinishBtn" onclick="obFinish()">Finish Setup ✦</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FILTER SHEET -->
+<div class="overlay" id="filterSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Filter Events</div>
+      <button class="sheet-close" onclick="closeSheet('filterSheet')">×</button>
+    </div>
+    <div class="sheet-body">
+      <div class="filter-group">
+        <div class="filter-group-title">Event Type</div>
+        <div class="filter-chips" id="typeChips"></div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-group-title">Price</div>
+        <div class="filter-chips">
+          <div class="filter-chip" data-filter="price" data-val="free" onclick="toggleFilterChip(this)">Free</div>
+          <div class="filter-chip" data-filter="price" data-val="paid" onclick="toggleFilterChip(this)">Paid</div>
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-group-title">Format</div>
+        <div class="filter-chips">
+          <div class="filter-chip" data-filter="format" data-val="in_person" onclick="toggleFilterChip(this)">In Person</div>
+          <div class="filter-chip" data-filter="format" data-val="online" onclick="toggleFilterChip(this)">Online</div>
+          <div class="filter-chip" data-filter="format" data-val="hybrid" onclick="toggleFilterChip(this)">Hybrid</div>
+        </div>
+      </div>
+      <div class="step-nav">
+        <button class="btn btn-outline btn-sm" style="flex:0 0 auto;width:auto" onclick="clearFilters()">Clear All</button>
+        <button class="btn btn-gold" onclick="applyFilters()">Show Results</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TICKET PURCHASE SHEET -->
+<div class="overlay" id="ticketSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div>
+        <div class="sheet-title" id="ticketSheetTitle">Get Tickets</div>
+        <div style="font-size:13px;color:var(--muted)" id="ticketSheetSub">—</div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet('ticketSheet')">×</button>
+    </div>
+    <div class="sheet-body">
+      <div class="breakdown-row"><span class="breakdown-label">Tickets</span><span id="bdFace">—</span></div>
+      <div class="breakdown-row"><span class="breakdown-label">Platform fee (5%)</span><span id="bdPf">—</span></div>
+      <div class="breakdown-row"><span class="breakdown-label">Stripe fee</span><span id="bdSf">Absorbed by host</span></div>
+      <div class="breakdown-row" id="bdTaxRow" style="display:none"><span class="breakdown-label">Tax</span><span id="bdTax">—</span></div>
+      <div class="breakdown-row" style="padding-top:14px"><span>Total</span><span id="bdTotal" style="color:var(--gold)">—</span></div>
+
+      <div style="margin:20px 0 6px;font-size:12px;color:var(--muted2);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Payment</div>
+      <div class="card-wrap" id="cardWrap">
+        <div id="cardEl"></div>
+      </div>
+      <div class="error-msg" id="cardErr"></div>
+      <button class="btn btn-gold" id="payBtn" onclick="processPayment()">
+        Pay <span id="payBtnAmt">—</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS SHEET -->
+<div class="overlay" id="successSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-body" style="text-align:center;padding:32px 24px">
+      <div class="success-icon" id="successIcon">🎟️</div>
+      <div class="font-serif" style="font-size:22px;font-weight:700;margin-bottom:8px" id="successTitle">Confirmed!</div>
+      <div style="font-size:14px;color:var(--muted2);margin-bottom:28px;line-height:1.65" id="successMsg">—</div>
+      <button class="btn btn-gold" onclick="closeSheet('successSheet')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- LISTING FEE SHEET -->
+<div class="overlay" id="listingFeeSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div>
+        <div class="sheet-title">Listing Fee</div>
+        <div style="font-size:13px;color:var(--muted)">One-time · Unlocks ticket sales</div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet('listingFeeSheet')">×</button>
+    </div>
+    <div class="sheet-body">
+      <div class="fee-card" style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-weight:600">Listing fee</span>
+          <span style="font-size:20px;font-weight:800;color:var(--gold)">$19.99</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted2)">Paid once per event. Gives you full ticket sales + 5% platform fee.</div>
+      </div>
+      <label class="field-label">Name on Card</label>
+      <input type="text" id="lfName" class="field" placeholder="David Johnson" autocomplete="cc-name">
+      <label class="field-label">Email for Receipt</label>
+      <input type="email" id="lfEmail" class="field" placeholder="you@example.com" autocomplete="email">
+      <label class="field-label">Card Details</label>
+      <div class="card-wrap" id="lfCardWrap">
+        <div id="lfCardNumberEl"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="card-wrap" id="lfExpWrap"><div id="lfCardExpiryEl"></div></div>
+        <div class="card-wrap" id="lfCvcWrap"><div id="lfCardCvcEl"></div></div>
+      </div>
+      <div class="error-msg" id="lfErr"></div>
+      <button class="btn btn-gold" id="lfPayBtn" onclick="processListingFee()">Pay $19.99 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PROFILE SHEET -->
+<div class="overlay" id="editProfileSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Edit Profile</div>
+      <button class="sheet-close" onclick="closeSheet('editProfileSheet')">×</button>
+    </div>
+    <div class="sheet-body">
+      <div style="text-align:center;margin-bottom:16px">
+        <div class="ob-avatar-preview" id="epPreview">?</div>
+        <label style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--gold);font-weight:600">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Change Photo
+          <input type="file" accept="image/*" style="display:none" onchange="epHandlePhoto(this)">
+        </label>
+      </div>
+      <div class="av-grid" id="epColorGrid"></div>
+      <label class="field-label">Name</label>
+      <input type="text" id="epName" class="field" placeholder="Your name" autocomplete="name">
+      <label class="field-label">City</label>
+      <input type="text" id="epCity" class="field" placeholder="Wilmington, DE">
+      <label class="field-label">Bio</label>
+      <textarea id="epBio" class="field" placeholder="A little about yourself…" rows="2"></textarea>
+      <div class="error-msg" id="epErr"></div>
+      <button class="btn btn-gold" id="epSaveBtn" onclick="saveProfile()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER PAGE SHEET -->
+<div class="overlay" id="footerSheet">
+  <div class="sheet" style="max-height:80dvh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title" id="footerSheetTitle">—</div>
+      <button class="sheet-close" onclick="closeSheet('footerSheet')">×</button>
+    </div>
+    <div class="sheet-body" id="footerSheetBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════ -->
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const SUPABASE_URL  = 'https://iqosvigdelnmarecpkkp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxb3N2aWdkZWxubWFyZWNwa2twIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MzQ5NTcsImV4cCI6MjA4NzIxMDk1N30.eqyIsbnkxFBdKjHoHKs56dz1-4yDBXv8_-Rt9uq9zlE';
+const STRIPE_PK     = 'pk_test_51SthaL0aSXVBGANHNQAqgYMIQCWfNn70XddpsgR5GiNEY5Pb6kTVkFDQCmnYmqctl3waOMpPN0aeWU5BJ6Bp7mKP00bMnThZ0e';
+const API_BASE      = '';
+
+// ═══════════════════════════════════════════════════════════
+// CLIENTS
+// ═══════════════════════════════════════════════════════════
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const stripeClient = Stripe(STRIPE_PK);
+const stripeElements = stripeClient.elements({
+  appearance:{
+    theme:'night',
+    variables:{
+      colorPrimary:'#C9A84C',colorBackground:'#1E1E2A',colorText:'#F0EBE0',
+      colorDanger:'#E05050',fontFamily:'DM Sans, system-ui, sans-serif',
+      borderRadius:'10px',spacingUnit:'4px'
+    }
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let currentUser    = null;
+let currentSession = null;
+let profileData    = {};
+let selectedEvent  = null;
+let currentQty     = 1;
+let listingFeePaid = false;
+let authMode       = 'signin';
+let pendingAction  = null;
+let isNewSignup    = false;
+let cardEl         = null;
+let lfCardNum = null, lfCardExp = null, lfCardCvc = null;
+let resendTimer    = null;
+let ticketRowCount = 0;
+let nearMeActive   = false;
+let userLocation   = null;
+let activeFilters  = { type:[], price:[], format:[] };
+let obAvatarColor  = null, obAvatarUrl = null;
+let epAvatarColor  = null, epAvatarUrl = null;
+
+const AVATAR_COLORS = [
+  'linear-gradient(135deg,#C9A84C,#6B4A00)',
+  'linear-gradient(135deg,#3B6FE8,#1E3A8A)',
+  'linear-gradient(135deg,#7C3AED,#4C1D95)',
+  'linear-gradient(135deg,#059669,#064E3B)',
+  'linear-gradient(135deg,#DC2626,#7F1D1D)',
+  'linear-gradient(135deg,#D97706,#78350F)',
+  'linear-gradient(135deg,#0891B2,#164E63)',
+  'linear-gradient(135deg,#BE185D,#500724)',
+];
+
+const EVENT_TYPES = ['Worship','Bible Study','Retreat','Youth','Prayer','Fellowship','Conference','Concert','Outreach'];
+
+const VERSES = [
+  {t:'"I can do all things through Christ who strengthens me."',r:'— Philippians 4:13'},
+  {t:'"For God so loved the world that he gave his one and only Son."',r:'— John 3:16'},
+  {t:'"The Lord is my shepherd, I lack nothing."',r:'— Psalm 23:1'},
+  {t:'"Trust in the Lord with all your heart."',r:'— Proverbs 3:5'},
+  {t:'"Be still, and know that I am God."',r:'— Psalm 46:10'},
+];
+
+// ═══════════════════════════════════════════════════════════
+// SUPABASE AUTH
+// ═══════════════════════════════════════════════════════════
+sb.auth.onAuthStateChange((event, session) => {
+  currentSession = session;
+  currentUser    = session?.user || null;
+  syncAuthUI();
+  if (currentUser) fetchProfile();
+});
+
+(async () => {
+  const { data:{ session } } = await sb.auth.getSession();
+  currentSession = session;
+  currentUser    = session?.user || null;
+  syncAuthUI();
+  if (currentUser) fetchProfile();
+})();
+
+function syncAuthUI() {
+  const out = document.getElementById('nav-loggedout');
+  const inn = document.getElementById('nav-loggedin');
+  const hGate = document.getElementById('host-gate');
+  const hForm  = document.getElementById('host-form');
+  const pGate  = document.getElementById('prof-gate');
+  const pCont  = document.getElementById('prof-content');
+  const cGate  = document.getElementById('community-gate');
+  const cForm  = document.getElementById('community-form');
+
+  if (currentUser) {
+    out.style.display  = 'none';
+    inn.style.display  = 'block';
+    hGate.style.display = 'none';
+    hForm.style.display = 'block';
+    pGate.style.display = 'none';
+    pCont.style.display = 'block';
+    cGate.style.display = 'none';
+    cForm.style.display = 'block';
+    // update avatar btn
+    const n = profileData?.full_name || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || '?';
+    const avBtn = document.getElementById('navAvatarBtn');
+    if (profileData?.avatar_url) {
+      avBtn.innerHTML = `<img src="${profileData.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    } else {
+      avBtn.textContent = n.charAt(0).toUpperCase();
+      if (profileData?.avatar_color) avBtn.style.background = profileData.avatar_color;
+    }
+    // post avatar
+    const cAv = document.getElementById('commAv');
+    cAv.textContent = n.charAt(0).toUpperCase();
+    if (profileData?.avatar_color) cAv.style.background = profileData.avatar_color;
+    else cAv.style.background = 'var(--surface3)';
+    cAv.style.color = profileData?.avatar_color ? '#000' : 'var(--muted)';
+  } else {
+    out.style.display  = 'flex';
+    inn.style.display  = 'none';
+    hGate.style.display = 'block';
+    hForm.style.display = 'none';
+    pGate.style.display = 'flex';
+    pCont.style.display = 'none';
+    cGate.style.display = 'block';
+    cForm.style.display = 'none';
+  }
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  profileData = {};
+  currentUser = null;
+  syncAuthUI();
+  closeDrop();
+  goTo('home');
+  showToast('👋 Signed out. See you soon!');
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAV DROPDOWN
+// ═══════════════════════════════════════════════════════════
+function toggleDrop() {
+  const dd = document.getElementById('nav-dropdown');
+  const isOpen = dd.style.display !== 'none';
+  if (isOpen) { closeDrop(); return; }
+  dd.style.display = 'block';
+  document.getElementById('dd-name').textContent  = profileData?.full_name || currentUser?.email?.split('@')[0] || '—';
+  document.getElementById('dd-email').textContent = currentUser?.email || '—';
+  setTimeout(() => document.addEventListener('click', outsideDrop, {once:true}), 50);
+}
+function closeDrop() {
+  document.getElementById('nav-dropdown').style.display = 'none';
+}
+function outsideDrop(e) {
+  const dd = document.getElementById('nav-dropdown');
+  const btn = document.getElementById('navAvatarBtn');
+  if (!dd.contains(e.target) && !btn.contains(e.target)) closeDrop();
+}
+
+// ═══════════════════════════════════════════════════════════
+// PAGE ROUTING
+// ═══════════════════════════════════════════════════════════
+function goTo(page) {
+  const curr = document.querySelector('.page.active');
+  const next = document.getElementById('page-' + page);
+  if (!next || curr === next) return;
+  curr.classList.remove('active');
+  next.classList.add('active');
+
+  // update tab bar
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('tab-' + page);
+  if (tab) tab.classList.add('active');
+
+  // update desktop nav
+  document.querySelectorAll('.nav-desktop-links a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+
+  window.scrollTo(0,0);
+  if (page === 'browse') initBrowse();
+  if (page === 'profile') renderProfilePage();
+  if (page === 'community') initCommunityFeed();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHEET SYSTEM
+// ═══════════════════════════════════════════════════════════
+function openSheet(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeSheet(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) { o.classList.remove('open'); document.body.style.overflow = ''; } });
+});
+
+// ═══════════════════════════════════════════════════════════
+// AUTH FLOW
+// ═══════════════════════════════════════════════════════════
+function openAuth(mode = 'signin', after = null) {
+  authMode = mode;
+  pendingAction = after;
+  setAuthMode(mode);
+  showAuthStep('auth-email');
+  openSheet('authSheet');
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  document.getElementById('tab-signin').classList.toggle('active', mode === 'signin');
+  document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
+  document.getElementById('nameGroup').style.display = mode === 'signup' ? 'block' : 'none';
+  document.getElementById('authTitle').textContent = mode === 'signup' ? 'Join Christ Link' : 'Welcome Back';
+  clearErr('err-email');
+}
+
+function showAuthStep(id) {
+  document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function clearErr(id) { const el = document.getElementById(id); if(el){el.textContent='';el.classList.remove('show');} }
+function showErr(id, msg) { const el = document.getElementById(id); if(el){el.textContent=msg;el.classList.add('show');} }
+
+async function sendOtp() {
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
+  const name  = document.getElementById('authName')?.value.trim() || '';
+  clearErr('err-email');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showErr('err-email','Please enter a valid email address.'); return;
+  }
+  const btn = document.getElementById('sendOtpBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div>&nbsp;Sending…';
+  try {
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true, data: { full_name: name || email.split('@')[0] } },
+    });
+    if (error) { showErr('err-email', error.message); btn.disabled=false; btn.innerHTML='Send Verification Code →'; return; }
+    document.getElementById('otpEmailDisplay').textContent = email;
+    showAuthStep('auth-otp');
+    startResend();
+    setTimeout(() => document.querySelector('.otp-box')?.focus(), 150);
+  } catch {
+    showErr('err-email','Something went wrong. Please try again.');
+    btn.disabled=false; btn.innerHTML='Send Verification Code →';
+  }
+}
+
+async function resendOtp() {
+  const email = document.getElementById('authEmail').value.trim();
+  await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:true } });
+  showToast('📬 New code sent!');
+  startResend();
+}
+
+function startResend() {
+  let s = 30;
+  const btn   = document.getElementById('resendBtn');
+  const timer = document.getElementById('resendTimer');
+  const count = document.getElementById('resendCount');
+  btn.disabled = true; timer.style.display = 'inline'; count.textContent = s;
+  clearInterval(resendTimer);
+  resendTimer = setInterval(() => {
+    s--; count.textContent = s;
+    if (s <= 0) { clearInterval(resendTimer); btn.disabled=false; timer.style.display='none'; }
+  }, 1000);
+}
+
+async function verifyOtp() {
+  const email = document.getElementById('authEmail').value.trim();
+  const digits = [...document.querySelectorAll('.otp-box')];
+  const token  = digits.map(d => d.value).join('');
+  clearErr('err-otp');
+  if (token.length < 6) { showErr('err-otp','Enter the full 6-digit code.'); return; }
+  const btn = document.getElementById('verifyOtpBtn');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>&nbsp;Verifying…';
+  try {
+    const { data, error } = await sb.auth.verifyOtp({ email, token, type:'email' });
+    if (error) {
+      showErr('err-otp', error.message?.includes('expired') ? 'Code expired — request a new one.' : 'Invalid code. Please try again.');
+      btn.disabled=false; btn.innerHTML='Verify Code ✓'; return;
+    }
+    currentUser    = data.user;
+    currentSession = data.session;
+    const name = data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Friend';
+    document.getElementById('authSuccessTitle').textContent = authMode === 'signup' ? `Welcome, ${name}! 🙌` : `Good to see you, ${name}!`;
+    document.getElementById('authSuccessSub').textContent   = 'You\'re all set.';
+    showAuthStep('auth-success');
+    spawnConfetti();
+    isNewSignup = authMode === 'signup';
+    syncAuthUI();
+    setTimeout(() => {
+      closeSheet('authSheet');
+      if (pendingAction) { pendingAction(); pendingAction = null; }
+      else if (isNewSignup) { showOnboarding(); isNewSignup = false; }
+    }, 1600);
+  } catch {
+    showErr('err-otp','Verification failed. Please try again.');
+    btn.disabled=false; btn.innerHTML='Verify Code ✓';
+  }
+}
+
+// OTP keyboard wiring
+document.addEventListener('DOMContentLoaded', () => {
+  const boxes = document.querySelectorAll('.otp-box');
+  boxes.forEach((box, i) => {
+    box.addEventListener('input', e => {
+      const v = e.target.value.replace(/\D/g,'');
+      e.target.value = v ? v[0] : '';
+      e.target.classList.toggle('filled', !!v);
+      if (v && i < boxes.length - 1) boxes[i+1].focus();
+      if ([...boxes].every(b => b.value)) verifyOtp();
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !box.value && i > 0) {
+        boxes[i-1].value = ''; boxes[i-1].classList.remove('filled'); boxes[i-1].focus();
+      }
+    });
+    box.addEventListener('paste', e => {
+      const p = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
+      if (p.length === 6) {
+        e.preventDefault();
+        boxes.forEach((b,j) => { b.value = p[j]||''; b.classList.toggle('filled',!!p[j]); });
+        boxes[5].focus();
+        setTimeout(verifyOtp, 100);
+      }
+    });
+  });
+
+  // post field expand
+  const pf = document.getElementById('postInput');
+  if (pf) {
+    pf.addEventListener('focus', () => {
+      document.getElementById('postSubmitRow').style.display = 'flex';
+    });
+  }
+
+  // Build filter type chips
+  const typeChips = document.getElementById('typeChips');
+  EVENT_TYPES.forEach(t => {
+    const d = document.createElement('div');
+    d.className = 'filter-chip';
+    d.dataset.filter = 'type';
+    d.dataset.val    = t.toLowerCase();
+    d.textContent = t;
+    d.onclick = function(){ toggleFilterChip(this); };
+    typeChips.appendChild(d);
+  });
+
+  // Verse carousel
+  initVerses();
+
+  // Init community feed placeholder
+  initCommunityFeed();
+
+  // Add first ticket row
+  addTicketRow(true);
+});
+
+// ═══════════════════════════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════════════════════════
+function showOnboarding() {
+  const name = currentUser?.user_metadata?.full_name || '';
+  document.getElementById('obName').value = name;
+  document.getElementById('obCity').value = '';
+  document.getElementById('obBio').value  = '';
+  document.getElementById('ob-step-1').style.display = 'block';
+  document.getElementById('ob-step-2').style.display = 'none';
+  document.getElementById('obStepNum').textContent = '1';
+  obAvatarColor = null; obAvatarUrl = null;
+  buildObGrid(name || 'U');
+  openSheet('onboardingSheet');
+}
+
+function buildObGrid(name) {
+  const grid = document.getElementById('obColorGrid');
+  grid.innerHTML = '';
+  AVATAR_COLORS.forEach((bg, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'ob-color-btn' + (i===0?' sel':'');
+    btn.style.background = bg;
+    btn.textContent = name.charAt(0).toUpperCase();
+    btn.onclick = () => {
+      obAvatarColor = bg; obAvatarUrl = null;
+      grid.querySelectorAll('.ob-color-btn').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      const prev = document.getElementById('obAvatarPreview');
+      prev.style.background = bg; prev.textContent = name.charAt(0).toUpperCase();
+      prev.innerHTML = '';
+      prev.style.color = '#000';
+      const span = document.createElement('span');
+      span.textContent = name.charAt(0).toUpperCase();
+      prev.appendChild(span);
+    };
+    grid.appendChild(btn);
+  });
+  // auto-select first
+  obAvatarColor = AVATAR_COLORS[0];
+  const prev = document.getElementById('obAvatarPreview');
+  prev.style.background = AVATAR_COLORS[0];
+  prev.innerHTML = `<span>${name.charAt(0).toUpperCase()}</span>`;
+}
+
+function obNext() {
+  const name = document.getElementById('obName').value.trim();
+  const err  = document.getElementById('obErr1');
+  if (!name) { err.textContent='Please enter your name.'; err.classList.add('show'); return; }
+  err.classList.remove('show');
+  buildObGrid(name);
+  document.getElementById('ob-step-1').style.display = 'none';
+  document.getElementById('ob-step-2').style.display = 'block';
+  document.getElementById('obStepNum').textContent = '2';
+}
+
+function obBack() {
+  document.getElementById('ob-step-1').style.display = 'block';
+  document.getElementById('ob-step-2').style.display = 'none';
+  document.getElementById('obStepNum').textContent = '1';
+}
+
+function obHandlePhoto(input) {
+  const file = input.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    obAvatarUrl = e.target.result; obAvatarColor = null;
+    const prev = document.getElementById('obAvatarPreview');
+    prev.innerHTML = '';
+    prev.style.background = 'transparent';
+    const img = document.createElement('img');
+    img.src = e.target.result;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+    prev.appendChild(img);
+    document.querySelectorAll('.ob-color-btn').forEach(b => b.classList.remove('sel'));
+  };
+  r.readAsDataURL(file);
+}
+
+async function obFinish() {
+  const btn = document.getElementById('obFinishBtn');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Saving…';
+  const updates = {
+    full_name:    document.getElementById('obName').value.trim(),
+    bio:          document.getElementById('obBio').value.trim(),
+    city:         document.getElementById('obCity').value.trim(),
+    avatar_color: obAvatarColor,
+    avatar_url:   null,
+  };
+  if (obAvatarUrl?.startsWith('data:')) {
+    try {
+      const blob = await fetch(obAvatarUrl).then(r=>r.blob());
+      const fileName = `avatars/${currentUser.id}/avatar-${Date.now()}.jpg`;
+      const { error: upErr } = await sb.storage.from('avatars').upload(fileName, blob, {upsert:true, contentType:blob.type});
+      if (!upErr) {
+        const { data:{publicUrl} } = sb.storage.from('avatars').getPublicUrl(fileName);
+        updates.avatar_url = publicUrl;
+      }
+    } catch {}
+  }
+  try {
+    await fetch(`${API_BASE}/api/profile`, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
+      body: JSON.stringify(updates),
+    });
+    profileData = {...profileData, ...updates};
+  } catch { profileData = {...profileData, ...updates}; }
+  await sb.auth.updateUser({ data:{ full_name: updates.full_name } });
+  closeSheet('onboardingSheet');
+  syncAuthUI();
+  renderProfilePage();
+  showToast('Welcome to Christ Link! 🙌','success');
+  spawnConfetti();
+  btn.disabled=false; btn.innerHTML='Finish Setup ✦';
+}
+
+// ═══════════════════════════════════════════════════════════
+// PROFILE
+// ═══════════════════════════════════════════════════════════
+async function fetchProfile() {
+  if (!currentUser) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/profile`, {
+      headers:{ 'Authorization':`Bearer ${currentSession?.access_token}` }
+    });
+    if (res.ok) { profileData = await res.json(); }
+  } catch {
+    profileData = {
+      full_name:  currentUser.user_metadata?.full_name,
+      bio: '', city: '', avatar_url: null,
+    };
+  }
+  syncAuthUI();
+  renderProfilePage();
+}
+
+function renderProfilePage() {
+  if (!currentUser) return;
+  const name = profileData?.full_name || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Friend';
+  const avEl = document.getElementById('profAv');
+  avEl.innerHTML = '';
+  if (profileData?.avatar_url) {
+    const img = document.createElement('img');
+    img.src = profileData.avatar_url;
+    avEl.appendChild(img);
+  } else {
+    avEl.textContent = name.charAt(0).toUpperCase();
+    if (profileData?.avatar_color) avEl.style.background = profileData.avatar_color;
+  }
+  document.getElementById('profName').textContent = name;
+  document.getElementById('profHandle').textContent = currentUser.email || '';
+  const joined = new Date(currentUser.created_at);
+  document.getElementById('profJoined').innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Joined ${joined.toLocaleDateString('en-US',{month:'long',year:'numeric'})}`;
+  document.getElementById('profBio').textContent = profileData?.bio || 'Tap Edit to add a bio.';
+  document.getElementById('profAbout').textContent = profileData?.bio || 'No bio added yet.';
+  const city = profileData?.city || '—';
+  document.getElementById('statCity').textContent = city.split(',')[0] || '—';
+}
+
+function switchPTab(el, tab) {
+  document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.profile-tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('ptab-' + tab).classList.add('active');
+}
+
+// ─── EDIT PROFILE ───────────────────────────────────────────
+function openEditProfile() { openSheet('editProfileSheet'); populateEditProfile(); }
+
+function populateEditProfile() {
+  const name = profileData?.full_name || currentUser?.user_metadata?.full_name || '';
+  document.getElementById('epName').value = name;
+  document.getElementById('epCity').value = profileData?.city || '';
+  document.getElementById('epBio').value  = profileData?.bio  || '';
+  // preview
+  const prev = document.getElementById('epPreview');
+  prev.innerHTML = '';
+  if (profileData?.avatar_url) {
+    const img = document.createElement('img');
+    img.src = profileData.avatar_url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+    prev.appendChild(img);
+    prev.style.background = 'transparent';
+  } else {
+    prev.textContent = name.charAt(0).toUpperCase();
+    if (profileData?.avatar_color) prev.style.background = profileData.avatar_color;
+  }
+  epAvatarColor = profileData?.avatar_color || null;
+  epAvatarUrl   = null;
+  // color grid
+  const grid = document.getElementById('epColorGrid');
+  grid.innerHTML = '';
+  AVATAR_COLORS.forEach(bg => {
+    const btn = document.createElement('button');
+    btn.className = 'av-btn' + (profileData?.avatar_color === bg ? ' sel':'');
+    btn.style.background = bg;
+    btn.textContent = name.charAt(0).toUpperCase();
+    btn.onclick = () => {
+      epAvatarColor = bg; epAvatarUrl = null;
+      grid.querySelectorAll('.av-btn').forEach(b=>b.classList.remove('sel'));
+      btn.classList.add('sel');
+      prev.style.background = bg;
+      prev.innerHTML = '';
+      prev.textContent = (document.getElementById('epName').value||'U').charAt(0).toUpperCase();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function epHandlePhoto(input) {
+  const file = input.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    epAvatarUrl = e.target.result; epAvatarColor = null;
+    const prev = document.getElementById('epPreview');
+    prev.innerHTML = '';
+    prev.style.background = 'transparent';
+    const img = document.createElement('img');
+    img.src = e.target.result;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+    prev.appendChild(img);
+    document.querySelectorAll('.av-btn').forEach(b=>b.classList.remove('sel'));
+  };
+  r.readAsDataURL(file);
+}
+
+async function saveProfile() {
+  const name = document.getElementById('epName').value.trim();
+  if (!name) { showErr('epErr','Please enter your name.'); return; }
+  const btn = document.getElementById('epSaveBtn');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Saving…';
+  let avatarUrl = profileData?.avatar_url || null;
+  if (epAvatarUrl?.startsWith('data:')) {
+    try {
+      const blob = await fetch(epAvatarUrl).then(r=>r.blob());
+      const fn = `avatars/${currentUser.id}/avatar-${Date.now()}.jpg`;
+      const { error } = await sb.storage.from('avatars').upload(fn,blob,{upsert:true,contentType:blob.type});
+      if (!error) {
+        const { data:{publicUrl} } = sb.storage.from('avatars').getPublicUrl(fn);
+        avatarUrl = publicUrl;
+      }
+    } catch {}
+  }
+  const updates = {
+    full_name:    name,
+    bio:          document.getElementById('epBio').value.trim(),
+    city:         document.getElementById('epCity').value.trim(),
+    avatar_url:   avatarUrl,
+    avatar_color: epAvatarColor || profileData?.avatar_color,
+  };
+  try {
+    const res = await fetch(`${API_BASE}/api/profile`,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
+      body: JSON.stringify(updates),
+    });
+    if (res.ok) profileData = {...profileData,...await res.json()};
+    else profileData = {...profileData,...updates};
+  } catch { profileData = {...profileData,...updates}; }
+  await sb.auth.updateUser({ data:{full_name:name} });
+  closeSheet('editProfileSheet');
+  syncAuthUI();
+  renderProfilePage();
+  showToast('Profile updated!','success');
+  btn.disabled=false; btn.innerHTML='Save Changes';
+}
+
+// ═══════════════════════════════════════════════════════════
+// EVENT CARDS
+// ═══════════════════════════════════════════════════════════
+const BG_GRADIENTS = [
+  'linear-gradient(135deg,#1A0E38,#0F0F1A)',
+  'linear-gradient(135deg,#0E2438,#0F1A1A)',
+  'linear-gradient(135deg,#1A0E18,#200F0F)',
+  'linear-gradient(135deg,#0E3820,#0F1A15)',
+  'linear-gradient(135deg,#2A1800,#1A1000)',
+];
+
+function makeCardHTML(ev, scrollMode) {
+  const fmtDate = ev.start_date
+    ? new Date(ev.start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
+    : 'Date TBD';
+  const isPaid = ev.is_paid;
+  const price  = isPaid && ev.ticket_types?.[0] ? `$${(ev.ticket_types[0].price_cents/100).toFixed(2)}` : null;
+  const bg = BG_GRADIENTS[Math.abs((ev.name||'').charCodeAt(0)) % BG_GRADIENTS.length];
+  const card = document.createElement('div');
+  card.className = 'event-card';
+  card.innerHTML = `
+    <div class="card-img" style="background:${bg}">
+      <span>${ev.emoji || '✝'}</span>
+      <div class="card-badges">
+        <span class="badge badge-type">${ev.event_type || 'Event'}</span>
+        <span class="badge ${isPaid ? 'badge-paid' : 'badge-free'}">${isPaid ? (price || 'Paid') : 'Free'}</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-date">${fmtDate}</div>
+      <div class="card-name">${ev.name || 'Untitled'}</div>
+      <div class="card-loc">
+        <svg width="10" height="13" viewBox="0 0 10 13" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg>
+        ${ev.city ? `${ev.city}${ev.state ? ', '+ev.state : ''}` : (ev.format==='online'?'Online':'TBD')}
+      </div>
+      <div class="card-footer">
+        <span class="card-going" id="going-${ev.id}"></span>
+        <button class="card-btn" onclick="event.stopPropagation();quickRsvp(this,'${ev.id}',${isPaid})">
+          ${isPaid ? 'Get Tickets' : "I'm Going ✨"}
+        </button>
+      </div>
+    </div>`;
+  card.onclick = () => viewDetail(ev);
+  return card;
+}
+
+function renderInto(container, events, scrollMode) {
+  container.innerHTML = '';
+  if (!events || events.length === 0) {
+    container.innerHTML = `<div class="empty-state" style="${scrollMode?'width:100%;padding:40px 20px':'grid-column:1/-1'}">
+      <div class="empty-icon">✝</div>
+      <div class="empty-title">No events yet</div>
+      <div class="empty-sub">Be the first to host in your city.</div>
+      <button class="btn btn-gold btn-sm mt-4" onclick="goTo('host')">Host an Event →</button>
+    </div>`;
+    return;
+  }
+  events.forEach(ev => container.appendChild(makeCardHTML(ev, scrollMode)));
+}
+
+function quickRsvp(btn, evId, isPaid) {
+  if (isPaid) { /* open event detail for ticket flow */ return; }
+  if (!currentUser) { openAuth('signup', () => quickRsvp(btn, evId, isPaid)); return; }
+  const going = btn.classList.toggle('going');
+  btn.textContent = going ? '✅ Going!' : "I'm Going ✨";
+  if (going) { showToast('🙌 You\'re going!','success'); spawnConfetti(); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════════════════════
+function homePill(el, filter) {
+  document.querySelectorAll('#homePills .pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  fetchHomeEvents(filter === 'all' ? {} : {type:filter});
+}
+
+async function fetchHomeEvents(params = {}) {
+  const scroll = document.getElementById('homeScroll');
+  scroll.innerHTML = '<div style="width:100%;display:flex;align-items:center;justify-content:center;padding:48px 20px;gap:10px"><div class="spinner spinner-gold"></div><span style="color:var(--muted)">Loading…</span></div>';
+  try {
+    const qs = new URLSearchParams(params);
+    const res = await fetch(`${API_BASE}/api/events?${qs}`);
+    const data = await res.json();
+    renderInto(scroll, data.events, true);
+  } catch {
+    renderInto(scroll, [], true);
+  }
+}
+
+function heroSearchGo() {
+  const q = document.getElementById('heroSearch').value.trim();
+  goTo('browse');
+  if (q) { setTimeout(() => { document.getElementById('browseSearch').value = q; runBrowse(); }, 350); }
+}
+
+function enableNearMeHome(btn) {
+  btn.classList.add('active');
+  btn.innerHTML = `<svg width="11" height="14" viewBox="0 0 10 13" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg> Locating…`;
+  getUserLocation(loc => {
+    btn.innerHTML = `<svg width="11" height="14" viewBox="0 0 10 13" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg> ${loc.city||'Near You'}`;
+    if (loc.city) fetchHomeEvents({ city: loc.city });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// BROWSE
+// ═══════════════════════════════════════════════════════════
+let browseReady = false;
+let browseDebounce;
+
+function initBrowse() {
+  if (browseReady) return;
+  browseReady = true;
+  runBrowse();
+}
+
+function debounceBrowse(q) {
+  clearTimeout(browseDebounce);
+  browseDebounce = setTimeout(() => runBrowse(), 350);
+}
+
+async function runBrowse() {
+  const q       = document.getElementById('browseSearch')?.value.trim() || '';
+  const grid    = document.getElementById('browseGrid');
+  const count   = document.getElementById('browseCount');
+  if (!grid) return;
+  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px 20px;display:flex;align-items:center;justify-content:center;gap:12px"><div class="spinner spinner-gold"></div><span style="color:var(--muted)">Loading…</span></div>`;
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (activeFilters.type.length)   params.set('type',   activeFilters.type[0]);
+  if (activeFilters.format.length) params.set('format', activeFilters.format[0]);
+  if (activeFilters.price.includes('free'))  params.set('is_paid','false');
+  if (activeFilters.price.includes('paid'))  params.set('is_paid','true');
+  if (nearMeActive && userLocation?.city) params.set('city', userLocation.city);
+  try {
+    const res  = await fetch(`${API_BASE}/api/events?${params}`);
+    const data = await res.json();
+    renderInto(grid, data.events, false);
+    if (count) count.textContent = data.events?.length ? `${data.events.length} event${data.events.length!==1?'s':''}` : '';
+  } catch {
+    renderInto(grid, [], false);
+    if (count) count.textContent = '';
+  }
+  renderActiveFilterTags();
+}
+
+// ─── FILTER CHIPS ────────────────────────────────────────────
+function toggleFilterChip(el) {
+  el.classList.toggle('active');
+}
+
+function clearFilters() {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  activeFilters = {type:[],price:[],format:[]};
+  renderActiveFilterTags();
+}
+
+function applyFilters() {
+  activeFilters = {type:[],price:[],format:[]};
+  document.querySelectorAll('.filter-chip.active').forEach(c => {
+    activeFilters[c.dataset.filter].push(c.dataset.val);
+  });
+  closeSheet('filterSheet');
+  runBrowse();
+  const hasFilters = Object.values(activeFilters).some(a=>a.length>0);
+  document.getElementById('filterToggleBtn').classList.toggle('has-filters', hasFilters);
+}
+
+function renderActiveFilterTags() {
+  const row = document.getElementById('activeFiltersRow');
+  if (!row) return;
+  row.innerHTML = '';
+  const all = [...activeFilters.type,...activeFilters.price,...activeFilters.format];
+  all.forEach(f => {
+    const chip = document.createElement('div');
+    chip.className = 'pill active';
+    chip.style.cssText = 'height:28px;font-size:12px;padding:0 10px';
+    chip.innerHTML = `${f} <span style="margin-left:4px;opacity:.6">×</span>`;
+    chip.onclick = () => {
+      activeFilters.type    = activeFilters.type.filter(v=>v!==f);
+      activeFilters.price   = activeFilters.price.filter(v=>v!==f);
+      activeFilters.format  = activeFilters.format.filter(v=>v!==f);
+      document.querySelectorAll(`.filter-chip[data-val="${f}"]`).forEach(c=>c.classList.remove('active'));
+      runBrowse();
+    };
+    row.appendChild(chip);
+  });
+}
+
+// near me toggle
+function toggleNearMe() {
+  const btn = document.getElementById('browseNearToggle');
+  if (nearMeActive) {
+    nearMeActive = false;
+    btn.classList.remove('active');
+    btn.innerHTML = `<svg width="11" height="14" viewBox="0 0 10 13" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg> Near Me`;
+    runBrowse(); return;
+  }
+  btn.innerHTML = `<svg width="11" height="14" viewBox="0 0 10 13" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg> Locating…`;
+  getUserLocation(loc => {
+    nearMeActive = true;
+    btn.classList.add('active');
+    btn.innerHTML = `<svg width="11" height="14" viewBox="0 0 10 13" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg> ${loc.city||'Near You'}`;
+    runBrowse();
+  });
+}
+
+function getUserLocation(cb) {
+  if (userLocation) { cb(userLocation); return; }
+  if (!navigator.geolocation) { showToast('Location not supported','error'); return; }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const {latitude:lat, longitude:lng} = pos.coords;
+    let city = '';
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+      const d = await r.json();
+      city = d.address?.city||d.address?.town||d.address?.village||d.address?.county||'';
+    } catch {}
+    userLocation = {lat,lng,city};
+    cb(userLocation);
+  }, () => showToast('Could not get location','error'), {timeout:8000});
+}
+
+// ═══════════════════════════════════════════════════════════
+// EVENT DETAIL
+// ═══════════════════════════════════════════════════════════
+function viewDetail(ev) {
+  selectedEvent = ev; currentQty = 1;
+  const isPaid  = ev.is_paid;
+  const bg = BG_GRADIENTS[Math.abs((ev.name||'').charCodeAt(0)) % BG_GRADIENTS.length];
+  document.getElementById('detailHero').style.background = bg;
+  document.getElementById('detailEmoji').textContent = ev.emoji || '✝';
+  document.getElementById('detailTitle').textContent = ev.name || 'Event';
+  document.getElementById('detailHostName').textContent = ev.host_name || 'Community Host';
+  document.getElementById('detailHostAv').textContent = (ev.host_name||'H').charAt(0);
+  document.getElementById('detailDesc').textContent = ev.description || 'No description provided.';
+  document.getElementById('detailDate').textContent = ev.start_date
+    ? new Date(ev.start_date).toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})
+    : 'Date TBD';
+  document.getElementById('detailLocation').textContent = ev.venue_name
+    ? `${ev.venue_name}, ${ev.city||''}`
+    : (ev.city || (ev.format==='online'?'Online':'TBD'));
+  // tags
+  const tagsEl = document.getElementById('detailTags');
+  tagsEl.innerHTML = '';
+  if (ev.event_type) { const t=document.createElement('span');t.className='tag';t.textContent=ev.event_type;tagsEl.appendChild(t); }
+  if (ev.format)     { const t=document.createElement('span');t.className='tag';t.textContent=ev.format==='in_person'?'In Person':ev.format;tagsEl.appendChild(t); }
+  // price / qty
+  const qtyRow   = document.getElementById('detailQtyRow');
+  const priceBig = document.getElementById('detailPriceBig');
+  const priceSub = document.getElementById('detailPriceSub');
+  const rsvpBtn  = document.getElementById('detailRsvpBtn');
+  if (isPaid && ev.ticket_types?.[0]) {
+    const tt = ev.ticket_types[0];
+    priceBig.textContent = `$${(tt.price_cents/100).toFixed(2)}`;
+    priceSub.textContent = 'Per person';
+    document.getElementById('qtyPriceNote').textContent = `$${(tt.price_cents/100).toFixed(2)} each`;
+    qtyRow.style.display = 'block';
+    rsvpBtn.textContent  = `Get Tickets → $${(tt.price_cents/100).toFixed(2)}`;
+  } else if (isPaid) {
+    priceBig.textContent = 'Paid';
+    priceSub.textContent = 'See event for pricing';
+    qtyRow.style.display = 'none';
+    rsvpBtn.textContent  = 'Get Tickets →';
+  } else {
+    priceBig.textContent = 'Free';
+    priceSub.textContent = 'Open to all';
+    qtyRow.style.display = 'none';
+    rsvpBtn.textContent  = 'Reserve My Spot →';
+  }
+  rsvpBtn.classList.remove('confirmed');
+  goTo('event-detail');
+}
+
+function changeQty(d) {
+  currentQty = Math.max(1, Math.min(10, currentQty + d));
+  document.getElementById('qtyVal').textContent = currentQty;
+  if (selectedEvent?.is_paid && selectedEvent?.ticket_types?.[0]) {
+    const price = selectedEvent.ticket_types[0].price_cents;
+    document.getElementById('detailRsvpBtn').textContent = `Get Tickets → $${(price*currentQty/100).toFixed(2)}`;
+  }
+}
+
+function handleRsvp() {
+  if (!currentUser) { openAuth('signup', () => handleRsvp()); return; }
+  if (selectedEvent?.is_paid) { openTicketSheet(); return; }
+  const btn = document.getElementById('detailRsvpBtn');
+  btn.textContent = '✅ You\'re Going!';
+  btn.classList.add('confirmed');
+  spawnConfetti();
+  showSuccess('🙌','You\'re Going!',`Spot reserved for ${selectedEvent?.name||'the event'}. See you there!`);
+  // real RSVP
+  fetch(`${API_BASE}/api/rsvp`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
+    body: JSON.stringify({eventId: selectedEvent?.id}),
+  }).catch(()=>{});
+}
+
+// ═══════════════════════════════════════════════════════════
+// TICKET PURCHASE
+// ═══════════════════════════════════════════════════════════
+function openTicketSheet() {
+  if (!selectedEvent) return;
+  const tt = selectedEvent.ticket_types?.[0];
+  const face = tt ? tt.price_cents * currentQty : 0;
+  const pf   = Math.round(face * 0.05);
+  document.getElementById('ticketSheetTitle').textContent = selectedEvent.name;
+  document.getElementById('ticketSheetSub').textContent   = `${currentQty} ticket${currentQty>1?'s':''} · ${currentUser?.email||''}`;
+  document.getElementById('bdFace').textContent = `$${(face/100).toFixed(2)}`;
+  document.getElementById('bdPf').textContent   = `$${(pf/100).toFixed(2)}`;
+  document.getElementById('bdTotal').textContent = `$${(face/100).toFixed(2)}`;
+  document.getElementById('payBtnAmt').textContent = `$${(face/100).toFixed(2)}`;
+  document.getElementById('bdTaxRow').style.display = 'none';
+  openSheet('ticketSheet');
+  setTimeout(mountCard, 150);
+  // fetch real breakdown
+  if (tt) {
+    Promise.all([
+      fetch(`${API_BASE}/api/price-breakdown?price=${tt.price_cents}&qty=${currentQty}&absorb=true`),
+      fetch(`${API_BASE}/api/tax-estimate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amountCents:face})})
+    ]).then(async ([r1,r2]) => {
+      const bd  = await r1.json();
+      const tax = await r2.json();
+      document.getElementById('bdFace').textContent  = `$${(bd.face/100).toFixed(2)}`;
+      document.getElementById('bdPf').textContent    = `$${(bd.platformFee/100).toFixed(2)}`;
+      if (tax.taxAmountCents > 0) {
+        document.getElementById('bdTaxRow').style.display = 'flex';
+        document.getElementById('bdTax').textContent = `$${(tax.taxAmountCents/100).toFixed(2)}`;
+        const total = bd.chargeAmount + tax.taxAmountCents;
+        document.getElementById('bdTotal').textContent   = `$${(total/100).toFixed(2)}`;
+        document.getElementById('payBtnAmt').textContent = `$${(total/100).toFixed(2)}`;
+      } else {
+        document.getElementById('bdTotal').textContent   = `$${(bd.chargeAmount/100).toFixed(2)}`;
+        document.getElementById('payBtnAmt').textContent = `$${(bd.chargeAmount/100).toFixed(2)}`;
+      }
+    }).catch(()=>{});
+  }
+}
+
+function mountCard() {
+  if (cardEl) return;
+  cardEl = stripeElements.create('card',{
+    style:{base:{color:'#F0EBE0',fontFamily:'DM Sans,sans-serif',fontSize:'15px','::placeholder':{color:'#666070'}}}
+  });
+  cardEl.mount('#cardEl');
+  cardEl.on('focus',()=>document.getElementById('cardWrap').classList.add('focused'));
+  cardEl.on('blur', ()=>document.getElementById('cardWrap').classList.remove('focused'));
+  cardEl.on('change',e=>{
+    const err = document.getElementById('cardErr');
+    if(e.error){err.textContent=e.error.message;err.classList.add('show');}
+    else{err.textContent='';err.classList.remove('show');}
+  });
+}
+
+async function processPayment() {
+  if (!cardEl || !selectedEvent) return;
+  const btn = document.getElementById('payBtn');
+  const orig = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>&nbsp;Processing…';
+  const err = document.getElementById('cardErr');
+  try {
+    const res = await fetch(`${API_BASE}/api/create-payment-intent`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
+      body: JSON.stringify({eventId:selectedEvent.id,ticketTypeId:selectedEvent.ticket_types?.[0]?.id,qty:currentQty,buyerEmail:currentUser?.email}),
+    });
+    const {clientSecret, error:be} = await res.json();
+    if (be) throw new Error(be);
+    const {error, paymentIntent} = await stripeClient.confirmCardPayment(clientSecret,{
+      payment_method:{card:cardEl,billing_details:{email:currentUser?.email}}
+    });
+    if (error) throw new Error(error.message);
+    if (paymentIntent.status === 'succeeded') {
+      closeSheet('ticketSheet');
+      spawnConfetti();
+      showSuccess('🎟️','Tickets Confirmed!',`${currentQty} ticket${currentQty>1?'s':''} to ${selectedEvent.name}. Receipt sent to ${currentUser?.email}.`);
+      document.getElementById('detailRsvpBtn').textContent = '✅ Tickets Purchased!';
+      document.getElementById('detailRsvpBtn').classList.add('confirmed');
+    }
+  } catch(e) {
+    // demo mode fallback
+    closeSheet('ticketSheet');
+    spawnConfetti();
+    showSuccess('🎟️','Confirmed! (Demo)',`Demo mode. ${currentQty} ticket${currentQty>1?'s':''} to ${selectedEvent?.name}.`);
+    document.getElementById('detailRsvpBtn').textContent = '✅ Tickets Purchased!';
+    document.getElementById('detailRsvpBtn').classList.add('confirmed');
+  }
+  btn.disabled=false; btn.innerHTML=orig;
+}
+
+// ─── LISTING FEE ─────────────────────────────────────────────
+let lfMounted = false;
+function mountListingCard() {
+  if (lfMounted) return; lfMounted = true;
+  const elems = stripeClient.elements({appearance:{theme:'night',variables:{colorPrimary:'#C9A84C',colorBackground:'#1E1E2A',colorText:'#F0EBE0',fontFamily:'DM Sans,sans-serif',borderRadius:'8px'}}});
+  const st = {base:{color:'#F0EBE0',fontFamily:'DM Sans,sans-serif',fontSize:'15px','::placeholder':{color:'#666070'}},invalid:{color:'#E05050'}};
+  lfCardNum = elems.create('cardNumber',{style:st,showIcon:true});
+  lfCardExp = elems.create('cardExpiry',{style:st});
+  lfCardCvc = elems.create('cardCvc',  {style:st});
+  lfCardNum.mount('#lfCardNumberEl');
+  lfCardExp.mount('#lfCardExpiryEl');
+  lfCardCvc.mount('#lfCardCvcEl');
+  [{el:lfCardNum,wrap:'lfCardWrap'},{el:lfCardExp,wrap:'lfExpWrap'},{el:lfCardCvc,wrap:'lfCvcWrap'}].forEach(({el,wrap})=>{
+    el.on('focus',()=>document.getElementById(wrap).classList.add('focused'));
+    el.on('blur', ()=>document.getElementById(wrap).classList.remove('focused'));
+    el.on('change',e=>{
+      const err=document.getElementById('lfErr');
+      if(e.error){err.textContent=e.error.message;err.classList.add('show');}
+      else{err.textContent='';err.classList.remove('show');}
+    });
+  });
+}
+
+document.getElementById('listingFeeSheet').addEventListener('click', e => {
+  // mount when sheet first interacted with
+  if (!lfMounted) setTimeout(mountListingCard, 100);
+}, {once:true});
+
+// also mount when opened
+const _origOpenSheet = window.openSheet;
+function openSheet(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (id === 'listingFeeSheet') setTimeout(mountListingCard, 200);
+}
+
+async function processListingFee() {
+  if (!lfCardNum) { showToast('Card form loading…'); return; }
+  const btn  = document.getElementById('lfPayBtn');
+  const orig = btn.innerHTML;
+  const err  = document.getElementById('lfErr');
+  const name = document.getElementById('lfName').value.trim();
+  const email= document.getElementById('lfEmail').value.trim();
+  if (!name) { err.textContent='Name on card is required.';err.classList.add('show'); return; }
+  btn.disabled=true; btn.innerHTML='<div class="spinner"></div>&nbsp;Processing $19.99…';
+  err.classList.remove('show');
+  try {
+    const {paymentMethod, error:pmErr} = await stripeClient.createPaymentMethod({type:'card',card:lfCardNum,billing_details:{name,email:email||undefined}});
+    if (pmErr) throw new Error(pmErr.message);
+    const res = await fetch(`${API_BASE}/api/charge-listing-fee`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
+      body: JSON.stringify({paymentMethodId:paymentMethod.id,eventId:'pending',hostEmail:email}),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error||'Payment failed.');
+    handleListingFeePaid();
+  } catch(e) {
+    if (e.message.includes('fetch')||e.message.includes('Failed')) { handleListingFeePaid(true); }
+    else { err.textContent=e.message;err.classList.add('show'); btn.disabled=false;btn.innerHTML=orig; }
+  }
+}
+
+function handleListingFeePaid(demo=false) {
+  listingFeePaid = true;
+  closeSheet('listingFeeSheet');
+  document.getElementById('listingStatus').style.display = 'block';
+  document.getElementById('payFeeBtn').style.display     = 'none';
+  showToast(demo?'✅ Listing fee paid (Demo)':'✅ $19.99 paid — ticketing unlocked!','success');
+  spawnConfetti();
+}
+
+// ═══════════════════════════════════════════════════════════
+// HOST FORM
+// ═══════════════════════════════════════════════════════════
+function setHostStep(n) {
+  document.querySelectorAll('.form-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById(`host-step-${n}`).classList.add('active');
+  for (let i=1;i<=4;i++) {
+    const num  = document.getElementById(`si-${i}`);
+    const lbl  = document.getElementById(`sl-${i}`);
+    num.classList.remove('active','done');
+    lbl.classList.remove('active');
+    if (i<n)  {num.classList.add('done'); num.textContent='✓';}
+    else       num.textContent = i;
+    if (i===n) {num.classList.add('active'); lbl.classList.add('active');}
+    if (i<=3) document.getElementById(`line-${i}-${i+1}`).classList.toggle('done',i<n);
+  }
+  if (n===4) buildReview();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function hostNext(from) {
+  if (!currentUser) { openAuth('signup', ()=>hostNext(from)); return; }
+  if (from===1) {
+    const isPaid = document.getElementById('paidToggle').checked;
+    if (isPaid && !listingFeePaid) {
+      showToast('💳 Pay listing fee to continue');
+      document.getElementById('listingFeeSection').scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+  }
+  setHostStep(from+1);
+}
+function hostPrev(from) { setHostStep(from-1); }
+
+function handlePaidToggle() {
+  const isPaid = document.getElementById('paidToggle').checked;
+  document.getElementById('listingFeeSection').style.display  = isPaid ? 'block' : 'none';
+  document.getElementById('paidDesc').textContent = isPaid ? 'Charge attendees — $19.99 listing fee required' : 'Free — anyone can RSVP';
+  document.getElementById('step3Label').textContent = isPaid ? 'Tickets' : 'Setup';
+  document.getElementById('freeEventSetup').style.display = isPaid ? 'none' : 'block';
+  document.getElementById('paidEventSetup').style.display = isPaid ? 'block' : 'none';
+}
+
+// ─── TICKET ROWS ─────────────────────────────────────────────
+function addTicketRow(first=false) {
+  ticketRowCount++;
+  const builder = document.getElementById('ticketBuilder');
+  const row = document.createElement('div');
+  row.className = 'ticket-row';
+  row.id = `tr-${ticketRowCount}`;
+  row.innerHTML = `
+    <div>
+      <div class="ticket-row-label">Name</div>
+      <input type="text" placeholder="General Admission" value="${first?'General Admission':''}">
+    </div>
+    <div>
+      <div class="ticket-row-label">Price ($)</div>
+      <input type="number" value="${first?'25':''}" min="1" oninput="previewRevenue()">
+    </div>
+    <div>
+      <div class="ticket-row-label">Qty</div>
+      <input type="number" value="100" min="1">
+    </div>
+    <button class="remove-tt" onclick="removeTicketRow(${ticketRowCount})" title="Remove">✕</button>`;
+  builder.appendChild(row);
+  previewRevenue();
+}
+function removeTicketRow(id) {
+  document.getElementById(`tr-${id}`)?.remove();
+  previewRevenue();
+}
+function previewRevenue() {
+  const input = document.querySelector('#ticketBuilder input[type=number]');
+  const price = parseFloat(input?.value || 25);
+  const pf = price*0.05, sf = price*0.029+0.30, net = price - pf - sf;
+  document.getElementById('prevFace').textContent = `$${price.toFixed(2)}`;
+  document.getElementById('prevPf').textContent   = `−$${pf.toFixed(2)}`;
+  document.getElementById('prevSf').textContent   = `−$${sf.toFixed(2)}`;
+  document.getElementById('prevNet').textContent  = `$${net.toFixed(2)}`;
+}
+
+function updateReview() { /* no-op until step 4 */ }
+
+function buildReview() {
+  const name  = document.getElementById('evName').value  || 'Untitled Event';
+  const emoji = document.getElementById('evEmoji').value || '✝';
+  const type  = document.getElementById('evType').value  || 'Event';
+  const isPaid= document.getElementById('paidToggle').checked;
+  const date  = document.getElementById('evStartDate').value;
+  const city  = document.getElementById('evCity').value;
+  const state = document.getElementById('evState').value;
+  document.getElementById('reviewEmoji').textContent = emoji;
+  document.getElementById('reviewName').textContent  = name;
+  document.getElementById('reviewType').textContent  = type;
+  document.getElementById('reviewMeta').textContent  = document.getElementById('evDesc').value?.substring(0,80) || '—';
+  document.getElementById('reviewDate').textContent  = date ? new Date(date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : 'Date TBD';
+  document.getElementById('reviewLocation').textContent = city ? `${city}${state?', '+state:''}` : 'Location TBD';
+  document.getElementById('reviewPricing').textContent  = isPaid ? 'Paid · 5% platform fee' : 'Free · Instant RSVPs';
+}
+
+async function publishEvent() {
+  if (!currentUser) { openAuth('signup'); return; }
+  const btn = document.getElementById('publishBtn');
+  btn.disabled=true; btn.innerHTML='<div class="spinner"></div>&nbsp;Publishing…';
+  const isPaid    = document.getElementById('paidToggle').checked;
+  const name      = document.getElementById('evName').value.trim();
+  const desc      = document.getElementById('evDesc').value.trim();
+  const emoji     = document.getElementById('evEmoji').value || '✝';
+  const eventType = document.getElementById('evType').value;
+  const format    = document.getElementById('evFormat').value || 'in_person';
+  const startDate = document.getElementById('evStartDate').value;
+  const endDate   = document.getElementById('evEndDate').value;
+  const venueName = document.getElementById('evVenue').value.trim();
+  const address   = document.getElementById('evAddress').value.trim();
+  const city      = document.getElementById('evCity').value.trim();
+  const state     = document.getElementById('evState').value.trim();
+  const capacity  = document.getElementById('evCapacity').value;
+  const onlineUrl = document.getElementById('evOnlineUrl').value.trim();
+  if (!name) {
+    showToast('Please add an event name','error');
+    btn.disabled=false; btn.innerHTML='🚀 Publish Event';
+    setHostStep(1); return;
+  }
+  try {
+    const createRes = await fetch(`${API_BASE}/api/events`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
+      body: JSON.stringify({
+        name, description:desc, emoji, event_type:eventType,
+        format, is_paid:isPaid, start_date:startDate||null, end_date:endDate||null,
+        venue_name:venueName, address, city, state, max_capacity:capacity?parseInt(capacity):null,
+        online_url:onlineUrl||null,
+      }),
+    });
+    if (!createRes.ok) { const e=await createRes.json(); throw new Error(e.error||'Failed to create'); }
+    const event = await createRes.json();
+    const pubRes = await fetch(`${API_BASE}/api/events/${event.id}/publish`,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
+    });
+    if (!pubRes.ok) { const e=await pubRes.json(); throw new Error(e.error||'Failed to publish'); }
+    if (isPaid) {
+      const rows = document.querySelectorAll('.ticket-row');
+      for (const row of rows) {
+        const inputs = row.querySelectorAll('input');
+        const ttName = inputs[0]?.value||'General Admission';
+        const price  = Math.round(parseFloat(inputs[1]?.value||25)*100);
+        const qty    = parseInt(inputs[2]?.value||100);
+        await fetch(`${API_BASE}/api/ticket-types`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
+          body: JSON.stringify({event_id:event.id,name:ttName,price_cents:price,quantity:qty}),
+        }).catch(()=>{});
+      }
+    }
+    showToast('🚀 Event is live!','success');
+    spawnConfetti();
+    setTimeout(()=>goTo('profile'),1400);
+  } catch(e) {
+    showToast(e.message||'Failed to publish. Please try again.','error');
+    btn.disabled=false; btn.innerHTML='🚀 Publish Event';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMMUNITY
+// ═══════════════════════════════════════════════════════════
+const SAMPLE_POSTS = [
+  {name:'Pastor James T.',time:'2h ago',text:'Praying for everyone who came to last night\'s worship night. The presence of the Lord was so real. 🙏',amens:14},
+  {name:'Grace M.',time:'5h ago',text:'Testimony: I was going through the hardest season of my life, but God brought the right people at the right time. This community is a blessing.',amens:32},
+  {name:'Emmanuel O.',time:'1d ago',text:'"I can do all things through Christ who strengthens me." Holding onto this today. Who else needs this?',amens:21},
+];
+
+function initCommunityFeed() {
+  const feed = document.getElementById('communityFeed');
+  if (!feed || feed.dataset.loaded) return;
+  feed.dataset.loaded = '1';
+  feed.innerHTML = '';
+  SAMPLE_POSTS.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'feed-card';
+    el.innerHTML = `
+      <div class="feed-header">
+        <div class="feed-av">${p.name.charAt(0)}</div>
+        <div><div class="feed-name">${p.name}</div><div class="feed-time">${p.time}</div></div>
+      </div>
+      <div class="feed-body">${p.text}</div>
+      <div class="feed-reactions">
+        <button class="reaction-btn" onclick="toggleReaction(this)">🙏 Amen <span>${p.amens}</span></button>
+        <button class="reaction-btn" onclick="toggleReaction(this)">❤️ <span>0</span></button>
+      </div>`;
+    feed.appendChild(el);
+  });
+}
+
+function toggleReaction(btn) {
+  const on = btn.classList.toggle('active');
+  const count = btn.querySelector('span');
+  count.textContent = parseInt(count.textContent) + (on ? 1 : -1);
+}
+
+function postToFeed() {
+  if (!currentUser) { openAuth('signup'); return; }
+  const inp = document.getElementById('postInput');
+  if (!inp.value.trim()) { showToast('Write something first ✏️'); return; }
+  const feed = document.getElementById('communityFeed');
+  const name = profileData?.full_name || currentUser.email?.split('@')[0] || 'You';
+  const el = document.createElement('div');
+  el.className = 'feed-card';
+  el.style.animation = 'pageIn .3s ease both';
+  el.innerHTML = `
+    <div class="feed-header">
+      <div class="feed-av" style="background:${profileData?.avatar_color||'var(--gold)'};">${name.charAt(0)}</div>
+      <div><div class="feed-name">${name}</div><div class="feed-time">Just now</div></div>
+    </div>
+    <div class="feed-body">${inp.value.trim()}</div>
+    <div class="feed-reactions">
+      <button class="reaction-btn" onclick="toggleReaction(this)">🙏 Amen <span>0</span></button>
+      <button class="reaction-btn" onclick="toggleReaction(this)">❤️ <span>0</span></button>
+    </div>`;
+  feed.insertBefore(el, feed.firstChild);
+  inp.value = '';
+  document.getElementById('postSubmitRow').style.display = 'none';
+  showToast('✨ Posted!','success');
+}
+
+// ═══════════════════════════════════════════════════════════
+// VERSE CAROUSEL
+// ═══════════════════════════════════════════════════════════
+let verseIdx = 0;
+function initVerses() {
+  const dots = document.getElementById('verseDots');
+  dots.innerHTML = '';
+  VERSES.forEach((_,i) => {
+    const d = document.createElement('button');
+    d.className = 'v-dot' + (i===0?' active':'');
+    d.onclick = () => goVerse(i);
+    dots.appendChild(d);
+  });
+  setInterval(()=>goVerse((verseIdx+1)%VERSES.length), 5500);
+}
+function goVerse(i) {
+  const vt = document.getElementById('verseText');
+  const vr = document.getElementById('verseRef');
+  vt.style.opacity = vr.style.opacity = '0';
+  setTimeout(()=>{
+    verseIdx = i;
+    vt.textContent = VERSES[i].t;
+    vr.textContent = VERSES[i].r;
+    vt.style.opacity = vr.style.opacity = '1';
+    document.querySelectorAll('.v-dot').forEach((d,j)=>d.classList.toggle('active',j===i));
+  }, 400);
+}
+
+// ═══════════════════════════════════════════════════════════
+// FOOTER PAGES
+// ═══════════════════════════════════════════════════════════
+const FOOTER_PAGES = {
+  about:{title:'About Christ Link',body:'<p style="color:var(--muted2);line-height:1.8;font-size:15px;margin-bottom:14px">Christ Link was built to solve a simple problem — believers couldn\'t easily find or host faith-based events in their city.</p><p style="color:var(--muted2);line-height:1.8;font-size:15px">We connect ministries, churches, and community leaders with the people they serve. Built with faith. Powered by community.</p>'},
+  privacy:{title:'Privacy Policy',body:'<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px"><strong style="color:var(--text)">Data we collect:</strong> Email, name, and event activity. Payment info is handled entirely by Stripe — we never store card details.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px"><strong style="color:var(--text)">How we use it:</strong> To verify your account and send event confirmations. We never sell your data.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px"><strong style="color:var(--text)">Your rights:</strong> Delete your account at any time by contacting us.</p>'},
+  terms:{title:'Terms of Service',body:'<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px">Use Christ Link only for legitimate faith-based events. Misuse results in account removal.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px">The $19.99 listing fee for paid events is non-refundable once an event is live.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px">Christ Link takes 5% of each ticket sale. Payouts go to hosts via Stripe Connect.</p>'},
+  contact:{title:'Contact Us',body:'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;margin-bottom:12px"><div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">General</div><div>hello@christlink.com</div></div><div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;margin-bottom:12px"><div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Host Support</div><div>hosts@christlink.com</div></div>'},
+};
+function showFooterPage(key) {
+  const p = FOOTER_PAGES[key]; if (!p) return;
+  document.getElementById('footerSheetTitle').textContent = p.title;
+  document.getElementById('footerSheetBody').innerHTML   = p.body;
+  openSheet('footerSheet');
+}
+
+// ═══════════════════════════════════════════════════════════
+// SUCCESS
+// ═══════════════════════════════════════════════════════════
+function showSuccess(icon, title, msg) {
+  document.getElementById('successIcon').textContent  = icon;
+  document.getElementById('successTitle').textContent = title;
+  document.getElementById('successMsg').textContent   = msg;
+  openSheet('successSheet');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONFETTI
+// ═══════════════════════════════════════════════════════════
+function spawnConfetti() {
+  const colors = ['#C9A84C','#E8C97A','#fff','#FFD700','#D4AF37','#FFF0A0'];
+  for (let i=0;i<28;i++) {
+    setTimeout(()=>{
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.cssText=`left:${Math.random()*100}vw;top:-10px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${1.4+Math.random()*0.8}s;animation-delay:${Math.random()*.3}s;`;
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),2600);
+    },i*18);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+// Fetch home events on load
+fetchHomeEvents();
+</script>
+</body>
+</html>
