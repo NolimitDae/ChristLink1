@@ -1185,7 +1185,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
           </div>
           <input type="file" id="coverPhotoInput" accept="image/*" style="display:none" onchange="handleCoverPhoto(this)">
         </div>
-        <div class="field-note" style="margin-bottom:18px">This appears at the top of your event page</div>
+        <div class="field-note" style="margin-top:10px;margin-bottom:18px">This appears at the top of your event page</div>
 
         <!-- Image Gallery -->
         <label class="field-label">Event Gallery <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
@@ -1218,7 +1218,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
         <textarea id="evDesc" class="field" placeholder="Share what this gathering is about…" rows="3"></textarea>
 
         <label class="field-label">Start Date & Time</label>
-        <input type="datetime-local" id="evStartDate" class="field">
+        <input type="datetime-local" id="evStartDate" class="field" style="max-width:280px">
 
         <!-- Paid toggle -->
         <div class="toggle-row">
