@@ -158,10 +158,18 @@ app.get('/api/profile', requireAuth, async (req, res) => {
 
 app.patch('/api/profile', requireAuth, async (req, res) => {
   const { full_name, bio, city, avatar_url, avatar_color } = req.body;
+  const updates = {};
+  if (full_name   !== undefined) updates.full_name   = full_name;
+  if (bio         !== undefined) updates.bio         = bio;
+  if (city        !== undefined) updates.city        = city;
+  if (avatar_url  !== undefined) updates.avatar_url  = avatar_url;
+  if (avatar_color !== undefined) updates.avatar_color = avatar_color;
+  updates.updated_at = new Date().toISOString();
+  // Upsert in case profile row doesn't exist yet
   const { data, error } = await supabaseAdmin
     .from('profiles')
-    .update({ full_name, bio, city, avatar_url, avatar_color })
-    .eq('id', req.userId).select().single();
+    .upsert({ id: req.userId, ...updates }, { onConflict: 'id' })
+    .select().single();
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });
@@ -234,6 +242,59 @@ app.patch('/api/events/:id/publish', requireAuth, async (req, res) => {
   res.json(data);
 });
 
+// ── My Events (host's own events) ───────────────────────────
+app.get('/api/my-events', requireAuth, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('events_with_details')
+    .select('*')
+    .eq('host_id', req.userId)
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ events: data || [] });
+});
+
+// ── My Tickets (attendee's purchased tickets) ────────────────
+app.get('/api/my-tickets', requireAuth, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('tickets')
+    .select(`
+      *,
+      events ( name, start_date, city, cover_url ),
+      ticket_types ( name )
+    `)
+    .eq('user_id', req.userId)
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  const tickets = (data || []).map(t => ({
+    ...t,
+    event_name:       t.events?.name,
+    event_start_date: t.events?.start_date,
+    event_city:       t.events?.city,
+    event_cover_url:  t.events?.cover_url,
+    ticket_type_name: t.ticket_types?.name,
+  }));
+  res.json({ tickets });
+});
+
+// ── Delete Event ─────────────────────────────────────────────
+app.delete('/api/events/:id', requireAuth, async (req, res) => {
+  // Only allow deletion of draft events or if host owns it
+  const { data: ev } = await supabaseAdmin
+    .from('events').select('id, status, host_id')
+    .eq('id', req.params.id).eq('host_id', req.userId).single();
+  if (!ev) return res.status(404).json({ error: 'Event not found or not yours.' });
+  if (ev.status === 'published') {
+    // Soft-cancel instead of hard delete to preserve ticket records
+    const { error } = await supabaseAdmin
+      .from('events').update({ status: 'cancelled' }).eq('id', req.params.id);
+    if (error) return res.status(400).json({ error: error.message });
+    return res.json({ success: true, action: 'cancelled' });
+  }
+  const { error } = await supabaseAdmin.from('events').delete().eq('id', req.params.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ success: true, action: 'deleted' });
+});
+
 // ════════════════════════════════════════════════════════════
 // TICKET TYPES
 // ════════════════════════════════════════════════════════════
@@ -272,6 +333,103 @@ app.delete('/api/rsvp/:eventId', requireAuth, async (req, res) => {
   await supabaseAdmin.from('rsvps').update({ status: 'cancelled' })
     .eq('event_id', req.params.eventId).eq('user_id', req.userId);
   res.json({ success: true });
+});
+
+// ── Ticket Verification (scanner) ───────────────────────────
+app.post('/api/tickets/verify', requireAuth, async (req, res) => {
+  const { ticketId, code, eventId } = req.body;
+  if (!ticketId && !code) return res.status(400).json({ valid: false, error: 'Ticket ID or code required.' });
+
+  try {
+    // First verify the requesting user is the host of this event
+    if (eventId) {
+      const { data: ev } = await supabaseAdmin
+        .from('events').select('host_id').eq('id', eventId).single();
+      if (!ev || ev.host_id !== req.userId) {
+        return res.status(403).json({ valid: false, error: 'Only the event host can verify tickets.' });
+      }
+    }
+
+    // Look up the ticket
+    let query = supabaseAdmin
+      .from('tickets')
+      .select('*, events(name,start_date,city), ticket_types(name)')
+      .eq('status', 'confirmed');
+
+    if (ticketId) query = query.eq('id', ticketId);
+    else {
+      // Code is last 8 chars of payment intent
+      query = query.ilike('stripe_payment_intent', `%${code}`);
+    }
+
+    if (eventId) query = query.eq('event_id', eventId);
+
+    const { data: ticket } = await query.single();
+
+    if (!ticket) {
+      return res.json({ valid: false, error: 'Ticket not found or not confirmed for this event.' });
+    }
+
+    // Check if already checked in
+    const { data: existingCheckin } = await supabaseAdmin
+      .from('ticket_checkins')
+      .select('id, checked_in_at')
+      .eq('ticket_id', ticket.id)
+      .single();
+
+    if (existingCheckin) {
+      return res.json({
+        valid: false,
+        error: `Already checked in at ${new Date(existingCheckin.checked_in_at).toLocaleTimeString()}`,
+        ticket: {
+          ...ticket,
+          code: (ticket.stripe_payment_intent || ticket.id).replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase(),
+          event_name: ticket.events?.name,
+        }
+      });
+    }
+
+    // Record check-in
+    await supabaseAdmin.from('ticket_checkins').insert({
+      ticket_id:     ticket.id,
+      event_id:      ticket.event_id,
+      checked_in_by: req.userId,
+      checked_in_at: new Date().toISOString(),
+    });
+
+    res.json({
+      valid: true,
+      message: `${ticket.quantity} ticket${ticket.quantity !== 1 ? 's' : ''} checked in successfully.`,
+      ticket: {
+        ...ticket,
+        code: (ticket.stripe_payment_intent || ticket.id).replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase(),
+        event_name:       ticket.events?.name,
+        event_start_date: ticket.events?.start_date,
+        ticket_type_name: ticket.ticket_types?.name,
+      }
+    });
+  } catch(e) {
+    console.error('Verify error:', e.message);
+    res.status(500).json({ valid: false, error: 'Verification failed. Try again.' });
+  }
+});
+
+// ── Event Attendance Count ───────────────────────────────────
+app.get('/api/events/:id/attendance', requireAuth, async (req, res) => {
+  // Verify host
+  const { data: ev } = await supabaseAdmin
+    .from('events').select('host_id, max_capacity').eq('id', req.params.id).single();
+  if (!ev || ev.host_id !== req.userId)
+    return res.status(403).json({ error: 'Not your event.' });
+
+  const [{ count: total }, { count: checkedIn }] = await Promise.all([
+    supabaseAdmin.from('tickets').select('*', { count: 'exact', head: true })
+      .eq('event_id', req.params.id).eq('status', 'confirmed'),
+    supabaseAdmin.from('ticket_checkins').select('*', { count: 'exact', head: true })
+      .eq('event_id', req.params.id),
+  ]);
+
+  res.json({ total: total || 0, checked_in: checkedIn || 0, capacity: ev.max_capacity });
 });
 
 // ════════════════════════════════════════════════════════════
