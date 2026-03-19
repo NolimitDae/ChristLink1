@@ -1874,6 +1874,71 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   </div>
 </div>
 
+<!-- EDIT EVENT SHEET -->
+<div class="overlay" id="editEventSheet">
+  <div class="sheet" style="max-height:90dvh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Edit Event</div>
+      <button class="sheet-close" onclick="closeSheet('editEventSheet')">×</button>
+    </div>
+    <div class="sheet-body">
+      <label class="field-label">Event Name *</label>
+      <input type="text" id="eeeName" class="field" placeholder="Sunday Worship Night">
+
+      <label class="field-label">Event Type</label>
+      <select id="eeeType" class="field">
+        <option value="">Select type…</option>
+        <option>Worship</option><option>Bible Study</option><option>Retreat</option>
+        <option>Youth</option><option>Prayer</option><option>Fellowship</option>
+        <option>Conference</option><option>Concert</option><option>Outreach</option>
+      </select>
+
+      <label class="field-label">Format</label>
+      <select id="eeeFormat" class="field">
+        <option value="in_person">In Person</option>
+        <option value="online">Online</option>
+        <option value="hybrid">Hybrid</option>
+      </select>
+
+      <label class="field-label">Description</label>
+      <textarea id="eeeDesc" class="field" placeholder="Share what this gathering is about…" rows="3"></textarea>
+
+      <label class="field-label">Start Date & Time</label>
+      <input type="datetime-local" id="eeeStartDate" class="field">
+
+      <label class="field-label">End Date & Time</label>
+      <input type="datetime-local" id="eeeEndDate" class="field">
+
+      <label class="field-label">Venue Name</label>
+      <input type="text" id="eeeVenue" class="field" placeholder="First Baptist Church">
+
+      <label class="field-label">Street Address</label>
+      <input type="text" id="eeeAddress" class="field" placeholder="123 Main Street">
+
+      <div class="field-row">
+        <div>
+          <label class="field-label">City</label>
+          <input type="text" id="eeeCity" class="field" placeholder="Wilmington">
+        </div>
+        <div>
+          <label class="field-label">State</label>
+          <input type="text" id="eeeState" class="field" placeholder="DE" maxlength="2">
+        </div>
+      </div>
+
+      <label class="field-label">Max Capacity (optional)</label>
+      <input type="number" id="eeeCapacity" class="field" placeholder="Leave blank for unlimited" min="1">
+
+      <label class="field-label">Online URL (if applicable)</label>
+      <input type="url" id="eeeOnlineUrl" class="field" placeholder="https://zoom.us/j/...">
+
+      <div class="error-msg" id="eeeErr"></div>
+      <button class="btn btn-gold" id="eeeSaveBtn" onclick="saveEditEvent()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -2491,6 +2556,7 @@ function makeHostedEventCard(ev) {
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
         ${ev.status === 'published' ? '<button onclick="event.stopPropagation();openScannerSheet(\''+ev.id+'\',\''+encodeURIComponent(ev.name||'')+'\')" style="font-size:11px;font-weight:600;color:#4EC98C;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);padding:5px 10px;border-radius:var(--r-full)">Scan</button>' : ''}
+        <button onclick="event.stopPropagation();openEditEventSheet(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:#7EB8F7;background:rgba(126,184,247,.1);border:1px solid rgba(126,184,247,.25);padding:5px 10px;border-radius:var(--r-full)">Edit</button>
         <button onclick="event.stopPropagation();viewDetail(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:5px 10px;border-radius:var(--r-full)">View</button>
         <button onclick="event.stopPropagation();confirmDeleteEvent('${ev.id}')" style="font-size:11px;font-weight:600;color:var(--red);background:rgba(224,80,80,.08);border:1px solid rgba(224,80,80,.2);padding:5px 10px;border-radius:var(--r-full)">Delete</button>
       </div>
@@ -2547,6 +2613,63 @@ async function deleteEvent(id) {
       showToast('Could not delete event','error');
     }
   } catch { showToast('Could not delete event','error'); }
+}
+
+// ─── EDIT EVENT ──────────────────────────────────────────────
+let editEventId = null;
+
+function openEditEventSheet(ev) {
+  editEventId = ev.id;
+  document.getElementById('eeeName').value      = ev.name         || '';
+  document.getElementById('eeeType').value      = ev.event_type   || '';
+  document.getElementById('eeeFormat').value    = ev.format       || 'in_person';
+  document.getElementById('eeeDesc').value      = ev.description  || '';
+  document.getElementById('eeeStartDate').value = ev.start_date   ? ev.start_date.slice(0,16) : '';
+  document.getElementById('eeeEndDate').value   = ev.end_date     ? ev.end_date.slice(0,16)   : '';
+  document.getElementById('eeeVenue').value     = ev.venue_name   || '';
+  document.getElementById('eeeAddress').value   = ev.address      || '';
+  document.getElementById('eeeCity').value      = ev.city         || '';
+  document.getElementById('eeeState').value     = ev.state        || '';
+  document.getElementById('eeeCapacity').value  = ev.max_capacity || '';
+  document.getElementById('eeeOnlineUrl').value = ev.online_url   || '';
+  document.getElementById('eeeErr').textContent = '';
+  document.getElementById('editEventSheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+async function saveEditEvent() {
+  const name = document.getElementById('eeeName').value.trim();
+  if (!name) { document.getElementById('eeeErr').textContent = 'Event name is required.'; return; }
+  const btn = document.getElementById('eeeSaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const cap = document.getElementById('eeeCapacity').value;
+    const body = {
+      name,
+      event_type:   document.getElementById('eeeType').value,
+      format:       document.getElementById('eeeFormat').value,
+      description:  document.getElementById('eeeDesc').value.trim(),
+      start_date:   document.getElementById('eeeStartDate').value || null,
+      end_date:     document.getElementById('eeeEndDate').value   || null,
+      venue_name:   document.getElementById('eeeVenue').value.trim(),
+      address:      document.getElementById('eeeAddress').value.trim(),
+      city:         document.getElementById('eeeCity').value.trim(),
+      state:        document.getElementById('eeeState').value.trim(),
+      max_capacity: cap ? Number(cap) : null,
+      online_url:   document.getElementById('eeeOnlineUrl').value.trim() || null,
+    };
+    const res = await fetch(`${API_BASE}/api/events/${editEventId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('eeeErr').textContent = data.error || 'Failed to save.'; return; }
+    closeSheet('editEventSheet');
+    showToast('Event updated!', 'success');
+    fetchMyEvents();
+  } catch { document.getElementById('eeeErr').textContent = 'Network error. Try again.'; }
+  finally { btn.disabled = false; btn.textContent = 'Save Changes'; }
 }
 
 function renderProfilePage() {

@@ -229,6 +229,28 @@ app.post('/api/events', requireAuth, async (req, res) => {
   res.json(data);
 });
 
+app.patch('/api/events/:id', requireAuth, async (req, res) => {
+  const { data: ev } = await supabaseAdmin
+    .from('events').select('id, host_id')
+    .eq('id', req.params.id).eq('host_id', req.userId).single();
+  if (!ev) return res.status(404).json({ error: 'Event not found or not yours.' });
+  const allowed = [
+    'name','description','event_type','age_group','format','denomination','tags',
+    'start_date','end_date','venue_name','address','city','state','zip','online_url',
+    'max_capacity','cover_url','gallery_urls',
+  ];
+  const updates = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+  if (!Object.keys(updates).length) return res.status(400).json({ error: 'No fields to update.' });
+  updates.updated_at = new Date().toISOString();
+  const { data, error } = await supabaseAdmin
+    .from('events').update(updates).eq('id', req.params.id).select().single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
 app.patch('/api/events/:id/publish', requireAuth, async (req, res) => {
   const { data: ev } = await supabaseAdmin
     .from('events').select('id, is_paid, listing_fee_paid')
