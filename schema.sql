@@ -1,0 +1,208 @@
+-- ════════════════════════════════════════════════════════════
+-- CHRIST LINK — Supabase Schema v2.1
+-- Run this in your Supabase SQL Editor
+-- ════════════════════════════════════════════════════════════
+
+-- ─── EXTENSIONS ─────────────────────────────────────────────
+create extension if not exists "uuid-ossp";
+create extension if not exists "pg_trgm";
+
+-- ─── PROFILES ───────────────────────────────────────────────
+create table if not exists public.profiles (
+  id            uuid primary key references auth.users(id) on delete cascade,
+  email         text,
+  full_name     text,
+  bio           text,
+  city          text,
+  avatar_url    text,
+  avatar_color  text,
+  role          text not null default 'attendee' check (role in ('attendee','host','admin')),
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+create policy "Users can read all profiles"  on public.profiles for select using (true);
+create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
+create policy "Users can insert own profile" on public.profiles for insert with check (auth.uid() = id);
+
+-- auto-create profile on signup
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, full_name)
+  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email,'@',1)));
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- ─── HOST STRIPE ACCOUNTS ────────────────────────────────────
+create table if not exists public.host_stripe_accounts (
+  id                  uuid primary key default uuid_generate_v4(),
+  user_id             uuid not null references public.profiles(id) on delete cascade,
+  stripe_account_id   text not null unique,
+  onboarding_complete boolean not null default false,
+  payouts_enabled     boolean not null default false,
+  charges_enabled     boolean not null default false,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now()
+);
+
+alter table public.host_stripe_accounts enable row level security;
+create policy "Hosts can view own account" on public.host_stripe_accounts for select using (auth.uid() = user_id);
+create policy "Service role manages accounts" on public.host_stripe_accounts for all using (true);
+
+-- ─── EVENTS ─────────────────────────────────────────────────
+create table if not exists public.events (
+  id                uuid primary key default uuid_generate_v4(),
+  host_id           uuid not null references public.profiles(id) on delete cascade,
+  name              text not null,
+  description       text,
+  emoji             text not null default '✝',
+  event_type        text,
+  age_group         text default 'All Ages',
+  format            text not null default 'in_person' check (format in ('in_person','online','hybrid')),
+  denomination      text,
+  tags              text[],
+  is_paid           boolean not null default false,
+  absorb_stripe_fee boolean not null default true,
+  listing_fee_paid  boolean not null default false,
+  listing_payment_id text,
+  start_date        timestamptz,
+  end_date          timestamptz,
+  venue_name        text,
+  address           text,
+  city              text,
+  state             text,
+  zip               text,
+  online_url        text,
+  max_capacity      integer,
+  rsvp_count        integer not null default 0,
+  status            text not null default 'draft' check (status in ('draft','published','cancelled','completed')),
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now()
+);
+
+alter table public.events enable row level security;
+create policy "Anyone can view published events" on public.events for select using (status = 'published' or auth.uid() = host_id);
+create policy "Hosts can insert events"          on public.events for insert with check (auth.uid() = host_id);
+create policy "Hosts can update own events"      on public.events for update using (auth.uid() = host_id);
+
+-- index for search
+create index if not exists events_city_idx  on public.events(city);
+create index if not exists events_type_idx  on public.events(event_type);
+create index if not exists events_date_idx  on public.events(start_date);
+create index if not exists events_status_idx on public.events(status);
+create index if not exists events_name_trgm on public.events using gin(name gin_trgm_ops);
+
+-- ─── TICKET TYPES ────────────────────────────────────────────
+create table if not exists public.ticket_types (
+  id          uuid primary key default uuid_generate_v4(),
+  event_id    uuid not null references public.events(id) on delete cascade,
+  name        text not null default 'General Admission',
+  description text,
+  price_cents integer not null check (price_cents > 0),
+  quantity    integer,
+  sold        integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+
+alter table public.ticket_types enable row level security;
+create policy "Anyone can view ticket types"     on public.ticket_types for select using (true);
+create policy "Service role manages ticket types" on public.ticket_types for all using (true);
+
+-- helper to increment sold count
+create or replace function public.increment_tickets_sold(p_ticket_type_id uuid, p_qty integer)
+returns void as $$
+begin
+  update public.ticket_types
+  set sold = sold + p_qty
+  where id = p_ticket_type_id;
+end;
+$$ language plpgsql security definer;
+
+-- ─── RSVPS ──────────────────────────────────────────────────
+create table if not exists public.rsvps (
+  id          uuid primary key default uuid_generate_v4(),
+  event_id    uuid not null references public.events(id) on delete cascade,
+  user_id     uuid not null references public.profiles(id) on delete cascade,
+  status      text not null default 'confirmed' check (status in ('confirmed','cancelled')),
+  created_at  timestamptz not null default now(),
+  unique(event_id, user_id)
+);
+
+alter table public.rsvps enable row level security;
+create policy "Users can view own RSVPs"   on public.rsvps for select using (auth.uid() = user_id);
+create policy "Users can RSVP"             on public.rsvps for insert with check (auth.uid() = user_id);
+create policy "Users can cancel own RSVPs" on public.rsvps for update using (auth.uid() = user_id);
+
+-- ─── TICKETS (paid purchases) ────────────────────────────────
+create table if not exists public.tickets (
+  id                       uuid primary key default uuid_generate_v4(),
+  event_id                 uuid not null references public.events(id) on delete cascade,
+  ticket_type_id           uuid references public.ticket_types(id),
+  user_id                  uuid not null references public.profiles(id),
+  quantity                 integer not null default 1,
+  unit_price_cents         integer,
+  total_charged_cents      integer,
+  platform_fee_cents       integer,
+  stripe_fee_cents         integer,
+  host_receives_cents      integer,
+  stripe_payment_intent    text unique,
+  stripe_idempotency_key   text unique,
+  buyer_email              text,
+  status                   text not null default 'pending' check (status in ('pending','confirmed','failed','refunded','disputed')),
+  confirmed_at             timestamptz,
+  created_at               timestamptz not null default now()
+);
+
+alter table public.tickets enable row level security;
+create policy "Users can view own tickets" on public.tickets for select using (auth.uid() = user_id);
+create policy "Service role manages tickets" on public.tickets for all using (true);
+
+-- ─── EVENTS VIEW (with host info + ticket types) ─────────────
+create or replace view public.events_with_details as
+select
+  e.*,
+  p.full_name   as host_name,
+  p.avatar_url  as host_avatar,
+  p.avatar_color as host_avatar_color,
+  coalesce(
+    (select json_agg(t order by t.price_cents asc)
+     from public.ticket_types t
+     where t.event_id = e.id),
+    '[]'::json
+  ) as ticket_types,
+  (select count(*) from public.rsvps r where r.event_id = e.id and r.status = 'confirmed') as confirmed_rsvps
+from public.events e
+join public.profiles p on p.id = e.host_id;
+
+-- ─── COMMUNITY POSTS ─────────────────────────────────────────
+create table if not exists public.community_posts (
+  id          uuid primary key default uuid_generate_v4(),
+  author_id   uuid not null references public.profiles(id) on delete cascade,
+  body        text not null,
+  amen_count  integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+
+alter table public.community_posts enable row level security;
+create policy "Anyone can read posts" on public.community_posts for select using (true);
+create policy "Users can create posts" on public.community_posts for insert with check (auth.uid() = author_id);
+create policy "Authors can delete own posts" on public.community_posts for delete using (auth.uid() = author_id);
+
+-- ─── AVATARS STORAGE ─────────────────────────────────────────
+-- Run in Storage > New bucket:
+-- Bucket name: avatars
+-- Public: ON
+-- File size limit: 2MB
+-- Allowed MIME types: image/jpeg, image/png, image/webp
+
+-- Storage policy (run after creating bucket):
+-- insert into storage.policies (name, bucket_id, definition) values
+-- ('allow_authenticated_uploads', 'avatars', '(auth.role() = ''authenticated'')');
