@@ -2089,6 +2089,8 @@ let profileData    = {};
 let selectedEvent  = null;
 let currentQty     = 1;
 let listingFeePaid = false;
+let listingFeePaymentMethodId = null;
+let listingFeeHostEmail = null;
 let authMode       = 'signin';
 let pendingAction  = null;
 let isNewSignup    = false;
@@ -3747,31 +3749,25 @@ async function processListingFee() {
   const name = document.getElementById('lfName').value.trim();
   const email= document.getElementById('lfEmail').value.trim();
   if (!name) { err.textContent='Name on card is required.';err.classList.add('show'); return; }
-  btn.disabled=true; btn.innerHTML='<div class="spinner"></div>&nbsp;Processing $19.99…';
+  btn.disabled=true; btn.innerHTML='<div class="spinner"></div>&nbsp;Saving card…';
   err.classList.remove('show');
   try {
     const {paymentMethod, error:pmErr} = await stripeClient.createPaymentMethod({type:'card',card:lfCardNum,billing_details:{name,email:email||undefined}});
     if (pmErr) throw new Error(pmErr.message);
-    const res = await fetch(`${API_BASE}/api/charge-listing-fee`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
-      body: JSON.stringify({paymentMethodId:paymentMethod.id,eventId:'pending',hostEmail:email}),
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error||'Payment failed.');
+    listingFeePaymentMethodId = paymentMethod.id;
+    listingFeeHostEmail = email;
     handleListingFeePaid();
   } catch(e) {
-    if (e.message.includes('fetch')||e.message.includes('Failed')) { handleListingFeePaid(true); }
-    else { err.textContent=e.message;err.classList.add('show'); btn.disabled=false;btn.innerHTML=orig; }
+    err.textContent=e.message; err.classList.add('show'); btn.disabled=false; btn.innerHTML=orig;
   }
 }
 
-function handleListingFeePaid(demo=false) {
+function handleListingFeePaid() {
   listingFeePaid = true;
   closeSheet('listingFeeSheet');
   document.getElementById('listingStatus').style.display = 'block';
   document.getElementById('payFeeBtn').style.display     = 'none';
-  showToast(demo?'✅ Listing fee paid (Demo)':'✅ $19.99 paid — ticketing unlocked!','success');
+  showToast('✅ Card saved — $19.99 charged when you publish','success');
   spawnConfetti();
 }
 
@@ -4001,6 +3997,16 @@ async function publishEvent() {
     });
     if (!createRes.ok) { const e=await createRes.json(); throw new Error(e.error||'Failed to create'); }
     const event = await createRes.json();
+    if (isPaid) {
+      if (!listingFeePaymentMethodId) throw new Error('Please complete the listing fee card step before publishing.');
+      const feeRes = await fetch(`${API_BASE}/api/charge-listing-fee`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
+        body: JSON.stringify({paymentMethodId:listingFeePaymentMethodId,eventId:event.id,hostEmail:listingFeeHostEmail}),
+      });
+      const feeData = await feeRes.json();
+      if (!feeData.success) throw new Error(feeData.error||'Listing fee payment failed.');
+    }
     const pubRes = await fetch(`${API_BASE}/api/events/${event.id}/publish`,{
       method:'PATCH',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
@@ -4020,6 +4026,7 @@ async function publishEvent() {
         }).catch(()=>{});
       }
     }
+    listingFeePaymentMethodId = null; listingFeeHostEmail = null; listingFeePaid = false;
     showToast('🚀 Event is live!','success');
     spawnConfetti();
     setTimeout(()=>goTo('profile'),1400);
