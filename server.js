@@ -177,12 +177,18 @@ app.patch('/api/profile', requireAuth, async (req, res) => {
   if (facebook_url   !== undefined) updates.facebook_url   = facebook_url;
   if (tiktok_url     !== undefined) updates.tiktok_url     = tiktok_url;
   updates.updated_at = new Date().toISOString();
-  // Upsert in case profile row doesn't exist yet
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .upsert({ id: req.userId, ...updates }, { onConflict: 'id' })
-    .select().single();
-  if (error) return res.status(400).json({ error: error.message });
+  // Try update first (profile should exist from signup trigger)
+  let { data, error } = await supabaseAdmin
+    .from('profiles').update(updates).eq('id', req.userId).select().single();
+  if (error || !data) {
+    // Profile row missing — insert it
+    const insert = await supabaseAdmin
+      .from('profiles')
+      .insert({ id: req.userId, email: req.user.email, ...updates })
+      .select().single();
+    if (insert.error) return res.status(400).json({ error: insert.error.message });
+    return res.json(insert.data);
+  }
   res.json(data);
 });
 
