@@ -1190,7 +1190,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
         <!-- Image Gallery -->
         <label class="field-label">Event Gallery <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
         <div id="galleryGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px"></div>
-        <label style="display:flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:var(--r-md);background:var(--surface2);border:1.5px dashed var(--border);font-size:13px;color:var(--muted2);font-weight:600;cursor:pointer;margin-bottom:18px">
+        <label id="galleryAddBtn" style="display:flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:var(--r-md);background:var(--surface2);border:1.5px dashed var(--border);font-size:13px;color:var(--muted2);font-weight:600;cursor:pointer;margin-bottom:18px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add Photos
           <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="handleGalleryPhotos(this)">
@@ -2077,10 +2077,6 @@ function goTo(page) {
 // ═══════════════════════════════════════════════════════════
 // SHEET SYSTEM
 // ═══════════════════════════════════════════════════════════
-function openSheet(id) {
-  document.getElementById(id).classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
 function closeSheet(id) {
   document.getElementById(id).classList.remove('open');
   document.body.style.overflow = '';
@@ -2494,7 +2490,7 @@ function makeHostedEventCard(ev) {
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-        ${ev.status === 'published' ? `<button onclick="event.stopPropagation();openScannerSheet('${ev.id}','${(ev.name||'').replace(/'/g,'\\'')}')" style="font-size:11px;font-weight:600;color:#4EC98C;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);padding:5px 10px;border-radius:var(--r-full)">Scan</button>` : ''}
+        ${ev.status === 'published' ? '<button onclick="event.stopPropagation();openScannerSheet(\''+ev.id+'\',\''+encodeURIComponent(ev.name||'')+'\')" style="font-size:11px;font-weight:600;color:#4EC98C;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);padding:5px 10px;border-radius:var(--r-full)">Scan</button>' : ''}
         <button onclick="event.stopPropagation();viewDetail(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:5px 10px;border-radius:var(--r-full)">View</button>
         <button onclick="event.stopPropagation();confirmDeleteEvent('${ev.id}')" style="font-size:11px;font-weight:600;color:var(--red);background:rgba(224,80,80,.08);border:1px solid rgba(224,80,80,.2);padding:5px 10px;border-radius:var(--r-full)">Delete</button>
       </div>
@@ -3634,6 +3630,7 @@ let scannerCheckedIn = 0;
 let scannedCodes     = new Set(); // prevent double-scan in same session
 
 function openScannerSheet(eventId, eventName) {
+  eventName = decodeURIComponent(eventName || '');
   if (!currentUser) { openAuth('signin'); return; }
   scannerEventId = eventId;
   scannerPaused  = false;
