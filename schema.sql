@@ -17,9 +17,17 @@ create table if not exists public.profiles (
   avatar_url    text,
   avatar_color  text,
   role          text not null default 'attendee' check (role in ('attendee','host','admin')),
+  instagram_url text,
+  facebook_url  text,
+  tiktok_url    text,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
+
+-- Migration: add social links if upgrading from older schema
+alter table public.profiles add column if not exists instagram_url text;
+alter table public.profiles add column if not exists facebook_url  text;
+alter table public.profiles add column if not exists tiktok_url    text;
 
 alter table public.profiles enable row level security;
 create policy "Users can read all profiles"  on public.profiles for select using (true);
@@ -83,6 +91,7 @@ create table if not exists public.events (
   online_url        text,
   max_capacity      integer,
   rsvp_count        integer not null default 0,
+  forum_enabled     boolean not null default false,
   cover_url         text,
   gallery_urls      text[] default '{}',
   status            text not null default 'draft' check (status in ('draft','published','cancelled','completed')),
@@ -212,6 +221,23 @@ alter table public.community_posts enable row level security;
 create policy "Anyone can read posts" on public.community_posts for select using (true);
 create policy "Users can create posts" on public.community_posts for insert with check (auth.uid() = author_id);
 create policy "Authors can delete own posts" on public.community_posts for delete using (auth.uid() = author_id);
+
+-- ─── EVENT FORUM POSTS ───────────────────────────────────────
+create table if not exists public.event_forum_posts (
+  id          uuid primary key default uuid_generate_v4(),
+  event_id    uuid not null references public.events(id) on delete cascade,
+  author_id   uuid not null references public.profiles(id) on delete cascade,
+  body        text not null,
+  created_at  timestamptz not null default now()
+);
+
+alter table public.event_forum_posts enable row level security;
+create policy "Anyone can read forum posts"       on public.event_forum_posts for select using (true);
+create policy "Authenticated users can post"      on public.event_forum_posts for insert with check (auth.uid() = author_id);
+create policy "Authors can delete own forum posts" on public.event_forum_posts for delete using (auth.uid() = author_id);
+
+-- Migration: add forum_enabled to events if upgrading
+alter table public.events add column if not exists forum_enabled boolean not null default false;
 
 -- ─── EVENT IMAGES STORAGE ──────────────────────────────────────
 -- Create bucket: event-images, Public: ON, File size: 5MB

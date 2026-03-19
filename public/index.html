@@ -1407,6 +1407,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
         </button>
       </div>
       <div class="profile-bio" id="profBio">—</div>
+      <div id="profSocialLinks" style="display:flex;gap:14px;margin:10px 0 4px;flex-wrap:wrap"></div>
       <div class="profile-stats" id="profStats">
         <div class="stat-cell"><div class="stat-num" id="statEvents">0</div><div class="stat-label">Events</div></div>
         <div class="stat-cell"><div class="stat-num" id="statTickets">0</div><div class="stat-label">Tickets</div></div>
@@ -1454,12 +1455,13 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   <div class="detail-content">
     <div class="detail-tags" id="detailTags"></div>
     <h1 class="font-serif" style="font-size:24px;font-weight:700;margin-bottom:6px" id="detailTitle">—</h1>
-    <div class="detail-host-row">
+    <div class="detail-host-row" id="detailHostRow" style="cursor:pointer" onclick="openPublicProfile(selectedEvent?.host_id)">
       <div class="detail-host-av" id="detailHostAv">?</div>
-      <div>
+      <div style="flex:1">
         <div style="font-size:13px;font-weight:600" id="detailHostName">—</div>
         <div style="font-size:11px;color:var(--muted)">Hosted by</div>
       </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
     <div class="detail-meta-list">
       <div class="detail-meta-row">
@@ -1478,6 +1480,15 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       </div>
     </div>
     <div style="font-size:14px;line-height:1.7;color:var(--muted2);margin-bottom:20px" id="detailDesc">—</div>
+
+    <!-- Forum button -->
+    <div id="detailForumBtn" style="display:none;margin-bottom:20px">
+      <button onclick="openEventForum()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;font-weight:600;color:var(--text)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Event Forum
+        <span id="detailForumCount" style="font-size:11px;color:var(--muted);font-weight:400"></span>
+      </button>
+    </div>
 
     <!-- qty row for paid events -->
     <div id="detailQtyRow" style="display:none">
@@ -1736,6 +1747,19 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       <input type="text" id="epCity" class="field" placeholder="Wilmington, DE">
       <label class="field-label">Bio</label>
       <textarea id="epBio" class="field" placeholder="A little about yourself…" rows="2"></textarea>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">Social Links</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:18px">📸</span>
+        <input type="url" id="epInstagram" class="field" placeholder="instagram.com/yourhandle" style="margin:0;flex:1">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:18px">👥</span>
+        <input type="url" id="epFacebook" class="field" placeholder="facebook.com/yourpage" style="margin:0;flex:1">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
+        <span style="font-size:18px">🎵</span>
+        <input type="url" id="epTikTok" class="field" placeholder="tiktok.com/@yourhandle" style="margin:0;flex:1">
+      </div>
       <div class="error-msg" id="epErr"></div>
       <button class="btn btn-gold" id="epSaveBtn" onclick="saveProfile()">Save Changes</button>
     </div>
@@ -1874,6 +1898,71 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   </div>
 </div>
 
+<!-- PUBLIC PROFILE SHEET -->
+<div class="overlay" id="publicProfileSheet">
+  <div class="sheet" style="max-height:88dvh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Profile</div>
+      <button class="sheet-close" onclick="closeSheet('publicProfileSheet')">×</button>
+    </div>
+    <div class="sheet-body">
+      <div id="pubProfLoading" style="text-align:center;padding:32px 0"><div class="spinner spinner-gold" style="margin:0 auto"></div></div>
+      <div id="pubProfContent" style="display:none">
+        <div style="display:flex;gap:14px;align-items:center;margin-bottom:16px">
+          <div id="pubProfAv" style="width:64px;height:64px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#000;flex-shrink:0;overflow:hidden"></div>
+          <div>
+            <div style="font-family:var(--font-display);font-size:18px;font-weight:700" id="pubProfName">—</div>
+            <div style="font-size:13px;color:var(--muted2)" id="pubProfCity">—</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px" id="pubProfRole">—</div>
+          </div>
+        </div>
+        <div style="font-size:14px;line-height:1.7;color:var(--muted2);margin-bottom:16px" id="pubProfBio">—</div>
+        <div id="pubProfSocial" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
+        <div id="pubProfEvents">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">Hosted Events</div>
+          <div id="pubProfEventsList"></div>
+        </div>
+      </div>
+      <div id="pubProfErr" style="display:none;text-align:center;padding:32px 0;color:var(--muted2)">Could not load profile.</div>
+    </div>
+  </div>
+</div>
+
+<!-- EVENT FORUM SHEET -->
+<div class="overlay" id="eventForumSheet">
+  <div class="sheet" style="max-height:92dvh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div>
+        <div class="sheet-title">Event Forum</div>
+        <div style="font-size:12px;color:var(--muted)" id="forumEventName">—</div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet('eventForumSheet')">×</button>
+    </div>
+    <div class="sheet-body" style="display:flex;flex-direction:column;gap:0;padding-bottom:0">
+      <div id="forumLoading" style="text-align:center;padding:32px 0"><div class="spinner spinner-gold" style="margin:0 auto"></div></div>
+      <div id="forumPosts" style="flex:1;overflow-y:auto;display:none;padding-bottom:12px"></div>
+      <div id="forumEmpty" style="display:none;text-align:center;padding:32px 0;color:var(--muted2)">
+        <div style="font-size:32px;margin-bottom:8px">💬</div>
+        <div style="font-weight:600">No posts yet</div>
+        <div style="font-size:13px;margin-top:4px">Be the first to start the conversation!</div>
+      </div>
+      <div id="forumExpiredMsg" style="display:none;text-align:center;padding:32px 0;color:var(--muted2)">
+        <div style="font-size:32px;margin-bottom:8px">🕰️</div>
+        <div style="font-weight:600">Forum has closed</div>
+        <div style="font-size:13px;margin-top:4px">This forum expired 48 hours after the event ended.</div>
+      </div>
+      <div id="forumInput" style="display:none;border-top:1px solid var(--border);padding:12px 0 4px;background:var(--surface)">
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <textarea id="forumPostBody" class="field" placeholder="Share a thought or question…" rows="2" style="margin:0;flex:1;resize:none;font-size:14px"></textarea>
+          <button class="btn btn-gold btn-sm" style="flex-shrink:0;height:44px;padding:0 16px" onclick="submitForumPost()">Post</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT EVENT SHEET -->
 <div class="overlay" id="editEventSheet">
   <div class="sheet" style="max-height:90dvh">
@@ -1933,6 +2022,16 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       <label class="field-label">Online URL (if applicable)</label>
       <input type="url" id="eeeOnlineUrl" class="field" placeholder="https://zoom.us/j/...">
 
+      <div class="toggle-row" style="margin-bottom:18px">
+        <div class="toggle-label">
+          <h4>Event Forum</h4>
+          <p style="font-size:12px;color:var(--muted2)">Let attendees discuss — expires 48h after event ends</p>
+        </div>
+        <label class="toggle-sw">
+          <input type="checkbox" id="eeeForumEnabled">
+          <div class="toggle-sw-track"></div>
+        </label>
+      </div>
       <div class="error-msg" id="eeeErr"></div>
       <button class="btn btn-gold" id="eeeSaveBtn" onclick="saveEditEvent()">Save Changes</button>
     </div>
@@ -2631,7 +2730,8 @@ function openEditEventSheet(ev) {
   document.getElementById('eeeCity').value      = ev.city         || '';
   document.getElementById('eeeState').value     = ev.state        || '';
   document.getElementById('eeeCapacity').value  = ev.max_capacity || '';
-  document.getElementById('eeeOnlineUrl').value = ev.online_url   || '';
+  document.getElementById('eeeOnlineUrl').value    = ev.online_url    || '';
+  document.getElementById('eeeForumEnabled').checked = !!ev.forum_enabled;
   document.getElementById('eeeErr').textContent = '';
   document.getElementById('editEventSheet').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -2655,8 +2755,9 @@ async function saveEditEvent() {
       address:      document.getElementById('eeeAddress').value.trim(),
       city:         document.getElementById('eeeCity').value.trim(),
       state:        document.getElementById('eeeState').value.trim(),
-      max_capacity: cap ? Number(cap) : null,
-      online_url:   document.getElementById('eeeOnlineUrl').value.trim() || null,
+      max_capacity:  cap ? Number(cap) : null,
+      online_url:    document.getElementById('eeeOnlineUrl').value.trim() || null,
+      forum_enabled: document.getElementById('eeeForumEnabled').checked,
     };
     const res = await fetch(`${API_BASE}/api/events/${editEventId}`, {
       method: 'PATCH',
@@ -2689,10 +2790,212 @@ function renderProfilePage() {
   document.getElementById('profHandle').textContent = currentUser.email || '';
   const joined = new Date(currentUser.created_at);
   document.getElementById('profJoined').innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Joined ${joined.toLocaleDateString('en-US',{month:'long',year:'numeric'})}`;
-  document.getElementById('profBio').textContent = profileData?.bio || 'Tap Edit to add a bio.';
+  document.getElementById('profBio').textContent   = profileData?.bio || 'Tap Edit to add a bio.';
   document.getElementById('profAbout').textContent = profileData?.bio || 'No bio added yet.';
   const city = profileData?.city || '—';
   document.getElementById('statCity').textContent = city.split(',')[0] || '—';
+  // Social links
+  renderSocialLinks('profSocialLinks', profileData);
+}
+
+function renderSocialLinks(containerId, profile) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  const links = [
+    { key: 'instagram_url', label: 'Instagram', icon: '📸', color: '#E1306C' },
+    { key: 'facebook_url',  label: 'Facebook',  icon: '👥', color: '#1877F2' },
+    { key: 'tiktok_url',    label: 'TikTok',    icon: '🎵', color: '#fff' },
+  ];
+  links.forEach(({ key, label, icon, color }) => {
+    if (!profile?.[key]) return;
+    let href = profile[key];
+    if (!href.startsWith('http')) href = 'https://' + href;
+    const a = document.createElement('a');
+    a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    a.style.cssText = `display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:${color};background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:var(--r-full);padding:5px 12px;text-decoration:none`;
+    a.innerHTML = `${icon} ${label}`;
+    el.appendChild(a);
+  });
+}
+
+// ─── PUBLIC PROFILE VIEWER ───────────────────────────────────
+async function openPublicProfile(userId) {
+  if (!userId) return;
+  // If it's the current user, go to profile page instead
+  if (userId === currentUser?.id) { goTo('profile'); return; }
+  const loading = document.getElementById('pubProfLoading');
+  const content = document.getElementById('pubProfContent');
+  const errEl   = document.getElementById('pubProfErr');
+  loading.style.display = 'block'; content.style.display = 'none'; errEl.style.display = 'none';
+  document.getElementById('publicProfileSheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  try {
+    const [profRes, evRes] = await Promise.all([
+      fetch(`${API_BASE}/api/profiles/${userId}`),
+      fetch(`${API_BASE}/api/events?limit=10`),
+    ]);
+    if (!profRes.ok) throw new Error('Not found');
+    const prof = await profRes.json();
+    const evData = await evRes.json();
+    const hostEvents = (evData.events || []).filter(e => e.host_id === userId);
+    // Render avatar
+    const avEl = document.getElementById('pubProfAv');
+    avEl.innerHTML = '';
+    if (prof.avatar_url) {
+      const img = document.createElement('img');
+      img.src = prof.avatar_url;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+      avEl.appendChild(img);
+      avEl.style.background = 'transparent';
+    } else {
+      avEl.textContent = (prof.full_name||'?').charAt(0).toUpperCase();
+      avEl.style.background = prof.avatar_color || 'var(--gold)';
+    }
+    document.getElementById('pubProfName').textContent = prof.full_name || 'Anonymous';
+    document.getElementById('pubProfCity').textContent = prof.city || '';
+    document.getElementById('pubProfRole').textContent = prof.role === 'host' ? 'Event Host' : 'Member';
+    document.getElementById('pubProfBio').textContent  = prof.bio  || 'No bio yet.';
+    renderSocialLinks('pubProfSocial', prof);
+    // Hosted events mini-list
+    const listEl = document.getElementById('pubProfEventsList');
+    listEl.innerHTML = '';
+    if (hostEvents.length === 0) {
+      listEl.innerHTML = '<div style="font-size:13px;color:var(--muted2)">No public events yet.</div>';
+    } else {
+      hostEvents.forEach(ev => {
+        const d = document.createElement('div');
+        d.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer';
+        d.innerHTML = `<div><div style="font-size:14px;font-weight:600">${ev.name}</div><div style="font-size:12px;color:var(--muted2)">${ev.city||''} · ${ev.start_date ? new Date(ev.start_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Date TBD'}</div></div><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>`;
+        d.onclick = () => { closeSheet('publicProfileSheet'); viewDetail(ev); goTo('event-detail'); };
+        listEl.appendChild(d);
+      });
+    }
+    document.getElementById('pubProfEvents').style.display = hostEvents.length === 0 && prof.role !== 'host' ? 'none' : 'block';
+    loading.style.display = 'none'; content.style.display = 'block';
+  } catch {
+    loading.style.display = 'none'; errEl.style.display = 'block';
+  }
+}
+
+// ─── EVENT FORUM ─────────────────────────────────────────────
+let forumEventId   = null;
+let forumIsHost    = false;
+
+async function loadForumCount(eventId) {
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${eventId}/forum`);
+    const data = await res.json();
+    const el = document.getElementById('detailForumCount');
+    if (el && data.enabled) el.textContent = `· ${data.posts.length} post${data.posts.length !== 1 ? 's' : ''}`;
+  } catch {}
+}
+
+function openEventForum() {
+  if (!selectedEvent) return;
+  forumEventId = selectedEvent.id;
+  forumIsHost  = selectedEvent.host_id === currentUser?.id;
+  document.getElementById('forumEventName').textContent = selectedEvent.name || '';
+  document.getElementById('forumPosts').innerHTML = '';
+  document.getElementById('forumPosts').style.display     = 'none';
+  document.getElementById('forumEmpty').style.display     = 'none';
+  document.getElementById('forumExpiredMsg').style.display = 'none';
+  document.getElementById('forumInput').style.display     = 'none';
+  document.getElementById('forumLoading').style.display   = 'block';
+  document.getElementById('eventForumSheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  loadForumPosts();
+}
+
+async function loadForumPosts() {
+  try {
+    const res  = await fetch(`${API_BASE}/api/events/${forumEventId}/forum`);
+    const data = await res.json();
+    document.getElementById('forumLoading').style.display = 'none';
+    if (data.expired) {
+      document.getElementById('forumExpiredMsg').style.display = 'block'; return;
+    }
+    if (!data.enabled) {
+      document.getElementById('forumEmpty').style.display = 'block'; return;
+    }
+    if (data.posts.length === 0) {
+      document.getElementById('forumEmpty').style.display = 'block';
+    } else {
+      renderForumPosts(data.posts);
+    }
+    if (currentUser) document.getElementById('forumInput').style.display = 'block';
+  } catch {
+    document.getElementById('forumLoading').style.display = 'none';
+    document.getElementById('forumEmpty').style.display   = 'block';
+  }
+}
+
+function renderForumPosts(posts) {
+  const el = document.getElementById('forumPosts');
+  el.innerHTML = '';
+  posts.forEach(p => el.appendChild(makeForumPost(p)));
+  el.style.display = 'block';
+}
+
+function makeForumPost(p) {
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)';
+  const name  = p.profiles?.full_name || 'Member';
+  const avBg  = p.profiles?.avatar_color || 'var(--gold)';
+  const avUrl = p.profiles?.avatar_url;
+  const isOwn = p.author_id === currentUser?.id;
+  const canDel = isOwn || forumIsHost;
+  const time  = new Date(p.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  const avHTML = avUrl
+    ? `<img src="${avUrl}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+    : `<div style="width:36px;height:36px;border-radius:50%;background:${avBg};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0">${name.charAt(0).toUpperCase()}</div>`;
+  div.innerHTML = `
+    ${avHTML}
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px">
+        <span style="font-size:13px;font-weight:600">${name}</span>
+        <span style="font-size:11px;color:var(--muted);white-space:nowrap">${time}</span>
+      </div>
+      <div style="font-size:14px;line-height:1.6;color:var(--text);word-break:break-word">${p.body}</div>
+      ${canDel ? `<button onclick="deleteForumPost('${p.id}',this)" style="font-size:11px;color:var(--muted);background:none;border:none;padding:4px 0;margin-top:2px;cursor:pointer">Delete</button>` : ''}
+    </div>`;
+  return div;
+}
+
+async function submitForumPost() {
+  if (!currentUser) { openAuth('signin'); return; }
+  const body = document.getElementById('forumPostBody').value.trim();
+  if (!body) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${forumEventId}/forum`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+      body: JSON.stringify({ body }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Post failed', 'error'); return; }
+    document.getElementById('forumPostBody').value = '';
+    document.getElementById('forumEmpty').style.display = 'none';
+    const postsEl = document.getElementById('forumPosts');
+    postsEl.style.display = 'block';
+    postsEl.appendChild(makeForumPost(data));
+    postsEl.scrollTop = postsEl.scrollHeight;
+    loadForumCount(forumEventId);
+  } catch { showToast('Could not post. Try again.', 'error'); }
+}
+
+async function deleteForumPost(postId, btn) {
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${forumEventId}/forum/${postId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    if (res.ok) {
+      btn.closest('div[style*="display:flex"]').remove();
+      loadForumCount(forumEventId);
+    } else { btn.disabled = false; showToast('Could not delete','error'); }
+  } catch { btn.disabled = false; }
 }
 
 function switchPTab(el, tab) {
@@ -2709,9 +3012,12 @@ function openEditProfile() { openSheet('editProfileSheet'); populateEditProfile(
 
 function populateEditProfile() {
   const name = profileData?.full_name || currentUser?.user_metadata?.full_name || '';
-  document.getElementById('epName').value = name;
-  document.getElementById('epCity').value = profileData?.city || '';
-  document.getElementById('epBio').value  = profileData?.bio  || '';
+  document.getElementById('epName').value      = name;
+  document.getElementById('epCity').value      = profileData?.city          || '';
+  document.getElementById('epBio').value       = profileData?.bio           || '';
+  document.getElementById('epInstagram').value = profileData?.instagram_url || '';
+  document.getElementById('epFacebook').value  = profileData?.facebook_url  || '';
+  document.getElementById('epTikTok').value    = profileData?.tiktok_url    || '';
   // preview
   const prev = document.getElementById('epPreview');
   prev.innerHTML = '';
@@ -2790,11 +3096,14 @@ async function saveProfile() {
   }
 
   const updates = {
-    full_name:    name,
-    bio:          document.getElementById('epBio').value.trim(),
-    city:         document.getElementById('epCity').value.trim(),
-    avatar_url:   avatarUrl,
-    avatar_color: epAvatarColor || profileData?.avatar_color || null,
+    full_name:     name,
+    bio:           document.getElementById('epBio').value.trim(),
+    city:          document.getElementById('epCity').value.trim(),
+    avatar_url:    avatarUrl,
+    avatar_color:  epAvatarColor || profileData?.avatar_color || null,
+    instagram_url: document.getElementById('epInstagram').value.trim() || null,
+    facebook_url:  document.getElementById('epFacebook').value.trim()  || null,
+    tiktok_url:    document.getElementById('epTikTok').value.trim()    || null,
   };
 
   try {
@@ -3075,7 +3384,25 @@ function viewDetail(ev) {
   }
   document.getElementById('detailTitle').textContent = ev.name || 'Event';
   document.getElementById('detailHostName').textContent = ev.host_name || 'Community Host';
-  document.getElementById('detailHostAv').textContent = (ev.host_name||'H').charAt(0);
+  const dhAv = document.getElementById('detailHostAv');
+  dhAv.innerHTML = '';
+  if (ev.host_avatar) {
+    const img = document.createElement('img');
+    img.src = ev.host_avatar;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+    dhAv.appendChild(img);
+  } else {
+    dhAv.textContent = (ev.host_name||'H').charAt(0).toUpperCase();
+    if (ev.host_avatar_color) dhAv.style.background = ev.host_avatar_color;
+  }
+  // Forum button
+  const forumBtn = document.getElementById('detailForumBtn');
+  if (ev.forum_enabled) {
+    forumBtn.style.display = 'block';
+    loadForumCount(ev.id);
+  } else {
+    forumBtn.style.display = 'none';
+  }
   document.getElementById('detailDesc').textContent = ev.description || 'No description provided.';
   document.getElementById('detailDate').textContent = ev.start_date
     ? new Date(ev.start_date).toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})

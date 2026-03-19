@@ -156,14 +156,26 @@ app.get('/api/profile', requireAuth, async (req, res) => {
   res.json(data);
 });
 
+app.get('/api/profiles/:id', async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('id, full_name, bio, city, avatar_url, avatar_color, role, created_at, instagram_url, facebook_url, tiktok_url')
+    .eq('id', req.params.id).single();
+  if (error || !data) return res.status(404).json({ error: 'Profile not found.' });
+  res.json(data);
+});
+
 app.patch('/api/profile', requireAuth, async (req, res) => {
-  const { full_name, bio, city, avatar_url, avatar_color } = req.body;
+  const { full_name, bio, city, avatar_url, avatar_color, instagram_url, facebook_url, tiktok_url } = req.body;
   const updates = {};
-  if (full_name   !== undefined) updates.full_name   = full_name;
-  if (bio         !== undefined) updates.bio         = bio;
-  if (city        !== undefined) updates.city        = city;
-  if (avatar_url  !== undefined) updates.avatar_url  = avatar_url;
-  if (avatar_color !== undefined) updates.avatar_color = avatar_color;
+  if (full_name      !== undefined) updates.full_name      = full_name;
+  if (bio            !== undefined) updates.bio            = bio;
+  if (city           !== undefined) updates.city           = city;
+  if (avatar_url     !== undefined) updates.avatar_url     = avatar_url;
+  if (avatar_color   !== undefined) updates.avatar_color   = avatar_color;
+  if (instagram_url  !== undefined) updates.instagram_url  = instagram_url;
+  if (facebook_url   !== undefined) updates.facebook_url   = facebook_url;
+  if (tiktok_url     !== undefined) updates.tiktok_url     = tiktok_url;
   updates.updated_at = new Date().toISOString();
   // Upsert in case profile row doesn't exist yet
   const { data, error } = await supabaseAdmin
@@ -237,7 +249,7 @@ app.patch('/api/events/:id', requireAuth, async (req, res) => {
   const allowed = [
     'name','description','event_type','age_group','format','denomination','tags',
     'start_date','end_date','venue_name','address','city','state','zip','online_url',
-    'max_capacity','cover_url','gallery_urls',
+    'max_capacity','cover_url','gallery_urls','forum_enabled',
   ];
   const updates = {};
   for (const key of allowed) {
@@ -315,6 +327,53 @@ app.delete('/api/events/:id', requireAuth, async (req, res) => {
   const { error } = await supabaseAdmin.from('events').delete().eq('id', req.params.id);
   if (error) return res.status(400).json({ error: error.message });
   res.json({ success: true, action: 'deleted' });
+});
+
+// ════════════════════════════════════════════════════════════
+// EVENT FORUM
+// ════════════════════════════════════════════════════════════
+function forumExpired(ev) {
+  if (!ev.end_date) return false;
+  return Date.now() > new Date(ev.end_date).getTime() + 48 * 60 * 60 * 1000;
+}
+
+app.get('/api/events/:id/forum', async (req, res) => {
+  const { data: ev } = await supabaseAdmin
+    .from('events').select('forum_enabled, end_date, status').eq('id', req.params.id).single();
+  if (!ev) return res.status(404).json({ error: 'Event not found.' });
+  if (!ev.forum_enabled) return res.json({ posts: [], enabled: false, expired: false });
+  if (forumExpired(ev)) return res.json({ posts: [], enabled: false, expired: true });
+  const { data } = await supabaseAdmin
+    .from('event_forum_posts')
+    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .eq('event_id', req.params.id)
+    .order('created_at', { ascending: true });
+  res.json({ posts: data || [], enabled: true, expired: false });
+});
+
+app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
+  const { body } = req.body;
+  if (!body?.trim()) return res.status(400).json({ error: 'Message required.' });
+  const { data: ev } = await supabaseAdmin
+    .from('events').select('forum_enabled, end_date').eq('id', req.params.id).single();
+  if (!ev || !ev.forum_enabled) return res.status(403).json({ error: 'Forum is not enabled.' });
+  if (forumExpired(ev)) return res.status(403).json({ error: 'Forum has expired.' });
+  const { data, error } = await supabaseAdmin.from('event_forum_posts')
+    .insert({ event_id: req.params.id, author_id: req.userId, body: body.trim() })
+    .select('*, profiles(full_name, avatar_url, avatar_color)').single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+app.delete('/api/events/:eventId/forum/:postId', requireAuth, async (req, res) => {
+  const { data: post } = await supabaseAdmin
+    .from('event_forum_posts').select('author_id, event_id, events(host_id)')
+    .eq('id', req.params.postId).single();
+  if (!post) return res.status(404).json({ error: 'Post not found.' });
+  if (post.author_id !== req.userId && post.events?.host_id !== req.userId)
+    return res.status(403).json({ error: 'Not authorized.' });
+  await supabaseAdmin.from('event_forum_posts').delete().eq('id', req.params.postId);
+  res.json({ success: true });
 });
 
 // ════════════════════════════════════════════════════════════
