@@ -531,9 +531,9 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 .detail-price-big{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--gold)}
 .detail-price-sub{font-size:11px;color:var(--muted);margin-top:1px}
 .detail-rsvp-btn{
-  flex:1;height:62px;border-radius:var(--r-full);
+  flex:1;height:52px;border-radius:var(--r-full);
   background:linear-gradient(135deg,var(--gold),#9A7000);
-  color:#0A0A0F;font-weight:800;font-size:17px;
+  color:#0A0A0F;font-weight:800;font-size:15px;
   box-shadow:0 4px 20px var(--gold-glow);
   transition:all .2s;
 }
@@ -1239,7 +1239,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
               <div style="font-weight:700;font-size:15px">Listing Fee</div>
               <div style="font-size:20px;font-weight:800;color:var(--gold)">$19.99</div>
             </div>
-            <p style="font-size:13px;color:var(--muted2);margin-bottom:12px">Required to publish a paid event. Christ Link takes 5% per ticket sold.</p>
+            <p style="font-size:13px;color:var(--muted2);margin-bottom:12px">Required to publish a paid event. A 5% service fee is added to each ticket price — paid by attendees, not you.</p>
             <div id="listingStatus" style="display:none;font-size:13px;color:var(--green);font-weight:600">✅ Listing fee paid — ticketing unlocked</div>
             <button id="payFeeBtn" class="btn btn-gold btn-sm" onclick="openSheet('listingFeeSheet')">Pay $19.99 to Unlock →</button>
           </div>
@@ -1301,7 +1301,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
           <button class="btn btn-ghost btn-sm" onclick="addTicketRow()" style="margin-bottom:18px">+ Add Ticket Type</button>
           <div class="revenue-preview">
             <div class="rev-row"><span class="rev-label">Ticket face value</span><span class="rev-val" id="prevFace">—</span></div>
-            <div class="rev-row"><span class="rev-label">Platform fee (5%)</span><span class="rev-val" id="prevPf">—</span></div>
+            <div class="rev-row"><span class="rev-label">Service fee (attendee pays)</span><span class="rev-val" id="prevPf">—</span></div>
             <div class="rev-row"><span class="rev-label">Stripe fee</span><span class="rev-val" id="prevSf">—</span></div>
             <div class="rev-row net"><span class="rev-label">You receive</span><span class="rev-val" id="prevNet">—</span></div>
           </div>
@@ -1667,7 +1667,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
     </div>
     <div class="sheet-body">
       <div class="breakdown-row"><span class="breakdown-label">Tickets</span><span id="bdFace">—</span></div>
-      <div class="breakdown-row"><span class="breakdown-label">Platform fee (5%)</span><span id="bdPf">—</span></div>
+      <div class="breakdown-row"><span class="breakdown-label">Service fee (5%)</span><span id="bdPf">—</span></div>
       <div class="breakdown-row"><span class="breakdown-label">Stripe fee</span><span id="bdSf">Absorbed by host</span></div>
       <div class="breakdown-row" id="bdTaxRow" style="display:none"><span class="breakdown-label">Tax</span><span id="bdTax">—</span></div>
       <div class="breakdown-row" style="padding-top:14px"><span>Total</span><span id="bdTotal" style="color:var(--gold)">—</span></div>
@@ -3905,9 +3905,12 @@ function removeTicketRow(id) {
 function previewRevenue() {
   const input = document.querySelector('#ticketBuilder input[type=number]');
   const price = parseFloat(input?.value || 25);
-  const pf = price*0.05, sf = price*0.029+0.30, net = price - pf - sf;
+  const pf   = price * 0.05;                      // added to attendee charge, not host's cost
+  const base = price + pf;                         // what attendee pays
+  const sf   = base * 0.029 + 0.30;               // Stripe fee on the full charge
+  const net  = base - sf - pf;                     // host receives face minus Stripe fee
   document.getElementById('prevFace').textContent = `$${price.toFixed(2)}`;
-  document.getElementById('prevPf').textContent   = `−$${pf.toFixed(2)}`;
+  document.getElementById('prevPf').textContent   = `+$${pf.toFixed(2)}`;
   document.getElementById('prevSf').textContent   = `−$${sf.toFixed(2)}`;
   document.getElementById('prevNet').textContent  = `$${net.toFixed(2)}`;
 }

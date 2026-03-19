@@ -62,10 +62,11 @@ app.use('/api', apiLimiter);
 // ─── HELPERS ────────────────────────────────────────────────
 function calcAmounts(priceCents, qty, absorb) {
   const face        = priceCents * qty;
-  const platformFee = Math.round(face * PLATFORM_FEE_PCT);
+  const platformFee = Math.round(face * PLATFORM_FEE_PCT); // added to attendee charge
+  const baseCharge  = face + platformFee;                   // attendee pays face + 5%
   const chargeAmount = absorb
-    ? face
-    : Math.ceil((face + STRIPE_FIXED) / (1 - STRIPE_PCT));
+    ? baseCharge
+    : Math.ceil((baseCharge + STRIPE_FIXED) / (1 - STRIPE_PCT));
   const stripeFee    = Math.round(chargeAmount * STRIPE_PCT + STRIPE_FIXED);
   const hostReceives = chargeAmount - stripeFee - platformFee;
   return { face, chargeAmount, platformFee, stripeFee, hostReceives };
