@@ -1496,15 +1496,6 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       </div>
     </div>
 
-    <!-- Who's Going -->
-    <div id="detailWhoGoing" style="display:none;margin-bottom:20px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div style="font-size:14px;font-weight:700;color:var(--text)">Who's Going</div>
-        <button onclick="openAttendeesSheet()" style="font-size:12px;color:var(--gold);background:none;border:none;cursor:pointer;font-weight:600;padding:0">See all →</button>
-      </div>
-      <div id="detailAttendeeAvatars" style="display:flex;gap:16px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none"></div>
-    </div>
-
     <!-- Forum button -->
     <div id="detailForumBtn" style="display:none;margin-bottom:20px">
       <button onclick="openEventForum()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;font-weight:600;color:var(--text)">
@@ -1541,19 +1532,6 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 <!-- ═══════════════════════════════════════════════════
      OVERLAYS / SHEETS
 ═══════════════════════════════════════════════════ -->
-
-<!-- ATTENDEES SHEET -->
-<div class="sheet-overlay" id="attendeesSheet" onclick="if(event.target===this)closeSheet('attendeesSheet')">
-  <div class="sheet" style="max-height:80vh">
-    <div class="sheet-header">
-      <div class="sheet-title">Who's Going</div>
-    </div>
-    <div class="sheet-body" style="overflow-y:auto">
-      <div id="attendeesLoading" style="text-align:center;padding:32px;color:var(--muted)">Loading…</div>
-      <div id="attendeesList" style="display:flex;flex-direction:column;gap:12px"></div>
-    </div>
-  </div>
-</div>
 
 <!-- AUTH SHEET -->
 <div class="overlay" id="authSheet">
@@ -3555,10 +3533,6 @@ function viewDetail(ev) {
     attendanceEl.style.display = 'none';
   }
 
-  // Who's Going (hides the simple count badge once avatars load)
-  document.getElementById('detailWhoGoing').style.display = 'none';
-  loadWhoGoing(ev.id);
-
   // Check if current user has already RSVP'd (free events)
   if (currentUser && !ev.is_paid) {
     fetch(`${API_BASE}/api/rsvp/${ev.id}`, {
@@ -3607,7 +3581,6 @@ function handleRsvp() {
       document.getElementById('detailAttendance').style.display = 'block';
       spawnConfetti();
       showSuccess('🙌', 'You\'re Going!', `Spot reserved for ${selectedEvent?.name || 'the event'}. See you there!`);
-      loadWhoGoing(selectedEvent.id);
     } else {
       const d = await r.json().catch(() => ({}));
       showToast(d.error || 'Could not RSVP', 'error');
@@ -3636,101 +3609,12 @@ async function cancelRsvp() {
       countEl.textContent = `${newCount} going`;
       if (newCount === 0) document.getElementById('detailAttendance').style.display = 'none';
       showToast('RSVP cancelled');
-      loadWhoGoing(selectedEvent.id);
     } else { showToast('Could not cancel RSVP', 'error'); }
   } catch { showToast('Could not cancel RSVP', 'error'); }
   finally { btn.disabled = false; btn.textContent = 'Cancel RSVP'; }
 }
 
 // ═══════════════════════════════════════════════════════════
-// WHO'S GOING
-// ═══════════════════════════════════════════════════════════
-function makeAvatarCircle(person, size) {
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:' + Math.round(size * 0.38) + 'px;font-weight:700;color:#0A0A0F;background:' + (person.avatar_color || 'linear-gradient(135deg,#C9A84C,#6B4A00)');
-  if (person.avatar_url) {
-    const img = document.createElement('img');
-    img.src = person.avatar_url;
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
-    wrap.appendChild(img);
-  } else {
-    wrap.textContent = (person.full_name || '?').charAt(0).toUpperCase();
-  }
-  return wrap;
-}
-
-function makeAvatarEl(person, size) {
-  return makeAvatarCircle(person, size);
-}
-
-async function loadWhoGoing(eventId) {
-  try {
-    const res = await fetch(`${API_BASE}/api/events/${eventId}/attendees`);
-    const { attendees, total } = await res.json();
-    const section = document.getElementById('detailWhoGoing');
-    const row = document.getElementById('detailAttendeeAvatars');
-    if (!attendees || total === 0) { section.style.display = 'none'; return; }
-    section.style.display = 'block';
-    document.getElementById('detailAttendance').style.display = 'none';
-    row.innerHTML = '';
-    attendees.slice(0, 10).forEach(p => {
-      const col = document.createElement('div');
-      col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;cursor:pointer;min-width:52px';
-      col.onclick = () => openPublicProfile(p.id);
-      const av = makeAvatarCircle(p, 44);
-      const nm = document.createElement('div');
-      nm.style.cssText = 'font-size:10px;color:var(--muted2);text-align:center;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-      nm.textContent = (p.full_name || 'Member').split(' ')[0];
-      col.appendChild(av);
-      col.appendChild(nm);
-      row.appendChild(col);
-    });
-    if (total > 10) {
-      const more = document.createElement('div');
-      more.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;cursor:pointer;min-width:52px';
-      more.onclick = openAttendeesSheet;
-      const circle = document.createElement('div');
-      circle.style.cssText = 'width:44px;height:44px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold)';
-      circle.textContent = '+' + (total - 10);
-      const lbl = document.createElement('div');
-      lbl.style.cssText = 'font-size:10px;color:var(--muted2);text-align:center';
-      lbl.textContent = 'more';
-      more.appendChild(circle);
-      more.appendChild(lbl);
-      row.appendChild(more);
-    }
-  } catch {}
-}
-
-async function openAttendeesSheet() {
-  openSheet('attendeesSheet');
-  document.getElementById('attendeesLoading').style.display = 'block';
-  document.getElementById('attendeesList').innerHTML = '';
-  try {
-    const res = await fetch(`${API_BASE}/api/events/${selectedEvent.id}/attendees`);
-    const { attendees } = await res.json();
-    document.getElementById('attendeesLoading').style.display = 'none';
-    const list = document.getElementById('attendeesList');
-    if (!attendees || attendees.length === 0) {
-      list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted)">No one has signed up yet — be the first!</div>';
-      return;
-    }
-    attendees.forEach(p => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:12px;cursor:pointer';
-      row.onclick = () => { closeSheet('attendeesSheet'); openPublicProfile(p.id); };
-      const av = makeAvatarCircle(p, 44);
-      const name = document.createElement('div');
-      name.style.cssText = 'font-size:14px;font-weight:600;color:var(--text)';
-      name.textContent = p.full_name || 'ChristLink Member';
-      row.appendChild(av);
-      row.appendChild(name);
-      list.appendChild(row);
-    });
-  } catch {
-    document.getElementById('attendeesLoading').textContent = 'Could not load attendees.';
-  }
-}
 
 // ═══════════════════════════════════════════════════════════
 // TICKET PURCHASE
@@ -3813,7 +3697,6 @@ async function processPayment() {
       document.getElementById('detailRsvpBtn').textContent = '✅ Tickets Purchased!';
       document.getElementById('detailRsvpBtn').classList.add('confirmed');
       fetchMyTickets();
-      loadWhoGoing(selectedEvent.id);
     }
   } catch(e) {
     // demo mode fallback
