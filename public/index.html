@@ -529,11 +529,11 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 .detail-price-big{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--gold)}
 .detail-price-sub{font-size:11px;color:var(--muted);margin-top:1px}
 .detail-rsvp-btn{
-  flex:1;height:50px;border-radius:var(--r-full);
+  flex:2;height:50px;border-radius:var(--r-full);
   background:linear-gradient(135deg,var(--gold),#9A7000);
-  color:#0A0A0F;font-weight:800;font-size:19px;
+  color:#0A0A0F;font-weight:700;font-size:15px;
   box-shadow:0 4px 20px var(--gold-glow);
-  transition:all .2s;
+  transition:all .2s;white-space:nowrap;
 }
 .detail-rsvp-btn:active{transform:scale(.97);box-shadow:none}
 .detail-rsvp-btn.confirmed{background:var(--green);box-shadow:0 4px 20px rgba(78,201,140,.3)}
@@ -3623,19 +3623,25 @@ function viewDetail(ev) {
     whoGoingEl.style.display = 'none';
   }
 
-  // Check if current user has already RSVP'd (free events)
-  if (currentUser && !ev.is_paid) {
+  // Check if current user has already RSVP'd — retry after delay in case auth is still loading
+  function checkRsvpState() {
+    if (!currentUser || ev.is_paid) return;
     fetch(`${API_BASE}/api/rsvp/${ev.id}`, {
       headers: { 'Authorization': `Bearer ${currentSession?.access_token}` }
     }).then(r => r.json()).then(data => {
       if (data.rsvp?.status === 'confirmed') {
         const btn = document.getElementById('detailRsvpBtn');
-        btn.textContent = '✅ You\'re Going!';
-        btn.classList.add('confirmed');
-        document.getElementById('detailCancelRsvpBtn').style.display = 'block';
+        if (btn && !btn.classList.contains('confirmed')) {
+          btn.textContent = '✅ You\'re Going!';
+          btn.classList.add('confirmed');
+          document.getElementById('detailCancelRsvpBtn').style.display = 'block';
+        }
       }
     }).catch(() => {});
   }
+  checkRsvpState();
+  // Retry once after 800ms in case auth token wasn't ready yet
+  setTimeout(checkRsvpState, 800);
 
   goTo('event-detail');
 }
@@ -3748,6 +3754,20 @@ async function loadInlineAttendees(eventId) {
       div.className = 'who-going-av-bubble who-going-av-more';
       div.textContent = `+${extra}`;
       avatarsEl.appendChild(div);
+    }
+
+    // If current user is in the attendees list, reflect that in the button
+    if (currentUser) {
+      const isGoing = attendees.some(a => a.id === currentUser.id);
+      if (isGoing) {
+        const rsvpBtn = document.getElementById('detailRsvpBtn');
+        if (rsvpBtn && !rsvpBtn.classList.contains('confirmed')) {
+          rsvpBtn.textContent = "✅ You're Going!";
+          rsvpBtn.classList.add('confirmed');
+          const cancelBtn = document.getElementById('detailCancelRsvpBtn');
+          if (cancelBtn) cancelBtn.style.display = 'block';
+        }
+      }
     }
 
     // Attendee list rows
