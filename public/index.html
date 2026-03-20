@@ -529,7 +529,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 .detail-price-big{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--gold)}
 .detail-price-sub{font-size:11px;color:var(--muted);margin-top:1px}
 .detail-rsvp-btn{
-  flex:1;height:496px;border-radius:var(--r-full);
+  flex:1;height:50px;border-radius:var(--r-full);
   background:linear-gradient(135deg,var(--gold),#9A7000);
   color:#0A0A0F;font-weight:800;font-size:19px;
   box-shadow:0 4px 20px var(--gold-glow);
@@ -547,6 +547,51 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   transition:all .15s;
 }
 .qty-btn:active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
+
+/* ═══════════════════════════════════════════════════════════
+   WHO'S GOING (inline event detail)
+═══════════════════════════════════════════════════════════ */
+.who-going-section{margin-bottom:20px}
+.who-going-header{
+  display:flex;align-items:center;gap:8px;margin-bottom:14px;
+}
+.who-going-title{
+  font-family:var(--font-display);font-size:17px;font-weight:700;flex:1;
+}
+.who-going-count{font-size:13px;color:var(--muted2);font-weight:500}
+.who-going-avatars{
+  display:flex;align-items:center;margin-bottom:14px;
+}
+.who-going-av-bubble{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff;
+  border:2px solid var(--bg);margin-left:-8px;flex-shrink:0;overflow:hidden;
+}
+.who-going-av-bubble:first-child{margin-left:0}
+.who-going-av-more{background:var(--surface3);color:var(--muted2);font-size:11px;font-weight:700}
+.who-going-row{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;
+  transition:opacity .15s;
+}
+.who-going-row:last-child{border-bottom:none}
+.who-going-row:active{opacity:.7}
+.who-going-row-av{
+  width:40px;height:40px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:700;color:#fff;overflow:hidden;
+}
+.who-going-row-info{flex:1;min-width:0}
+.who-going-row-name{font-size:14px;font-weight:600;color:var(--text)}
+.who-going-row-tag{font-size:12px;color:var(--green);margin-top:2px;font-weight:500}
+.who-going-see-all{
+  width:100%;height:42px;border-radius:var(--r-full);
+  background:transparent;border:1px solid var(--border2);
+  color:var(--muted2);font-size:13px;font-weight:600;
+  margin-top:12px;cursor:pointer;transition:all .18s var(--ease);
+}
+.who-going-see-all:hover,.who-going-see-all:active{border-color:var(--gold);color:var(--gold)}
 
 /* ═══════════════════════════════════════════════════════════
    COMMUNITY PAGE
@@ -1486,15 +1531,18 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
         </div>
       </div>
     </div>
-    <div style="font-size:14px;line-height:1.7;color:var(--muted2);margin-bottom:16px" id="detailDesc">—</div>
+    <div style="font-size:14px;line-height:1.7;color:var(--text);margin-bottom:20px" id="detailDesc">—</div>
 
-    <!-- Attendance count -->
-    <div id="detailAttendance" style="margin-bottom:16px;display:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);border-radius:var(--r-full);padding:6px 14px">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-        <span id="detailAttendanceCount" style="font-size:13px;font-weight:700;color:var(--green)">0 going</span>
+    <!-- Who's Going inline -->
+    <div id="detailWhoGoing" class="who-going-section" style="display:none">
+      <div class="who-going-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        <div class="who-going-title">Who's Going</div>
+        <div class="who-going-count" id="detailAttendanceCount">0 going</div>
       </div>
-      <button onclick="openAttendeesSheet()" style="font-size:12px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);border-radius:var(--r-full);padding:6px 14px;cursor:pointer">See Who's Going →</button>
+      <div class="who-going-avatars" id="detailWhoGoingAvatars"></div>
+      <div id="detailWhoGoingList"></div>
+      <button class="who-going-see-all" id="detailWhoGoingBtn" onclick="openAttendeesSheet()">See All Attendees ↓</button>
     </div>
 
     <!-- Forum button -->
@@ -3558,15 +3606,17 @@ function viewDetail(ev) {
   rsvpBtn.classList.remove('confirmed');
   document.getElementById('detailCancelRsvpBtn').style.display = 'none';
 
-  // Attendance count
-  const attendanceEl = document.getElementById('detailAttendance');
-  const countEl      = document.getElementById('detailAttendanceCount');
+  // Who's Going inline section
+  const whoGoingEl = document.getElementById('detailWhoGoing');
+  const countEl    = document.getElementById('detailAttendanceCount');
   const count = ev.confirmed_rsvps || 0;
   if (count > 0) {
     countEl.textContent = `${count} going`;
-    attendanceEl.style.display = 'block';
+    document.getElementById('detailWhoGoingBtn').textContent = `See All ${count} Attendees ↓`;
+    whoGoingEl.style.display = 'block';
+    loadInlineAttendees(ev.id);
   } else {
-    attendanceEl.style.display = 'none';
+    whoGoingEl.style.display = 'none';
   }
 
   // Check if current user has already RSVP'd (free events)
@@ -3613,8 +3663,11 @@ function handleRsvp() {
       // Update attendance count
       const countEl = document.getElementById('detailAttendanceCount');
       const cur = parseInt(countEl.textContent) || 0;
-      countEl.textContent = `${cur + 1} going`;
-      document.getElementById('detailAttendance').style.display = 'block';
+      const newRsvpCount = cur + 1;
+      countEl.textContent = `${newRsvpCount} going`;
+      document.getElementById('detailWhoGoingBtn').textContent = `See All ${newRsvpCount} Attendees ↓`;
+      document.getElementById('detailWhoGoing').style.display = 'block';
+      loadInlineAttendees(selectedEvent.id);
       spawnConfetti();
       showSuccess('🙌', 'You\'re Going!', `Spot reserved for ${selectedEvent?.name || 'the event'}. See you there!`);
     } else {
@@ -3643,7 +3696,12 @@ async function cancelRsvp() {
       const cur = parseInt(countEl.textContent) || 1;
       const newCount = Math.max(0, cur - 1);
       countEl.textContent = `${newCount} going`;
-      if (newCount === 0) document.getElementById('detailAttendance').style.display = 'none';
+      if (newCount === 0) {
+        document.getElementById('detailWhoGoing').style.display = 'none';
+      } else {
+        document.getElementById('detailWhoGoingBtn').textContent = `See All ${newCount} Attendees ↓`;
+        loadInlineAttendees(selectedEvent.id);
+      }
       showToast('RSVP cancelled');
     } else { showToast('Could not cancel RSVP', 'error'); }
   } catch { showToast('Could not cancel RSVP', 'error'); }
@@ -3651,6 +3709,69 @@ async function cancelRsvp() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// WHO'S GOING INLINE LOADER
+// ═══════════════════════════════════════════════════════════
+const AVATAR_COLORS_WG = ['#E05050','#4E7CFF','#4EC98C','#C9A84C','#A855F7','#F97316','#06B6D4','#EC4899'];
+
+async function loadInlineAttendees(eventId) {
+  const avatarsEl = document.getElementById('detailWhoGoingAvatars');
+  const listEl    = document.getElementById('detailWhoGoingList');
+  if (!avatarsEl || !listEl) return;
+  avatarsEl.innerHTML = '';
+  listEl.innerHTML = '';
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${eventId}/attendees`);
+    const { attendees } = await res.json();
+    if (!attendees || attendees.length === 0) return;
+
+    const shown = attendees.slice(0, 5);
+    const extra = attendees.length - shown.length;
+
+    // Avatar bubbles row
+    shown.forEach((p, i) => {
+      const div = document.createElement('div');
+      div.className = 'who-going-av-bubble';
+      div.style.background = p.avatar_color || AVATAR_COLORS_WG[i % AVATAR_COLORS_WG.length];
+      if (p.avatar_url) {
+        div.innerHTML = `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;
+      } else {
+        div.textContent = (p.full_name || '?').charAt(0).toUpperCase();
+      }
+      avatarsEl.appendChild(div);
+    });
+    if (extra > 0) {
+      const div = document.createElement('div');
+      div.className = 'who-going-av-bubble who-going-av-more';
+      div.textContent = `+${extra}`;
+      avatarsEl.appendChild(div);
+    }
+
+    // Attendee list rows
+    shown.forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'who-going-row';
+      row.onclick = () => openPublicProfile(p.id);
+      const color   = p.avatar_color || AVATAR_COLORS_WG[i % AVATAR_COLORS_WG.length];
+      const initial = (p.full_name || '?').charAt(0).toUpperCase();
+      const parts   = (p.full_name || 'Anonymous').split(' ');
+      const displayName = parts.length > 1 ? `${parts[0]} ${parts[1].charAt(0)}.` : parts[0];
+      const avInner = p.avatar_url
+        ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+        : initial;
+      row.innerHTML = `
+        <div class="who-going-row-av" style="background:${color}">${avInner}</div>
+        <div class="who-going-row-info">
+          <div class="who-going-row-name">${displayName}</div>
+          <div class="who-going-row-tag">✓ RSVP'd</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      `;
+      listEl.appendChild(row);
+    });
+  } catch(e) {
+    console.error('loadInlineAttendees error:', e);
+  }
+}
 
 // ═══════════════════════════════════════════════════════════
 // ATTENDEES / MINI PROFILE
