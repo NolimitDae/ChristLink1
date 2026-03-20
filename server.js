@@ -451,6 +451,26 @@ app.delete('/api/rsvp/:eventId', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// ── Public Attendee List ─────────────────────────────────────
+app.get('/api/events/:id/attendees', async (req, res) => {
+  const [{ data: rsvpData }, { data: ticketData }] = await Promise.all([
+    supabaseAdmin.from('rsvps')
+      .select('user_id, profiles(id, full_name, bio, city, avatar_url, avatar_color, instagram_url, facebook_url, tiktok_url)')
+      .eq('event_id', req.params.id).eq('status', 'confirmed').limit(100),
+    supabaseAdmin.from('tickets')
+      .select('user_id, profiles(id, full_name, bio, city, avatar_url, avatar_color, instagram_url, facebook_url, tiktok_url)')
+      .eq('event_id', req.params.id).eq('status', 'confirmed').limit(100),
+  ]);
+  const seen = new Set();
+  const attendees = [];
+  for (const row of [...(rsvpData || []), ...(ticketData || [])]) {
+    if (!row.profiles || seen.has(row.user_id)) continue;
+    seen.add(row.user_id);
+    attendees.push(row.profiles);
+  }
+  res.json({ attendees, total: attendees.length });
+});
+
 // ── Ticket Verification (scanner) ───────────────────────────
 app.post('/api/tickets/verify', requireAuth, async (req, res) => {
   const { ticketId, code, eventId } = req.body;

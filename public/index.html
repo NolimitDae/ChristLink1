@@ -1489,11 +1489,12 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
     <div style="font-size:14px;line-height:1.7;color:var(--muted2);margin-bottom:16px" id="detailDesc">—</div>
 
     <!-- Attendance count -->
-    <div id="detailAttendance" style="margin-bottom:16px;display:none">
+    <div id="detailAttendance" style="margin-bottom:16px;display:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);border-radius:var(--r-full);padding:6px 14px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
         <span id="detailAttendanceCount" style="font-size:13px;font-weight:700;color:var(--green)">0 going</span>
       </div>
+      <button onclick="openAttendeesSheet()" style="font-size:12px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);border-radius:var(--r-full);padding:6px 14px;cursor:pointer">See Who's Going →</button>
     </div>
 
     <!-- Forum button -->
@@ -1532,6 +1533,41 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 <!-- ═══════════════════════════════════════════════════
      OVERLAYS / SHEETS
 ═══════════════════════════════════════════════════ -->
+
+<!-- ATTENDEES SHEET -->
+<div class="sheet-overlay" id="attendeesSheet" onclick="if(event.target===this)closeSheet('attendeesSheet')">
+  <div class="sheet" style="max-height:75vh">
+    <div class="sheet-header">
+      <div class="sheet-title">Who's Going</div>
+      <button class="sheet-close" onclick="closeSheet('attendeesSheet')">×</button>
+    </div>
+    <div class="sheet-body" style="overflow-y:auto;padding-bottom:24px">
+      <div id="attendeesLoading" style="text-align:center;padding:32px;color:var(--muted);font-size:14px">Loading…</div>
+      <div id="attendeesList" style="display:flex;flex-direction:column;gap:2px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MINI PROFILE POPUP -->
+<div class="sheet-overlay" id="miniProfileSheet" onclick="if(event.target===this)closeSheet('miniProfileSheet')">
+  <div class="sheet" style="max-height:60vh">
+    <div class="sheet-header">
+      <div class="sheet-title">Profile</div>
+      <button class="sheet-close" onclick="closeSheet('miniProfileSheet')">×</button>
+    </div>
+    <div class="sheet-body">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div id="miniProfAv" style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#6B4A00);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#0A0A0F;flex-shrink:0;overflow:hidden"></div>
+        <div>
+          <div id="miniProfName" style="font-size:17px;font-weight:700;margin-bottom:2px">—</div>
+          <div id="miniProfCity" style="font-size:13px;color:var(--muted)"></div>
+        </div>
+      </div>
+      <div id="miniProfBio" style="font-size:14px;line-height:1.7;color:var(--muted2);margin-bottom:16px"></div>
+      <div id="miniProfSocial" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+</div>
 
 <!-- AUTH SHEET -->
 <div class="overlay" id="authSheet">
@@ -3615,6 +3651,91 @@ async function cancelRsvp() {
 }
 
 // ═══════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════
+// ATTENDEES / MINI PROFILE
+// ═══════════════════════════════════════════════════════════
+async function openAttendeesSheet() {
+  openSheet('attendeesSheet');
+  const loading = document.getElementById('attendeesLoading');
+  const list    = document.getElementById('attendeesList');
+  loading.style.display = 'block';
+  list.innerHTML = '';
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${selectedEvent.id}/attendees`);
+    const { attendees } = await res.json();
+    loading.style.display = 'none';
+    if (!attendees || attendees.length === 0) {
+      list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">No one has signed up yet — be the first!</div>';
+      return;
+    }
+    attendees.forEach(p => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer';
+      row.onclick = () => openMiniProfile(p);
+      // avatar
+      const av = document.createElement('div');
+      av.style.cssText = 'width:44px;height:44px;border-radius:50%;flex-shrink:0;overflow:hidden;background:' + (p.avatar_color || 'linear-gradient(135deg,#C9A84C,#6B4A00)') + ';display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#0A0A0F';
+      if (p.avatar_url) {
+        const img = document.createElement('img');
+        img.src = p.avatar_url;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+        av.appendChild(img);
+      } else {
+        av.textContent = (p.full_name || '?').charAt(0).toUpperCase();
+      }
+      const info = document.createElement('div');
+      info.style.cssText = 'flex:1;min-width:0';
+      info.innerHTML = '<div style="font-size:14px;font-weight:600;color:var(--text)">' + (p.full_name || 'ChristLink Member') + '</div>' +
+        (p.city ? '<div style="font-size:12px;color:var(--muted)">' + p.city + '</div>' : '');
+      const arrow = document.createElement('div');
+      arrow.style.cssText = 'font-size:16px;color:var(--muted)';
+      arrow.textContent = '›';
+      row.appendChild(av); row.appendChild(info); row.appendChild(arrow);
+      list.appendChild(row);
+    });
+  } catch {
+    loading.textContent = 'Could not load attendees.';
+  }
+}
+
+function openMiniProfile(p) {
+  // avatar
+  const avEl = document.getElementById('miniProfAv');
+  avEl.innerHTML = '';
+  if (p.avatar_url) {
+    const img = document.createElement('img');
+    img.src = p.avatar_url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    avEl.appendChild(img);
+    avEl.style.background = 'transparent';
+  } else {
+    avEl.textContent = (p.full_name || '?').charAt(0).toUpperCase();
+    avEl.style.background = p.avatar_color || 'linear-gradient(135deg,#C9A84C,#6B4A00)';
+  }
+  document.getElementById('miniProfName').textContent = p.full_name || 'ChristLink Member';
+  document.getElementById('miniProfCity').textContent = p.city || '';
+  document.getElementById('miniProfBio').textContent  = p.bio  || '';
+  // social links
+  const social = document.getElementById('miniProfSocial');
+  social.innerHTML = '';
+  const links = [
+    { url: p.instagram_url, label: 'Instagram', color: '#E1306C' },
+    { url: p.facebook_url,  label: 'Facebook',  color: '#1877F2' },
+    { url: p.tiktok_url,    label: 'TikTok',    color: '#fff'    },
+  ];
+  links.forEach(({ url, label, color }) => {
+    if (!url) return;
+    const a = document.createElement('a');
+    a.href = url.startsWith('http') ? url : 'https://' + url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);text-decoration:none';
+    a.innerHTML = '<span style="font-size:13px;font-weight:600;color:' + color + '">' + label + '</span><span style="font-size:12px;color:var(--muted);margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px">' + url + '</span>';
+    social.appendChild(a);
+  });
+  openSheet('miniProfileSheet');
+}
 
 // ═══════════════════════════════════════════════════════════
 // TICKET PURCHASE
