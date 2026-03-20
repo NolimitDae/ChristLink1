@@ -226,6 +226,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
     name, description, cover_url, gallery_urls, event_type, age_group, format,
     denomination, tags, is_paid, absorb_stripe_fee,
     start_date, end_date, venue_name, address, city, state, zip, online_url, max_capacity,
+    forum_enabled,
   } = req.body;
   if (!name) return res.status(400).json({ error: 'Event name is required.' });
   await supabaseAdmin.from('profiles').update({ role: 'host' }).eq('id', req.userId).eq('role', 'attendee');
@@ -242,6 +243,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
     start_date: start_date || null, end_date: end_date || null,
     venue_name, address, city, state, zip, online_url,
     max_capacity: max_capacity || null,
+    forum_enabled: forum_enabled || false,
     status: 'draft',
   }).select().single();
   if (error) return res.status(400).json({ error: error.message });

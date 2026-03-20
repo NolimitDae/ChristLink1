@@ -98,7 +98,7 @@ img{display:block;max-width:100%}
   color:var(--gold);letter-spacing:-.01em;
   display:flex;align-items:center;gap:8px;
 }
-.nav-logo-cross{font-size:14px;opacity:.7}
+.nav-logo-cross{display:flex;align-items:center}
 .nav-auth-row{display:flex;align-items:center;gap:10px}
 .nav-avatar-btn{
   width:36px;height:36px;border-radius:50%;
@@ -929,7 +929,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 ═══════════════════════════════════════════════════ -->
 <header id="topnav">
   <div class="nav-logo" onclick="goTo('home')">
-    <span class="nav-logo-cross">✝</span> Christ Link
+    <span class="nav-logo-cross"><svg width="18" height="22" viewBox="0 0 18 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="0" width="4" height="22" rx="2" fill="#C9A84C"/><rect x="0" y="6" width="18" height="4" rx="2" fill="#C9A84C"/></svg></span> Christ Link
   </div>
   <nav class="nav-desktop-links" id="desktopLinks">
     <a onclick="goTo('browse')" data-page="browse">Explore</a>
@@ -949,7 +949,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
           <div class="dd-email" id="dd-email">—</div>
         </div>
         <div class="dd-item" onclick="goTo('profile');closeDrop()">👤 My Profile</div>
-        <div class="dd-item" onclick="goTo('host');closeDrop()">✝ Host Event</div>
+        <div class="dd-item" onclick="goTo('host');closeDrop()"><svg width="11" height="14" viewBox="0 0 18 22" fill="none" style="vertical-align:middle;margin-right:4px"><rect x="7" y="0" width="4" height="22" rx="2" fill="#C9A84C"/><rect x="0" y="6" width="18" height="4" rx="2" fill="#C9A84C"/></svg> Host Event</div>
         <div class="dd-item danger" onclick="signOut()">↩ Sign Out</div>
       </div>
     </div>
@@ -1056,7 +1056,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 
   <!-- Host promo -->
   <div class="host-promo">
-    <div class="host-promo-icon">✝</div>
+    <div class="host-promo-icon"><svg width="32" height="40" viewBox="0 0 18 22" fill="none"><rect x="7" y="0" width="4" height="22" rx="2" fill="#C9A84C"/><rect x="0" y="6" width="18" height="4" rx="2" fill="#C9A84C"/></svg></div>
     <div>
       <h3>Host a Gathering</h3>
       <p>Create a free or paid event in minutes. Your community is waiting.</p>
@@ -1065,7 +1065,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   </div>
 
   <div class="footer">
-    <div class="footer-logo">✝ Christ Link</div>
+    <div class="footer-logo" style="display:flex;align-items:center;gap:8px;justify-content:center"><svg width="14" height="17" viewBox="0 0 18 22" fill="none"><rect x="7" y="0" width="4" height="22" rx="2" fill="#C9A84C"/><rect x="0" y="6" width="18" height="4" rx="2" fill="#C9A84C"/></svg> Christ Link</div>
     <div class="footer-tagline">Faith events, made simple.</div>
     <div class="footer-links">
       <a onclick="showFooterPage('about')">About</a>
@@ -1117,7 +1117,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   </div>
 
   <div class="footer" style="margin-top:0">
-    <div class="footer-logo">✝ Christ Link</div>
+    <div class="footer-logo" style="display:flex;align-items:center;gap:8px;justify-content:center"><svg width="14" height="17" viewBox="0 0 18 22" fill="none"><rect x="7" y="0" width="4" height="22" rx="2" fill="#C9A84C"/><rect x="0" y="6" width="18" height="4" rx="2" fill="#C9A84C"/></svg> Christ Link</div>
     <div class="footer-links">
       <a onclick="showFooterPage('about')">About</a>
       <a onclick="showFooterPage('privacy')">Privacy</a>
@@ -1307,6 +1307,15 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
           </div>
         </div>
 
+        <!-- Forum toggle -->
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;margin-bottom:18px">
+          <div>
+            <div style="font-size:14px;font-weight:600">Enable Event Forum</div>
+            <div style="font-size:12px;color:var(--muted2);margin-top:2px">Let attendees discuss — expires 48h after event ends</div>
+          </div>
+          <label class="toggle-wrap"><input type="checkbox" id="evForumEnabled"><span class="toggle-track"><span class="toggle-thumb"></span></span></label>
+        </div>
+
         <div class="step-nav">
           <button class="btn btn-outline" style="flex:0 0 auto;width:auto;padding:0 20px" onclick="hostPrev(3)">←</button>
           <button class="btn btn-gold" onclick="hostNext(3)">Review →</button>
@@ -1490,12 +1499,12 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
     </div>
 
     <!-- Who's Going -->
-    <div id="detailWhoGoing" style="display:none;margin-bottom:20px">
+    <div id="detailWhoGoing" style="display:none;margin-bottom:20px;padding-left:2px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:13px;font-weight:700;color:var(--text)">Who's Going</div>
         <button onclick="openAttendeesSheet()" style="font-size:12px;color:var(--gold);background:none;border:none;cursor:pointer;font-weight:600">See all →</button>
       </div>
-      <div id="detailAttendeeAvatars" style="display:flex;align-items:center"></div>
+      <div id="detailAttendeeAvatars" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"></div>
     </div>
 
     <!-- Forum button -->
@@ -1536,11 +1545,10 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 ═══════════════════════════════════════════════════ -->
 
 <!-- ATTENDEES SHEET -->
-<div class="sheet-overlay" id="attendeesSheet">
+<div class="sheet-overlay" id="attendeesSheet" onclick="if(event.target===this)closeSheet('attendeesSheet')">
   <div class="sheet" style="max-height:80vh">
     <div class="sheet-header">
       <div class="sheet-title">Who's Going</div>
-      <button class="sheet-close" onclick="closeSheet('attendeesSheet')">×</button>
     </div>
     <div class="sheet-body" style="overflow-y:auto">
       <div id="attendeesLoading" style="text-align:center;padding:32px;color:var(--muted)">Loading…</div>
@@ -3099,7 +3107,11 @@ function switchPTab(el, tab) {
 }
 
 // ─── EDIT PROFILE ───────────────────────────────────────────
-function openEditProfile() { openSheet('editProfileSheet'); populateEditProfile(); }
+async function openEditProfile() {
+  openSheet('editProfileSheet');
+  if (!profileData?.full_name) await fetchProfile();
+  populateEditProfile();
+}
 
 function populateEditProfile() {
   const name = profileData?.full_name || currentUser?.user_metadata?.full_name || '';
@@ -3555,7 +3567,7 @@ function viewDetail(ev) {
     attendanceEl.style.display = 'none';
   }
 
-  // Who's Going
+  // Who's Going (hides the simple count badge once avatars load)
   document.getElementById('detailWhoGoing').style.display = 'none';
   loadWhoGoing(ev.id);
 
@@ -3607,6 +3619,7 @@ function handleRsvp() {
       document.getElementById('detailAttendance').style.display = 'block';
       spawnConfetti();
       showSuccess('🙌', 'You\'re Going!', `Spot reserved for ${selectedEvent?.name || 'the event'}. See you there!`);
+      loadWhoGoing(selectedEvent.id);
     } else {
       const d = await r.json().catch(() => ({}));
       showToast(d.error || 'Could not RSVP', 'error');
@@ -3635,6 +3648,7 @@ async function cancelRsvp() {
       countEl.textContent = `${newCount} going`;
       if (newCount === 0) document.getElementById('detailAttendance').style.display = 'none';
       showToast('RSVP cancelled');
+      loadWhoGoing(selectedEvent.id);
     } else { showToast('Could not cancel RSVP', 'error'); }
   } catch { showToast('Could not cancel RSVP', 'error'); }
   finally { btn.disabled = false; btn.textContent = 'Cancel RSVP'; }
@@ -3666,6 +3680,8 @@ async function loadWhoGoing(eventId) {
     const row = document.getElementById('detailAttendeeAvatars');
     if (!attendees || total === 0) { section.style.display = 'none'; return; }
     section.style.display = 'block';
+    // hide redundant count badge when Who's Going is visible
+    document.getElementById('detailAttendance').style.display = 'none';
     row.innerHTML = '';
     const preview = attendees.slice(0, 8);
     preview.forEach((p, i) => row.appendChild(makeAvatarEl(p, 36, i > 0)));
@@ -3788,6 +3804,8 @@ async function processPayment() {
       showSuccess('🎟️','Tickets Confirmed!',`${currentQty} ticket${currentQty>1?'s':''} to ${selectedEvent.name}. Receipt sent to ${currentUser?.email}.`);
       document.getElementById('detailRsvpBtn').textContent = '✅ Tickets Purchased!';
       document.getElementById('detailRsvpBtn').classList.add('confirmed');
+      fetchMyTickets();
+      loadWhoGoing(selectedEvent.id);
     }
   } catch(e) {
     // demo mode fallback
@@ -4042,28 +4060,26 @@ async function publishEvent() {
   // upload cover photo to Supabase Storage
   let coverUrl = null;
   if (coverPhotoFile && currentUser) {
-    try {
-      const ext  = coverPhotoFile.name.split('.').pop();
-      const path = `events/${currentUser.id}/${Date.now()}-cover.${ext}`;
-      const { error: upErr } = await sb.storage.from('event-images').upload(path, coverPhotoFile, { upsert:true, contentType: coverPhotoFile.type });
-      if (!upErr) {
-        const { data:{ publicUrl } } = sb.storage.from('event-images').getPublicUrl(path);
-        coverUrl = publicUrl;
-      }
-    } catch {}
+    const ext  = coverPhotoFile.type.includes('png') ? 'png' : 'jpg';
+    const path = `events/${currentUser.id}/${Date.now()}-cover.${ext}`;
+    const { error: upErr } = await sb.storage.from('event-images').upload(path, coverPhotoFile, { upsert: true, contentType: coverPhotoFile.type });
+    if (upErr) {
+      btn.disabled = false; btn.innerHTML = '🚀 Publish Event';
+      showToast('Cover photo upload failed: ' + upErr.message, 'error'); return;
+    }
+    const { data: { publicUrl } } = sb.storage.from('event-images').getPublicUrl(path);
+    coverUrl = publicUrl;
   }
   // upload gallery images
   const galleryUrls = [];
   for (const file of galleryFiles) {
-    try {
-      const ext  = file.name.split('.').pop();
-      const path = `events/${currentUser.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: upErr } = await sb.storage.from('event-images').upload(path, file, { upsert:true, contentType: file.type });
-      if (!upErr) {
-        const { data:{ publicUrl } } = sb.storage.from('event-images').getPublicUrl(path);
-        galleryUrls.push(publicUrl);
-      }
-    } catch {}
+    const ext  = file.type.includes('png') ? 'png' : 'jpg';
+    const path = `events/${currentUser.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: upErr } = await sb.storage.from('event-images').upload(path, file, { upsert: true, contentType: file.type });
+    if (!upErr) {
+      const { data: { publicUrl } } = sb.storage.from('event-images').getPublicUrl(path);
+      galleryUrls.push(publicUrl);
+    }
   }
   const format    = document.getElementById('evFormat').value || 'in_person';
   const startDate = document.getElementById('evStartDate').value;
@@ -4088,6 +4104,7 @@ async function publishEvent() {
         format, is_paid:isPaid, start_date:startDate||null, end_date:endDate||null,
         venue_name:venueName, address, city, state, max_capacity:capacity?parseInt(capacity):null,
         online_url:onlineUrl||null,
+        forum_enabled: document.getElementById('evForumEnabled')?.checked || false,
       }),
     });
     if (!createRes.ok) { const e=await createRes.json(); throw new Error(e.error||'Failed to create'); }
@@ -4111,14 +4128,18 @@ async function publishEvent() {
       const rows = document.querySelectorAll('.ticket-row');
       for (const row of rows) {
         const inputs = row.querySelectorAll('input');
-        const ttName = inputs[0]?.value||'General Admission';
-        const price  = Math.round(parseFloat(inputs[1]?.value||25)*100);
-        const qty    = parseInt(inputs[2]?.value||100);
-        await fetch(`${API_BASE}/api/ticket-types`,{
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
-          body: JSON.stringify({event_id:event.id,name:ttName,price_cents:price,quantity:qty}),
-        }).catch(()=>{});
+        const ttName = inputs[0]?.value || 'General Admission';
+        const price  = Math.round(parseFloat(inputs[1]?.value || 25) * 100);
+        const qty    = parseInt(inputs[2]?.value || 100);
+        const ttRes  = await fetch(`${API_BASE}/api/ticket-types`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+          body: JSON.stringify({ event_id: event.id, name: ttName, price_cents: price, quantity: qty }),
+        });
+        if (!ttRes.ok) {
+          const e = await ttRes.json().catch(() => ({}));
+          showToast('Ticket type error: ' + (e.error || 'Unknown'), 'error');
+        }
       }
     }
     listingFeePaymentMethodId = null; listingFeeHostEmail = null; listingFeePaid = false;
