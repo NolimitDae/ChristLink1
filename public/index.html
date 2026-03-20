@@ -2819,7 +2819,8 @@ async function fetchMyTickets(countOnly = false) {
     const tickets = ticketRes.ok ? (await ticketRes.json()).tickets || [] : [];
     const rsvps   = rsvpRes.ok  ? (await rsvpRes.json()).rsvps     || [] : [];
     const total   = tickets.length + rsvps.length;
-    document.getElementById('statTickets').textContent = total;
+    const statEl = document.getElementById('statTickets');
+    if (statEl) statEl.textContent = total;
     if (countOnly) return;
     const container = document.getElementById('myTicketsContainer');
     if (!container) return;
@@ -4321,15 +4322,29 @@ async function processPayment() {
       showSuccess('🎟️','Tickets Confirmed!',`${currentQty} ticket${currentQty>1?'s':''} to ${selectedEvent.name}. Receipt sent to ${currentUser?.email}.`);
       document.getElementById('detailRsvpBtn').textContent = '✅ Tickets Purchased!';
       document.getElementById('detailRsvpBtn').classList.add('confirmed');
+      document.getElementById('detailCancelRsvpBtn').style.display = 'none';
+      // Refresh profile ticket count + list immediately
       fetchMyTickets();
+      // Re-fetch after 2.5s to catch webhook-confirmed status
+      setTimeout(fetchMyTickets, 2500);
+      // Update Who's Going section
+      const whoGoingEl = document.getElementById('detailWhoGoing');
+      const countEl    = document.getElementById('detailAttendanceCount');
+      const curCount   = parseInt(countEl?.textContent) || 0;
+      const newCount   = curCount + currentQty;
+      if (countEl) countEl.textContent = `${newCount} going`;
+      const seeAllBtn = document.getElementById('detailWhoGoingBtn');
+      if (seeAllBtn) seeAllBtn.textContent = `See All ${newCount} Attendees ↓`;
+      if (whoGoingEl) whoGoingEl.style.display = 'block';
+      // Reload inline attendees to show new buyer
+      setTimeout(() => loadInlineAttendees(selectedEvent.id), 1000);
     }
   } catch(e) {
-    // demo mode fallback
-    closeSheet('ticketSheet');
-    spawnConfetti();
-    showSuccess('🎟️','Confirmed! (Demo)',`Demo mode. ${currentQty} ticket${currentQty>1?'s':''} to ${selectedEvent?.name}.`);
-    document.getElementById('detailRsvpBtn').textContent = '✅ Tickets Purchased!';
-    document.getElementById('detailRsvpBtn').classList.add('confirmed');
+    // Show actual error — don't silently fake success
+    if (err) { err.textContent = e.message || 'Payment failed. Please try again.'; err.classList.add('show'); }
+    else showToast(e.message || 'Payment failed. Please try again.', 'error');
+    btn.disabled = false; btn.innerHTML = orig;
+    return;
   }
   btn.disabled=false; btn.innerHTML=orig;
 }
