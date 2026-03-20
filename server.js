@@ -601,7 +601,6 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
       payment_method: paymentMethodId, confirm: true,
       receipt_email: hostEmail || req.user.email,
       description: `Christ Link listing fee — ${ev.name}`,
-      automatic_tax: { enabled: true },
       metadata: { type: 'listing_fee', event_id: eventId, host_id: req.userId },
       return_url: `${process.env.APP_URL}/?listing_success=1`,
     }, { idempotencyKey: `listing-fee-${eventId}` });
@@ -632,7 +631,6 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
       amount: amounts.chargeAmount, currency: 'usd',
       receipt_email: buyerEmail || req.user.email,
       description: `${qty}x ${tt.name} — ${ev.name}`,
-      automatic_tax: { enabled: true },
       metadata: { event_id: eventId, ticket_type_id: ticketTypeId, buyer_id: req.userId, qty, platform_fee: amounts.platformFee },
       transfer_data: { destination: ev.host_stripe_accounts.stripe_account_id },
       application_fee_amount: amounts.platformFee,
