@@ -1499,12 +1499,12 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
     </div>
 
     <!-- Who's Going -->
-    <div id="detailWhoGoing" style="display:none;margin-bottom:20px;padding-left:2px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:700;color:var(--text)">Who's Going</div>
-        <button onclick="openAttendeesSheet()" style="font-size:12px;color:var(--gold);background:none;border:none;cursor:pointer;font-weight:600">See all →</button>
+    <div id="detailWhoGoing" style="display:none;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700;color:var(--text)">Who's Going</div>
+        <button onclick="openAttendeesSheet()" style="font-size:12px;color:var(--gold);background:none;border:none;cursor:pointer;font-weight:600;padding:0">See all →</button>
       </div>
-      <div id="detailAttendeeAvatars" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"></div>
+      <div id="detailAttendeeAvatars" style="display:flex;gap:16px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none"></div>
     </div>
 
     <!-- Forum button -->
@@ -2704,7 +2704,6 @@ function makeHostedEventCard(ev) {
         <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">${fmtDate}</div>
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:11px;font-weight:700;color:${statusColor};text-transform:uppercase;letter-spacing:.05em">${ev.status}</span>
-          <span style="font-size:11px;color:var(--muted)">${ev.confirmed_rsvps || 0} going</span>
           ${ev.is_paid ? `<span style="font-size:11px;color:var(--gold)">Paid</span>` : `<span style="font-size:11px;color:var(--muted)">Free</span>`}
         </div>
       </div>
@@ -3657,19 +3656,22 @@ async function cancelRsvp() {
 // ═══════════════════════════════════════════════════════════
 // WHO'S GOING
 // ═══════════════════════════════════════════════════════════
-function makeAvatarEl(person, size, overlap) {
+function makeAvatarCircle(person, size) {
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;border:2px solid var(--bg);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,var(--gold),#6B4A00);display:flex;align-items:center;justify-content:center;font-size:' + Math.round(size * 0.4) + 'px;font-weight:700;color:#0A0A0F' + (overlap ? ';margin-left:-10px' : '');
+  wrap.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:' + Math.round(size * 0.38) + 'px;font-weight:700;color:#0A0A0F;background:' + (person.avatar_color || 'linear-gradient(135deg,#C9A84C,#6B4A00)');
   if (person.avatar_url) {
     const img = document.createElement('img');
     img.src = person.avatar_url;
     img.style.cssText = 'width:100%;height:100%;object-fit:cover';
     wrap.appendChild(img);
   } else {
-    wrap.style.background = person.avatar_color || 'linear-gradient(135deg,var(--gold),#6B4A00)';
     wrap.textContent = (person.full_name || '?').charAt(0).toUpperCase();
   }
   return wrap;
+}
+
+function makeAvatarEl(person, size) {
+  return makeAvatarCircle(person, size);
 }
 
 async function loadWhoGoing(eventId) {
@@ -3680,15 +3682,32 @@ async function loadWhoGoing(eventId) {
     const row = document.getElementById('detailAttendeeAvatars');
     if (!attendees || total === 0) { section.style.display = 'none'; return; }
     section.style.display = 'block';
-    // hide redundant count badge when Who's Going is visible
     document.getElementById('detailAttendance').style.display = 'none';
     row.innerHTML = '';
-    const preview = attendees.slice(0, 8);
-    preview.forEach((p, i) => row.appendChild(makeAvatarEl(p, 36, i > 0)));
-    if (total > 8) {
+    attendees.slice(0, 10).forEach(p => {
+      const col = document.createElement('div');
+      col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;cursor:pointer;min-width:52px';
+      col.onclick = () => openPublicProfile(p.id);
+      const av = makeAvatarCircle(p, 44);
+      const nm = document.createElement('div');
+      nm.style.cssText = 'font-size:10px;color:var(--muted2);text-align:center;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      nm.textContent = (p.full_name || 'Member').split(' ')[0];
+      col.appendChild(av);
+      col.appendChild(nm);
+      row.appendChild(col);
+    });
+    if (total > 10) {
       const more = document.createElement('div');
-      more.style.cssText = 'margin-left:6px;font-size:12px;font-weight:600;color:var(--muted2)';
-      more.textContent = '+' + (total - 8) + ' more';
+      more.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;cursor:pointer;min-width:52px';
+      more.onclick = openAttendeesSheet;
+      const circle = document.createElement('div');
+      circle.style.cssText = 'width:44px;height:44px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold)';
+      circle.textContent = '+' + (total - 10);
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:10px;color:var(--muted2);text-align:center';
+      lbl.textContent = 'more';
+      more.appendChild(circle);
+      more.appendChild(lbl);
       row.appendChild(more);
     }
   } catch {}
@@ -3711,7 +3730,7 @@ async function openAttendeesSheet() {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:12px;cursor:pointer';
       row.onclick = () => { closeSheet('attendeesSheet'); openPublicProfile(p.id); };
-      const av = makeAvatarEl(p, 44, false);
+      const av = makeAvatarCircle(p, 44);
       const name = document.createElement('div');
       name.style.cssText = 'font-size:14px;font-weight:600;color:var(--text)';
       name.textContent = p.full_name || 'ChristLink Member';
