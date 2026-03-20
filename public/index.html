@@ -531,9 +531,9 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 .detail-price-big{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--gold)}
 .detail-price-sub{font-size:11px;color:var(--muted);margin-top:1px}
 .detail-rsvp-btn{
-  flex:1;height:62px;border-radius:var(--r-full);
+  flex:1;height:124px;border-radius:var(--r-full);
   background:linear-gradient(135deg,var(--gold),#9A7000);
-  color:#0A0A0F;font-weight:800;font-size:17px;
+  color:#0A0A0F;font-weight:800;font-size:19px;
   box-shadow:0 4px 20px var(--gold-glow);
   transition:all .2s;
 }
@@ -1489,6 +1489,15 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       </div>
     </div>
 
+    <!-- Who's Going -->
+    <div id="detailWhoGoing" style="display:none;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Who's Going</div>
+        <button onclick="openAttendeesSheet()" style="font-size:12px;color:var(--gold);background:none;border:none;cursor:pointer;font-weight:600">See all →</button>
+      </div>
+      <div id="detailAttendeeAvatars" style="display:flex;align-items:center"></div>
+    </div>
+
     <!-- Forum button -->
     <div id="detailForumBtn" style="display:none;margin-bottom:20px">
       <button onclick="openEventForum()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;font-weight:600;color:var(--text)">
@@ -1525,6 +1534,20 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 <!-- ═══════════════════════════════════════════════════
      OVERLAYS / SHEETS
 ═══════════════════════════════════════════════════ -->
+
+<!-- ATTENDEES SHEET -->
+<div class="sheet-overlay" id="attendeesSheet">
+  <div class="sheet" style="max-height:80vh">
+    <div class="sheet-header">
+      <div class="sheet-title">Who's Going</div>
+      <button class="sheet-close" onclick="closeSheet('attendeesSheet')">×</button>
+    </div>
+    <div class="sheet-body" style="overflow-y:auto">
+      <div id="attendeesLoading" style="text-align:center;padding:32px;color:var(--muted)">Loading…</div>
+      <div id="attendeesList" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+  </div>
+</div>
 
 <!-- AUTH SHEET -->
 <div class="overlay" id="authSheet">
@@ -3532,6 +3555,10 @@ function viewDetail(ev) {
     attendanceEl.style.display = 'none';
   }
 
+  // Who's Going
+  document.getElementById('detailWhoGoing').style.display = 'none';
+  loadWhoGoing(ev.id);
+
   // Check if current user has already RSVP'd (free events)
   if (currentUser && !ev.is_paid) {
     fetch(`${API_BASE}/api/rsvp/${ev.id}`, {
@@ -3611,6 +3638,74 @@ async function cancelRsvp() {
     } else { showToast('Could not cancel RSVP', 'error'); }
   } catch { showToast('Could not cancel RSVP', 'error'); }
   finally { btn.disabled = false; btn.textContent = 'Cancel RSVP'; }
+}
+
+// ═══════════════════════════════════════════════════════════
+// WHO'S GOING
+// ═══════════════════════════════════════════════════════════
+function makeAvatarEl(person, size, overlap) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;border:2px solid var(--bg);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,var(--gold),#6B4A00);display:flex;align-items:center;justify-content:center;font-size:' + Math.round(size * 0.4) + 'px;font-weight:700;color:#0A0A0F' + (overlap ? ';margin-left:-10px' : '');
+  if (person.avatar_url) {
+    const img = document.createElement('img');
+    img.src = person.avatar_url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    wrap.appendChild(img);
+  } else {
+    wrap.style.background = person.avatar_color || 'linear-gradient(135deg,var(--gold),#6B4A00)';
+    wrap.textContent = (person.full_name || '?').charAt(0).toUpperCase();
+  }
+  return wrap;
+}
+
+async function loadWhoGoing(eventId) {
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${eventId}/attendees`);
+    const { attendees, total } = await res.json();
+    const section = document.getElementById('detailWhoGoing');
+    const row = document.getElementById('detailAttendeeAvatars');
+    if (!attendees || total === 0) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    row.innerHTML = '';
+    const preview = attendees.slice(0, 8);
+    preview.forEach((p, i) => row.appendChild(makeAvatarEl(p, 36, i > 0)));
+    if (total > 8) {
+      const more = document.createElement('div');
+      more.style.cssText = 'margin-left:6px;font-size:12px;font-weight:600;color:var(--muted2)';
+      more.textContent = '+' + (total - 8) + ' more';
+      row.appendChild(more);
+    }
+  } catch {}
+}
+
+async function openAttendeesSheet() {
+  openSheet('attendeesSheet');
+  document.getElementById('attendeesLoading').style.display = 'block';
+  document.getElementById('attendeesList').innerHTML = '';
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${selectedEvent.id}/attendees`);
+    const { attendees } = await res.json();
+    document.getElementById('attendeesLoading').style.display = 'none';
+    const list = document.getElementById('attendeesList');
+    if (!attendees || attendees.length === 0) {
+      list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted)">No one has signed up yet — be the first!</div>';
+      return;
+    }
+    attendees.forEach(p => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:12px;cursor:pointer';
+      row.onclick = () => { closeSheet('attendeesSheet'); openPublicProfile(p.id); };
+      const av = makeAvatarEl(p, 44, false);
+      const name = document.createElement('div');
+      name.style.cssText = 'font-size:14px;font-weight:600;color:var(--text)';
+      name.textContent = p.full_name || 'ChristLink Member';
+      row.appendChild(av);
+      row.appendChild(name);
+      list.appendChild(row);
+    });
+  } catch {
+    document.getElementById('attendeesLoading').textContent = 'Could not load attendees.';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
