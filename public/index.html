@@ -281,14 +281,12 @@ img{display:block;max-width:100%}
 .card-name{font-family:var(--font-display);font-size:16px;font-weight:700;line-height:1.3;margin-bottom:5px;color:var(--text)}
 .card-loc{font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:4px;margin-bottom:12px}
 .card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.card-going{font-size:12px;color:var(--muted);font-weight:500}
 .card-btn{
   height:32px;padding:0 14px;border-radius:var(--r-full);
   background:var(--gold-dim);color:var(--gold);font-weight:700;font-size:12px;
   border:1px solid rgba(201,168,76,.3);transition:all .18s;
 }
 .card-btn:active,.card-btn:hover{background:var(--gold);color:#000}
-.card-btn.going{background:rgba(78,201,140,.15);color:var(--green);border-color:rgba(78,201,140,.3)}
 
 /* ═══════════════════════════════════════════════════════════
    VERSE BANNER
@@ -3289,10 +3287,8 @@ function makeCardHTML(ev, scrollMode) {
         ${ev.city ? `${ev.city}${ev.state ? ', '+ev.state : ''}` : (ev.format==='online'?'Online':'TBD')}
       </div>
       <div class="card-footer">
-        <span class="card-going" id="going-${ev.id}"></span>
-        <button class="card-btn" onclick="event.stopPropagation();quickRsvp(this,'${ev.id}',${isPaid})">
-          ${isPaid ? 'Get Tickets' : "I'm Going ✨"}
-        </button>
+        ${price ? `<span style="font-size:13px;font-weight:700;color:var(--gold)">${price}</span>` : `<span style="font-size:12px;color:var(--green);font-weight:600">Free</span>`}
+        <span style="font-size:11px;color:var(--muted)">Tap to view →</span>
       </div>
     </div>`;
   card.onclick = () => viewDetail(ev);
@@ -3313,13 +3309,6 @@ function renderInto(container, events, scrollMode) {
   events.forEach(ev => container.appendChild(makeCardHTML(ev, scrollMode)));
 }
 
-function quickRsvp(btn, evId, isPaid) {
-  if (isPaid) { /* open event detail for ticket flow */ return; }
-  if (!currentUser) { openAuth('signup', () => quickRsvp(btn, evId, isPaid)); return; }
-  const going = btn.classList.toggle('going');
-  btn.textContent = going ? '✅ Going!' : "I'm Going ✨";
-  if (going) { showToast('🙌 You\'re going!','success'); spawnConfetti(); }
-}
 
 // ═══════════════════════════════════════════════════════════
 // HOME
