@@ -239,6 +239,22 @@ create policy "Authors can delete own forum posts" on public.event_forum_posts f
 -- Migration: add forum_enabled to events if upgrading
 alter table public.events add column if not exists forum_enabled boolean not null default false;
 
+-- ─── TICKET CODE MIGRATION ───────────────────────────────────────
+-- Add short code column to tickets for easy QR scanning + display
+alter table public.tickets add column if not exists code text;
+-- Backfill existing confirmed tickets with a code derived from payment intent
+update public.tickets
+set code = upper(substring(replace(stripe_payment_intent, '_', ''), length(replace(stripe_payment_intent, '_', '')) - 7, 8))
+where code is null and stripe_payment_intent is not null;
+-- For tickets without a payment intent (edge case), use uuid-based code
+update public.tickets
+set code = upper(substring(replace(id::text, '-', ''), 1, 8))
+where code is null;
+
+-- Storage policies for event-images bucket (run after creating bucket in Supabase dashboard)
+-- insert into storage.policies (name, bucket_id, definition) values
+-- ('allow_authenticated_uploads', 'event-images', '(auth.role() = ''authenticated'')');
+
 -- ─── EVENT IMAGES STORAGE ──────────────────────────────────────
 -- Create bucket: event-images, Public: ON, File size: 5MB
 -- Allowed MIME: image/jpeg, image/png, image/webp

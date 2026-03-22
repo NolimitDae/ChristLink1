@@ -495,7 +495,25 @@ app.post('/api/tickets/verify', requireAuth, async (req, res) => {
 
     if (ticketId) query = query.eq('id', ticketId);
     else {
-      // Code is last 8 chars of payment intent
+      // Match against dedicated code column first, fall back to payment intent suffix
+      const { data: byCode } = await supabaseAdmin
+        .from('tickets')
+        .select('*, events(name,start_date,city), ticket_types(name)')
+        .eq('status', 'confirmed')
+        .ilike('code', code)
+        .eq('event_id', eventId || '')
+        .maybeSingle();
+      if (byCode) {
+        // Found by code — skip the rest of query building
+        const ticket = byCode;
+        const { data: existingCheckin } = await supabaseAdmin.from('ticket_checkins').select('id,checked_in_at').eq('ticket_id', ticket.id).single();
+        if (existingCheckin) {
+          return res.json({ valid: false, already_checked_in: true, message: `Already checked in at ${new Date(existingCheckin.checked_in_at).toLocaleTimeString()}`, ticket: { ...ticket, code: ticket.code, event_name: ticket.events?.name } });
+        }
+        await supabaseAdmin.from('ticket_checkins').insert({ ticket_id: ticket.id, event_id: ticket.event_id, checked_in_by: req.userId });
+        return res.json({ valid: true, message: `${ticket.quantity} ticket${ticket.quantity !== 1 ? 's' : ''} checked in successfully.`, ticket: { ...ticket, code: ticket.code, event_name: ticket.events?.name, ticket_type_name: ticket.ticket_types?.name } });
+      }
+      // Fall back to payment intent suffix match
       query = query.ilike('stripe_payment_intent', `%${code}`);
     }
 
@@ -639,15 +657,19 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
       application_fee_amount: amounts.platformFee,
     }, { idempotencyKey });
     const taxAmount = intent.amount_details?.tax?.amount || 0;
-    await supabaseAdmin.from('tickets').insert({
+    // Generate a short human-readable ticket code (8 alphanumeric chars, uppercase)
+    const ticketCode = Math.random().toString(36).slice(2,6).toUpperCase() +
+                       Math.random().toString(36).slice(2,6).toUpperCase();
+    const { data: insertedTicket } = await supabaseAdmin.from('tickets').insert({
       event_id: eventId, ticket_type_id: ticketTypeId, user_id: req.userId, quantity: qty,
       unit_price_cents: tt.price_cents, total_charged_cents: amounts.chargeAmount + taxAmount,
       platform_fee_cents: amounts.platformFee, stripe_fee_cents: amounts.stripeFee,
       host_receives_cents: amounts.hostReceives, stripe_payment_intent: intent.id,
       stripe_idempotency_key: idempotencyKey, status: 'pending',
       buyer_email: buyerEmail || req.user.email,
-    });
-    res.json({ clientSecret: intent.client_secret, breakdown: { ...amounts, taxAmount }, intentId: intent.id });
+      code: ticketCode,
+    }).select('id, code').single();
+    res.json({ clientSecret: intent.client_secret, breakdown: { ...amounts, taxAmount }, intentId: intent.id, ticketCode: insertedTicket?.code || ticketCode });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
