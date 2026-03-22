@@ -274,9 +274,10 @@ app.patch('/api/events/:id', requireAuth, async (req, res) => {
 
 app.patch('/api/events/:id/publish', requireAuth, async (req, res) => {
   const { data: ev } = await supabaseAdmin
-    .from('events').select('id, is_paid, listing_fee_paid')
+    .from('events').select('id, is_paid, listing_fee_paid, status')
     .eq('id', req.params.id).eq('host_id', req.userId).single();
   if (!ev) return res.status(404).json({ error: 'Event not found or not yours.' });
+  if (ev.status !== 'draft') return res.status(400).json({ error: 'Only draft events can be published.' });
   if (ev.is_paid && !ev.listing_fee_paid) return res.status(402).json({ error: 'Listing fee required.' });
   const { data, error } = await supabaseAdmin
     .from('events').update({ status: 'published' })
@@ -618,9 +619,9 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
   const { eventId, ticketTypeId, qty = 1, buyerEmail } = req.body;
   if (!eventId || !ticketTypeId) return res.status(400).json({ error: 'Event ID and ticket type required.' });
   const { data: ev } = await supabaseAdmin
-    .from('events').select('*, host_stripe_accounts!inner(stripe_account_id, payouts_enabled)')
+    .from('events').select('*, host_stripe_accounts(stripe_account_id, payouts_enabled)')
     .eq('id', eventId).eq('status', 'published').single();
-  if (!ev) return res.status(404).json({ error: 'Event not found.' });
+  if (!ev) return res.status(404).json({ error: 'Event not found. Make sure the event is published.' });
   if (!ev.is_paid) return res.status(400).json({ error: 'This event is free — use RSVP.' });
   if (!ev.host_stripe_accounts?.payouts_enabled) return res.status(400).json({ error: 'Host payment account not set up.' });
   const { data: tt } = await supabaseAdmin.from('ticket_types').select('*').eq('id', ticketTypeId).eq('event_id', eventId).single();
@@ -695,13 +696,19 @@ async function handleWebhook(req, res) {
             .update({ listing_fee_paid: true, listing_payment_id: pi.id }).eq('id', pi.metadata.event_id);
           break;
         }
-        await supabaseAdmin.from('tickets')
+        // Only update rows that are still 'pending' — ensures idempotency on webhook replay
+        const { data: updatedTickets } = await supabaseAdmin.from('tickets')
           .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
-          .eq('stripe_payment_intent', pi.id);
-        if (pi.metadata.ticket_type_id) await supabaseAdmin.rpc('increment_tickets_sold', {
-          p_ticket_type_id: pi.metadata.ticket_type_id,
-          p_qty: parseInt(pi.metadata.qty) || 1,
-        });
+          .eq('stripe_payment_intent', pi.id)
+          .eq('status', 'pending')
+          .select('id');
+        // Only increment sold count if we actually changed something (prevents double-count on replay)
+        if (pi.metadata.ticket_type_id && updatedTickets?.length > 0) {
+          await supabaseAdmin.rpc('increment_tickets_sold', {
+            p_ticket_type_id: pi.metadata.ticket_type_id,
+            p_qty: parseInt(pi.metadata.qty) || 1,
+          });
+        }
         break;
       }
       case 'payment_intent.payment_failed':
