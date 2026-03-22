@@ -5272,6 +5272,54 @@ function spawnConfetti() {
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
+
+(function handleReturnParams() {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get('connected') === '1') {
+    window.history.replaceState({}, '', window.location.pathname);
+    const tryRedirect = setInterval(() => {
+      if (currentUser !== null || document.readyState === 'complete') {
+        clearInterval(tryRedirect);
+        goTo('profile');
+        setTimeout(() => {
+          showToast('✅ Stripe account connected! You can now accept payments.', 'success');
+          fetchProfile();
+        }, 400);
+      }
+    }, 100);
+    setTimeout(() => {
+      clearInterval(tryRedirect);
+      goTo('profile');
+      showToast('✅ Stripe account connected!', 'success');
+    }, 3000);
+  }
+
+  if (params.get('reauth') === '1') {
+    window.history.replaceState({}, '', window.location.pathname);
+    const tryReauth = setInterval(() => {
+      if (currentUser !== null || document.readyState === 'complete') {
+        clearInterval(tryReauth);
+        goTo('profile');
+        setTimeout(() => {
+          showToast('⚠️ Please reconnect your Stripe account to receive payouts.', 'error');
+          fetchProfile();
+        }, 400);
+      }
+    }, 100);
+    setTimeout(() => {
+      clearInterval(tryReauth);
+      goTo('profile');
+      showToast('⚠️ Please reconnect your Stripe account.', 'error');
+    }, 3000);
+  }
+
+  if (params.get('listing_success') === '1') {
+    window.history.replaceState({}, '', window.location.pathname);
+    setTimeout(() => showToast('✅ Listing fee paid — ticketing unlocked!', 'success'), 800);
+  }
+})();
+
 // Fetch home events on load
 fetchHomeEvents();
 </script>
