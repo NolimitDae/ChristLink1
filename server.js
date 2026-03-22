@@ -10,6 +10,9 @@ const rateLimit = require('express-rate-limit');
 const path      = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const Stripe    = require('stripe');
+const forge     = require('node-forge');
+const JSZip     = require('jszip');
+const crypto    = require('crypto');
 
 const app  = express();
 const PORT = process.env.PORT || 4242;
@@ -757,6 +760,166 @@ async function handleWebhook(req, res) {
     res.json({ received: true, warning: e.message });
   }
 }
+
+// ════════════════════════════════════════════════════════════
+// APPLE WALLET — .pkpass generation
+// ════════════════════════════════════════════════════════════
+
+function signManifest(manifestJson, p12Base64, p12Password) {
+  const p12Der  = Buffer.from(p12Base64, 'base64');
+  const p12Asn1 = forge.asn1.fromDer(p12Der.toString('binary'));
+  const p12Obj  = forge.pkcs12.pkcs12FromAsn1(p12Asn1, p12Password);
+
+  let certPem = null;
+  let keyPem  = null;
+
+  for (const safeContent of p12Obj.safeContents) {
+    for (const safeBag of safeContent.safeBags) {
+      if (safeBag.type === forge.pki.oids.certBag) {
+        certPem = forge.pki.certificateToPem(safeBag.cert);
+      }
+      if (safeBag.type === forge.pki.oids.pkcs8ShroudedKeyBag ||
+          safeBag.type === forge.pki.oids.keyBag) {
+        keyPem = forge.pki.privateKeyToPem(safeBag.key);
+      }
+    }
+  }
+
+  if (!certPem || !keyPem) throw new Error('Could not extract cert/key from P12.');
+
+  const p7 = forge.pkcs7.createSignedData();
+  p7.content = forge.util.createBuffer(manifestJson, 'utf8');
+  p7.addCertificate(certPem);
+  p7.addSigner({
+    key:         keyPem,
+    certificate: certPem,
+    digestAlgorithm: forge.pki.oids.sha256,
+    authenticatedAttributes: [
+      { type: forge.pki.oids.contentType,   value: forge.pki.oids.data },
+      { type: forge.pki.oids.messageDigest               },
+      { type: forge.pki.oids.signingTime,   value: new Date() },
+    ],
+  });
+  p7.sign({ detached: true });
+  const derBytes = forge.asn1.toDer(p7.toAsn1()).getBytes();
+  return Buffer.from(derBytes, 'binary');
+}
+
+app.get('/api/tickets/:ticketId/wallet', requireAuth, async (req, res) => {
+  const { ticketId } = req.params;
+
+  const { data: ticket } = await supabaseAdmin
+    .from('tickets')
+    .select('*, events(name, start_date, end_date, venue_name, city, state, cover_url), ticket_types(name)')
+    .eq('id', ticketId)
+    .eq('user_id', req.userId)
+    .eq('status', 'confirmed')
+    .single();
+
+  if (!ticket) return res.status(404).json({ error: 'Ticket not found or not confirmed.' });
+
+  const p12Base64   = process.env.APPLE_PASS_P12_BASE64;
+  const p12Password = process.env.APPLE_PASS_P12_PASSWORD;
+  const passTypeId  = process.env.APPLE_PASS_TYPE_ID  || 'pass.com.christlink.tickets';
+  const teamId      = process.env.APPLE_TEAM_ID       || 'QKP52JF8KD';
+
+  if (!p12Base64 || !p12Password) {
+    return res.status(503).json({ error: 'Apple Wallet not configured on this server.' });
+  }
+
+  try {
+    const ev          = ticket.events || {};
+    const shortCode   = (ticket.stripe_payment_intent || ticket.id).replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase();
+    const eventName   = ev.name      || 'Christ Link Event';
+    const venueName   = ev.venue_name || (ev.city ? `${ev.city}${ev.state ? ', ' + ev.state : ''}` : 'See event details');
+    const startDate   = ev.start_date ? new Date(ev.start_date) : new Date();
+    const relevantDate = startDate.toISOString();
+    const fmtDate     = startDate.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+
+    const passJson = {
+      formatVersion:          1,
+      passTypeIdentifier:     passTypeId,
+      serialNumber:           ticket.id,
+      teamIdentifier:         teamId,
+      organizationName:       'Christ Link',
+      description:            eventName,
+      logoText:               'Christ Link',
+      foregroundColor:        'rgb(240, 235, 224)',
+      backgroundColor:        'rgb(10, 10, 15)',
+      labelColor:             'rgb(201, 168, 76)',
+      relevantDate,
+      barcode: {
+        message:         JSON.stringify({ ticketId: ticket.id, code: shortCode, eventId: ticket.event_id }),
+        format:          'PKBarcodeFormatQR',
+        messageEncoding: 'iso-8859-1',
+        altText:         shortCode,
+      },
+      barcodes: [{
+        message:         JSON.stringify({ ticketId: ticket.id, code: shortCode, eventId: ticket.event_id }),
+        format:          'PKBarcodeFormatQR',
+        messageEncoding: 'iso-8859-1',
+        altText:         shortCode,
+      }],
+      eventTicket: {
+        primaryFields: [
+          { key: 'event',  label: 'EVENT',    value: eventName },
+        ],
+        secondaryFields: [
+          { key: 'date',   label: 'DATE',     value: fmtDate },
+          { key: 'qty',    label: 'TICKETS',  value: String(ticket.quantity || 1) },
+        ],
+        auxiliaryFields: [
+          { key: 'venue',  label: 'LOCATION', value: venueName },
+          { key: 'type',   label: 'TYPE',     value: ticket.ticket_types?.name || 'General Admission' },
+        ],
+        backFields: [
+          { key: 'ticketid', label: 'Ticket ID',     value: ticket.id },
+          { key: 'code',     label: 'Confirmation',  value: shortCode },
+          { key: 'email',    label: 'Registered To', value: ticket.buyer_email || '' },
+          { key: 'terms',    label: 'Terms',         value: 'This ticket is non-transferable. Present QR code at entry. Issued by Christ Link.' },
+        ],
+      },
+    };
+
+    const passJsonStr = JSON.stringify(passJson);
+    const zip = new JSZip();
+
+    const transparentPng = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      'base64'
+    );
+
+    zip.file('pass.json',    passJsonStr);
+    zip.file('icon.png',     transparentPng);
+    zip.file('icon@2x.png',  transparentPng);
+    zip.file('logo.png',     transparentPng);
+    zip.file('logo@2x.png',  transparentPng);
+
+    const manifest = {};
+    for (const [name] of Object.entries(zip.files)) {
+      const buf = await zip.file(name).async('nodebuffer');
+      manifest[name] = require('crypto').createHash('sha1').update(buf).digest('hex');
+    }
+    const manifestStr = JSON.stringify(manifest);
+    zip.file('manifest.json', manifestStr);
+
+    const signatureBuf = signManifest(manifestStr, p12Base64, p12Password);
+    zip.file('signature', signatureBuf);
+
+    const pkpassBuf = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+
+    res.set({
+      'Content-Type':        'application/vnd.apple.pkpass',
+      'Content-Disposition': `attachment; filename="christlink-${shortCode}.pkpass"`,
+      'Content-Length':      pkpassBuf.length,
+    });
+    res.send(pkpassBuf);
+
+  } catch(e) {
+    console.error('Wallet generation error:', e.message);
+    res.status(500).json({ error: 'Failed to generate pass. ' + e.message });
+  }
+});
 
 // ─── SPA FALLBACK ───────────────────────────────────────────
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));

@@ -1975,6 +1975,12 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
           </div>
         </div>
       </div>
+      <div id="tvWalletWrap" style="display:none;margin-bottom:10px">
+        <button onclick="addToAppleWallet()" style="width:100%;height:50px;border-radius:var(--r-full);background:#000;border:none;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+          <span style="color:#fff;font-size:15px;font-weight:700;letter-spacing:.01em">Add to Apple Wallet</span>
+        </button>
+      </div>
       <button class="btn btn-outline" onclick="closeSheet('ticketViewerSheet')">Close</button>
     </div>
   </div>
@@ -4224,6 +4230,59 @@ async function loadInlineAttendees(eventId, isPaid = false) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// APPLE WALLET
+// ═══════════════════════════════════════════════════════════
+async function addToAppleWallet() {
+  if (!currentSession?.access_token) { openAuth('signin'); return; }
+
+  const btn  = document.querySelector('#tvWalletWrap button');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<div class="spinner" style="border-top-color:#fff;border-color:rgba(255,255,255,.2)"></div>';
+  btn.disabled  = true;
+
+  const ticketCode = document.getElementById('tvTicketCode')?.textContent;
+  if (!ticketCode || ticketCode === '—') {
+    showToast('No ticket selected', 'error');
+    btn.innerHTML = orig; btn.disabled = false;
+    return;
+  }
+
+  try {
+    const res    = await fetch(`${API_BASE}/api/my-tickets`, {
+      headers: { 'Authorization': `Bearer ${currentSession.access_token}` }
+    });
+    const data   = await res.json();
+    const ticket = (data.tickets || []).find(t => {
+      const code = (t.stripe_payment_intent || t.id || '').replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase();
+      return code === ticketCode;
+    });
+
+    if (!ticket) throw new Error('Ticket not found');
+
+    const passRes = await fetch(`${API_BASE}/api/tickets/${ticket.id}/wallet`, {
+      headers: { 'Authorization': `Bearer ${currentSession.access_token}` }
+    });
+
+    if (!passRes.ok) {
+      const err = await passRes.json();
+      throw new Error(err.error || 'Failed to generate pass');
+    }
+
+    const blob = await passRes.blob();
+    const url  = URL.createObjectURL(blob);
+    window.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+  } catch(e) {
+    console.error('Wallet error:', e);
+    showToast(e.message || 'Could not generate pass', 'error');
+  }
+
+  btn.innerHTML = orig;
+  btn.disabled  = false;
+}
+
+// ═══════════════════════════════════════════════════════════
 // ATTENDEES / MINI PROFILE
 // ═══════════════════════════════════════════════════════════
 async function openAttendeesSheet() {
@@ -4988,6 +5047,9 @@ function openTicketViewer(t) {
     color: { dark: '#1A1400', light: '#FFFFFF' },
     errorCorrectionLevel: 'H',
   }, err => { if (err) console.error('QR error:', err); });
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  document.getElementById('tvWalletWrap').style.display = isIOS ? 'block' : 'none';
 
   openSheet('ticketViewerSheet');
 }
