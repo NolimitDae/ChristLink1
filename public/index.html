@@ -2359,24 +2359,6 @@ sb.auth.onAuthStateChange((event, session) => {
   currentUser    = session?.user || null;
   syncAuthUI();
   if (currentUser) fetchProfile();
-
-  // Handle Stripe Connect return params
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('connected') === '1') {
-    // Stripe Connect onboarding completed — go to profile and refresh
-    history.replaceState({}, '', window.location.pathname);
-    if (currentUser) {
-      await fetchProfile();
-      goTo('profile');
-      showToast('✅ Stripe connected! Payouts are being activated.', 'success');
-    }
-  } else if (urlParams.get('reauth') === '1') {
-    history.replaceState({}, '', window.location.pathname);
-    if (currentUser) {
-      goTo('profile');
-      showToast('Please complete your Stripe setup to enable payouts.', 'error');
-    }
-  }
 })();
 
 function syncAuthUI() {
@@ -2482,6 +2464,12 @@ function goTo(page) {
   // update desktop nav
   document.querySelectorAll('.nav-desktop-links a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
 
+  // persist current page in URL hash so refresh restores it
+  const hashPage = (page === 'home') ? '' : page;
+  if (window.location.hash.replace('#','') !== hashPage) {
+    history.replaceState({}, '', hashPage ? `#${hashPage}` : window.location.pathname);
+  }
+
   window.scrollTo(0,0);
   if (page === 'browse') initBrowse();
   if (page === 'profile') {
@@ -2491,6 +2479,14 @@ function goTo(page) {
   }
   if (page === 'community') initCommunityFeed();
 }
+
+// Restore page from URL hash on load / back-forward navigation
+function restorePageFromHash() {
+  const hash = window.location.hash.replace('#', '').split('/')[0];
+  const valid = ['home','browse','community','host','profile'];
+  if (hash && valid.includes(hash)) goTo(hash);
+}
+window.addEventListener('hashchange', restorePageFromHash);
 
 // ═══════════════════════════════════════════════════════════
 // SHEET SYSTEM
@@ -5319,6 +5315,9 @@ function spawnConfetti() {
     setTimeout(() => showToast('✅ Listing fee paid — ticketing unlocked!', 'success'), 800);
   }
 })();
+
+// Restore page from hash on load (fixes refresh losing current page)
+restorePageFromHash();
 
 // Fetch home events on load
 fetchHomeEvents();

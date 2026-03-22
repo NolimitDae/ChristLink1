@@ -690,10 +690,11 @@ app.post('/api/connect-onboard', requireAuth, async (req, res) => {
       accountId = account.id;
       await supabaseAdmin.from('host_stripe_accounts').insert({ user_id: req.userId, stripe_account_id: accountId });
     }
+    const appUrl = (process.env.APP_URL || `https://${req.headers.host}`).replace(/\/$/, '');
     const link = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${process.env.APP_URL}/?reauth=1`,
-      return_url:  `${process.env.APP_URL}/?connected=1`,
+      refresh_url: `${appUrl}/?reauth=1`,
+      return_url:  `${appUrl}/?connected=1`,
       type: 'account_onboarding',
     });
     res.json({ url: link.url, accountId });
