@@ -421,7 +421,7 @@ app.delete('/api/events/:id', requireAuth, async (req, res) => {
 // ════════════════════════════════════════════════════════════
 function forumExpired(ev) {
   if (!ev.end_date) return false;
-  return Date.now() > new Date(ev.end_date).getTime() + 48 * 60 * 60 * 1000;
+  return Date.now() > new Date(ev.end_date).getTime() + 30 * 24 * 60 * 60 * 1000;
 }
 
 app.get('/api/events/:id/forum', async (req, res) => {
@@ -434,10 +434,10 @@ app.get('/api/events/:id/forum', async (req, res) => {
 
   if (!ev) return res.status(404).json({ error: 'Event not found.' });
 
-  // Check if forum has expired (48h after event end)
+  // Check if forum has expired (30 days after event end)
   let expired = false;
   if (ev.end_date) {
-    const expiry = new Date(ev.end_date).getTime() + 48 * 60 * 60 * 1000;
+    const expiry = new Date(ev.end_date).getTime() + 30 * 24 * 60 * 60 * 1000;
     expired = Date.now() > expiry;
   }
 
@@ -477,7 +477,7 @@ app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
   if (!ev) return res.status(404).json({ error: 'Event not found.' });
   if (!ev.forum_enabled) return res.status(403).json({ error: 'Forum is not enabled for this event.' });
   if (ev.end_date) {
-    const expiry = new Date(ev.end_date).getTime() + 48 * 60 * 60 * 1000;
+    const expiry = new Date(ev.end_date).getTime() + 30 * 24 * 60 * 60 * 1000;
     if (Date.now() > expiry) return res.status(403).json({ error: 'This forum has expired.' });
   }
   const { data, error } = await supabaseAdmin
