@@ -70,14 +70,15 @@ app.use(express.static(path.join(__dirname, 'public')));
       console.log(`[storage] Created bucket "${b.name}"`);
     }
   }
-  // Only enable forum for published events where it was never explicitly set (null).
-  // Do NOT touch events where forum_enabled = false (host deliberately disabled it).
+  // Enable forum on ALL published events that still have the DB default (false).
+  // The column is NOT NULL DEFAULT false, so IS NULL never matches — we use .eq(false).
+  // This is a one-time backfill; new events are created with forum_enabled = true.
   const { error: forumErr } = await supabaseAdmin
     .from('events').update({ forum_enabled: true })
     .eq('status', 'published')
-    .is('forum_enabled', null);
-  if (forumErr) console.warn('[startup] Could not enable forum on existing events:', forumErr.message);
-  else console.log('[startup] Forum enabled on published events where it was unset.');
+    .eq('forum_enabled', false);
+  if (forumErr) console.warn('[startup] forum backfill error:', forumErr.message);
+  else console.log('[startup] forum backfill done.');
 })();
 
 // ─── RATE LIMITERS ──────────────────────────────────────────
@@ -440,13 +441,9 @@ app.get('/api/events/:id/forum', async (req, res) => {
     expired = Date.now() > expiry;
   }
 
-  // null  → column never set (old event) → default to enabled if published
-  // false → host explicitly disabled it  → respect that
-  // true  → explicitly enabled           → respect that
-  const forumEnabled = ev.forum_enabled === false
-    ? false
-    : (ev.forum_enabled || ev.status === 'published');
-  if (!forumEnabled) {
+  // Trust the DB value directly. The startup backfill ensures all published
+  // events have forum_enabled = true unless the host explicitly disabled it.
+  if (!ev.forum_enabled) {
     return res.json({ enabled: false, expired: false, posts: [] });
   }
 
@@ -478,11 +475,7 @@ app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
   const { data: ev } = await supabaseAdmin
     .from('events').select('id, status, forum_enabled, end_date').eq('id', req.params.id).single();
   if (!ev) return res.status(404).json({ error: 'Event not found.' });
-  // null → old event, default enabled for published; false → explicitly off
-  const forumEnabled = ev.forum_enabled === false
-    ? false
-    : (ev.forum_enabled || ev.status === 'published');
-  if (!forumEnabled) return res.status(403).json({ error: 'Forum is not enabled for this event.' });
+  if (!ev.forum_enabled) return res.status(403).json({ error: 'Forum is not enabled for this event.' });
   if (ev.end_date) {
     const expiry = new Date(ev.end_date).getTime() + 48 * 60 * 60 * 1000;
     if (Date.now() > expiry) return res.status(403).json({ error: 'This forum has expired.' });
