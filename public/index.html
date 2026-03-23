@@ -1411,7 +1411,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
             <div style="font-size:14px;font-weight:600">Enable Event Forum</div>
             <div style="font-size:12px;color:var(--muted2);margin-top:2px">Let attendees discuss — expires 48h after event ends</div>
           </div>
-          <label class="toggle-sw"><input type="checkbox" id="evForumEnabled"><span class="toggle-sw-track"></span></label>
+          <label class="toggle-sw"><input type="checkbox" id="evForumEnabled" checked><span class="toggle-sw-track"></span></label>
         </div>
 
         <div class="step-nav">
@@ -3416,9 +3416,8 @@ async function saveEditEvent() {
       selectedEvent.cover_url = data.cover_url;
       const hero = document.getElementById('detailHero');
       if (hero) {
-        hero.style.backgroundImage = `url("${data.cover_url.replace(/"/g,'%22')}")`;
-        hero.style.backgroundSize = 'cover';
-        hero.style.backgroundPosition = 'center';
+        const safeUrl = data.cover_url.replace(/\\/g,'').replace(/"/g,'%22');
+        hero.style.cssText = `background:url("${safeUrl}") center/cover no-repeat;`;
       }
     }
   } catch(e) {
@@ -4109,14 +4108,12 @@ function viewDetail(ev) {
   const isPaid  = ev.is_paid;
   const bg = BG_GRADIENTS[Math.abs((ev.name||'').charCodeAt(0)) % BG_GRADIENTS.length];
   const detailHero = document.getElementById('detailHero');
-  detailHero.style.background = bg;
   if (ev.cover_url) {
-    detailHero.style.backgroundImage = `url("${ev.cover_url.replace(/"/g,'%22')}")`;
-    detailHero.style.backgroundSize  = 'cover';
-    detailHero.style.backgroundPosition = 'center';
+    const safeUrl = ev.cover_url.replace(/\\/g,'').replace(/"/g,'%22');
+    detailHero.style.cssText = `background:url("${safeUrl}") center/cover no-repeat;`;
     document.getElementById('detailEmoji').style.display = 'none';
   } else {
-    detailHero.style.backgroundImage = '';
+    detailHero.style.cssText = `background:${bg};`;
     document.getElementById('detailEmoji').style.display = 'block';
     document.getElementById('detailEmoji').textContent = ev.emoji || '✝';
   }
@@ -5142,66 +5139,105 @@ async function publishEvent() {
 // ═══════════════════════════════════════════════════════════
 // COMMUNITY
 // ═══════════════════════════════════════════════════════════
-const SAMPLE_POSTS = [
-  {name:'Pastor James T.',time:'2h ago',text:'Praying for everyone who came to last night\'s worship night. The presence of the Lord was so real. 🙏',amens:14},
-  {name:'Grace M.',time:'5h ago',text:'Testimony: I was going through the hardest season of my life, but God brought the right people at the right time. This community is a blessing.',amens:32},
-  {name:'Emmanuel O.',time:'1d ago',text:'"I can do all things through Christ who strengthens me." Holding onto this today. Who else needs this?',amens:21},
-];
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatTimeAgo(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1)  return 'Just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7)  return `${d}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
-function initCommunityFeed() {
+async function initCommunityFeed() {
   const feed = document.getElementById('communityFeed');
-  if (!feed || feed.dataset.loaded) return;
-  feed.dataset.loaded = '1';
+  if (!feed) return;
+  feed.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--muted2);font-size:14px">Loading…</div>';
+  try {
+    const res = await fetch(`${API_BASE}/api/community-posts`);
+    const { posts, error } = await res.json();
+    if (error) throw new Error(error);
+    renderCommunityFeed(posts || []);
+  } catch(e) {
+    feed.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--muted2);font-size:14px">Could not load posts.</div>';
+  }
+}
+
+function renderCommunityFeed(posts) {
+  const feed = document.getElementById('communityFeed');
+  if (!feed) return;
+  if (!posts.length) {
+    feed.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--muted2);font-size:14px">No posts yet — be the first to share! 🙏</div>';
+    return;
+  }
   feed.innerHTML = '';
-  SAMPLE_POSTS.forEach(p => {
+  posts.forEach(p => {
     const el = document.createElement('div');
     el.className = 'feed-card';
+    const name = p.profiles?.full_name || 'Anonymous';
+    const initial = name.charAt(0).toUpperCase();
+    const avHTML = p.profiles?.avatar_url
+      ? `<div class="feed-av" style="background:transparent;overflow:hidden;padding:0"><img src="${p.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
+      : `<div class="feed-av" style="background:${p.profiles?.avatar_color||'var(--gold)'}">${initial}</div>`;
     el.innerHTML = `
       <div class="feed-header">
-        <div class="feed-av">${p.name.charAt(0)}</div>
-        <div><div class="feed-name">${p.name}</div><div class="feed-time">${p.time}</div></div>
+        ${avHTML}
+        <div><div class="feed-name">${escapeHtml(name)}</div><div class="feed-time">${formatTimeAgo(p.created_at)}</div></div>
       </div>
-      <div class="feed-body">${p.text}</div>
+      <div class="feed-body" style="white-space:pre-wrap">${escapeHtml(p.body)}</div>
       <div class="feed-reactions">
-        <button class="reaction-btn" onclick="toggleReaction(this)">🙏 Amen <span>${p.amens}</span></button>
-        <button class="reaction-btn" onclick="toggleReaction(this)">❤️ <span>0</span></button>
+        <button class="reaction-btn" data-post-id="${p.id}" onclick="amenPost('${p.id}',this)">🙏 Amen <span>${p.amen_count||0}</span></button>
       </div>`;
     feed.appendChild(el);
   });
 }
 
-function toggleReaction(btn) {
-  const on = btn.classList.toggle('active');
-  const count = btn.querySelector('span');
-  count.textContent = parseInt(count.textContent) + (on ? 1 : -1);
+async function amenPost(postId, btn) {
+  if (!currentUser) { openAuth('signup'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/api/community-posts/${postId}/amen`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      const countEl = btn.querySelector('span');
+      if (countEl) countEl.textContent = data.amen_count;
+      btn.classList.add('active');
+    }
+  } catch(e) { /* silent */ }
 }
 
-function postToFeed() {
+async function postToFeed() {
   if (!currentUser) { openAuth('signup'); return; }
   const inp = document.getElementById('postInput');
   if (!inp.value.trim()) { showToast('Write something first ✏️'); return; }
-  const feed = document.getElementById('communityFeed');
-  const name = profileData?.full_name || currentUser.email?.split('@')[0] || 'You';
-  const el = document.createElement('div');
-  el.className = 'feed-card';
-  el.style.animation = 'pageIn .3s ease both';
-  const avHTML = profileData?.avatar_url
-    ? `<div class="feed-av" style="background:transparent;overflow:hidden"><img src="${profileData.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
-    : `<div class="feed-av" style="background:${profileData?.avatar_color||'var(--gold)'}">${name.charAt(0).toUpperCase()}</div>`;
-  el.innerHTML = `
-    <div class="feed-header">
-      ${avHTML}
-      <div><div class="feed-name">${name}</div><div class="feed-time">Just now</div></div>
-    </div>
-    <div class="feed-body">${inp.value.trim()}</div>
-    <div class="feed-reactions">
-      <button class="reaction-btn" onclick="toggleReaction(this)">🙏 Amen <span>0</span></button>
-      <button class="reaction-btn" onclick="toggleReaction(this)">❤️ <span>0</span></button>
-    </div>`;
-  feed.insertBefore(el, feed.firstChild);
-  inp.value = '';
-  document.getElementById('postSubmitRow').style.display = 'none';
-  showToast('✨ Posted!','success');
+  const body = inp.value.trim();
+  const btn = document.querySelector('#postSubmitRow .btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Posting…'; }
+  try {
+    const res = await fetch(`${API_BASE}/api/community-posts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+      body: JSON.stringify({ body }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to post');
+    inp.value = '';
+    document.getElementById('postSubmitRow').style.display = 'none';
+    showToast('Posted! 🙏', 'success');
+    await initCommunityFeed();
+  } catch(e) {
+    showToast(e.message || 'Failed to post', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Post'; }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════

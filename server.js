@@ -70,6 +70,12 @@ app.use(express.static(path.join(__dirname, 'public')));
       console.log(`[storage] Created bucket "${b.name}"`);
     }
   }
+  // Ensure all published events have forum_enabled = true (one-time migration fix)
+  const { error: forumErr } = await supabaseAdmin
+    .from('events').update({ forum_enabled: true })
+    .eq('status', 'published').eq('forum_enabled', false);
+  if (forumErr) console.warn('[startup] Could not enable forum on existing events:', forumErr.message);
+  else console.log('[startup] Forum enabled on all published events.');
 })();
 
 // ─── RATE LIMITERS ──────────────────────────────────────────
@@ -304,7 +310,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
     start_date: start_date || null, end_date: end_date || null,
     venue_name, address, city, state, zip, online_url,
     max_capacity: max_capacity || null,
-    forum_enabled: forum_enabled || false,
+    forum_enabled: forum_enabled !== false,
     status: 'draft',
   }).select().single();
   if (error) return res.status(400).json({ error: error.message });
@@ -697,12 +703,20 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
 app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res) => {
   const { eventId, ticketTypeId, qty = 1, buyerEmail } = req.body;
   if (!eventId || !ticketTypeId) return res.status(400).json({ error: 'Event ID and ticket type required.' });
+  // First: find the event (separate from Stripe account lookup so we can give precise errors)
   const { data: ev } = await supabaseAdmin
-    .from('events').select('*, host_stripe_accounts(stripe_account_id, payouts_enabled)')
-    .eq('id', eventId).eq('status', 'published').single();
-  if (!ev) return res.status(404).json({ error: 'Event not found. Make sure the event is published.' });
+    .from('events').select('*')
+    .eq('id', eventId).single();
+  if (!ev) return res.status(404).json({ error: 'Event not found.' });
+  if (ev.status !== 'published') return res.status(400).json({ error: 'This event is not published yet.' });
   if (!ev.is_paid) return res.status(400).json({ error: 'This event is free — use RSVP.' });
-  if (!ev.host_stripe_accounts?.payouts_enabled) return res.status(400).json({ error: 'Host payment account not set up.' });
+  // Second: look up host Stripe account via host_id
+  const { data: stripeAcct } = await supabaseAdmin
+    .from('host_stripe_accounts').select('stripe_account_id, payouts_enabled')
+    .eq('user_id', ev.host_id).single();
+  if (!stripeAcct?.payouts_enabled) return res.status(400).json({ error: 'Host payment account not set up. Please ask the host to complete their Stripe setup.' });
+  // Alias for rest of handler
+  ev.host_stripe_accounts = stripeAcct;
   const { data: tt } = await supabaseAdmin.from('ticket_types').select('*').eq('id', ticketTypeId).eq('event_id', eventId).single();
   if (!tt) return res.status(404).json({ error: 'Ticket type not found.' });
   if (tt.quantity !== null && qty > (tt.quantity - tt.sold)) return res.status(400).json({ error: `Only ${tt.quantity - tt.sold} tickets remaining.` });
@@ -978,6 +992,43 @@ app.get('/api/tickets/:ticketId/wallet', requireAuth, async (req, res) => {
     console.error('Wallet generation error:', e.message);
     res.status(500).json({ error: 'Failed to generate pass. ' + e.message });
   }
+});
+
+// ════════════════════════════════════════════════════════════
+// COMMUNITY POSTS
+// ════════════════════════════════════════════════════════════
+app.get('/api/community-posts', async (req, res) => {
+  const { limit = 30, offset = 0 } = req.query;
+  const { data, error } = await supabaseAdmin
+    .from('community_posts')
+    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .order('created_at', { ascending: false })
+    .range(Number(offset), Number(offset) + Number(limit) - 1);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ posts: data || [] });
+});
+
+app.post('/api/community-posts', requireAuth, async (req, res) => {
+  const { body } = req.body;
+  if (!body?.trim()) return res.status(400).json({ error: 'Post body required.' });
+  const { data, error } = await supabaseAdmin
+    .from('community_posts')
+    .insert({ author_id: req.userId, body: body.trim() })
+    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/api/community-posts/:id/amen', requireAuth, async (req, res) => {
+  const { data: post, error: fetchErr } = await supabaseAdmin
+    .from('community_posts').select('amen_count').eq('id', req.params.id).single();
+  if (fetchErr || !post) return res.status(404).json({ error: 'Post not found.' });
+  const newCount = (post.amen_count || 0) + 1;
+  const { error } = await supabaseAdmin
+    .from('community_posts').update({ amen_count: newCount }).eq('id', req.params.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ amen_count: newCount });
 });
 
 // ─── SPA FALLBACK ───────────────────────────────────────────
