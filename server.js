@@ -440,8 +440,10 @@ app.get('/api/events/:id/forum', async (req, res) => {
     expired = Date.now() > expiry;
   }
 
-  // Return enabled/expired even if no posts yet so frontend can react correctly
-  if (!ev.forum_enabled) {
+  // Treat published events as forum-enabled even if the column is false/null
+  // (handles events created before the forum_enabled column was added)
+  const forumEnabled = ev.forum_enabled || ev.status === 'published';
+  if (!forumEnabled) {
     return res.json({ enabled: false, expired: false, posts: [] });
   }
 
@@ -469,16 +471,29 @@ app.get('/api/events/:id/forum', async (req, res) => {
 
 app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
   const { body } = req.body;
-  if (!body?.trim()) return res.status(400).json({ error: 'Message required.' });
+  if (!body?.trim()) return res.status(400).json({ error: 'Message body required.' });
   const { data: ev } = await supabaseAdmin
-    .from('events').select('forum_enabled, end_date').eq('id', req.params.id).single();
-  if (!ev || !ev.forum_enabled) return res.status(403).json({ error: 'Forum is not enabled.' });
-  if (forumExpired(ev)) return res.status(403).json({ error: 'Forum has expired.' });
-  const { data, error } = await supabaseAdmin.from('event_forum_posts')
+    .from('events').select('id, status, forum_enabled, end_date').eq('id', req.params.id).single();
+  if (!ev) return res.status(404).json({ error: 'Event not found.' });
+  // Allow posting if forum_enabled OR event is published (backwards compat)
+  const forumEnabled = ev.forum_enabled || ev.status === 'published';
+  if (!forumEnabled) return res.status(403).json({ error: 'Forum is not enabled for this event.' });
+  if (ev.end_date) {
+    const expiry = new Date(ev.end_date).getTime() + 48 * 60 * 60 * 1000;
+    if (Date.now() > expiry) return res.status(403).json({ error: 'This forum has expired.' });
+  }
+  const { data, error } = await supabaseAdmin
+    .from('event_forum_posts')
     .insert({ event_id: req.params.id, author_id: req.userId, body: body.trim() })
-    .select('*, profiles(full_name, avatar_url, avatar_color)').single();
+    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .single();
   if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
+  res.json({
+    ...data,
+    author_name:         data.profiles?.full_name || 'Member',
+    author_avatar_url:   data.profiles?.avatar_url,
+    author_avatar_color: data.profiles?.avatar_color,
+  });
 });
 
 app.delete('/api/events/:eventId/forum/:postId', requireAuth, async (req, res) => {
