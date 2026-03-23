@@ -2560,6 +2560,7 @@ function goTo(page) {
   }
 
   window.scrollTo(0,0);
+  if (page === 'home') fetchHomeEvents();
   if (page === 'browse') initBrowse();
   if (page === 'profile') {
     fetchProfile();
@@ -3174,17 +3175,30 @@ function openEditEventSheet(ev) {
 
 function handleEditCoverPhoto(input) {
   const file = input.files[0]; if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { showToast('Cover photo must be under 5MB','error'); return; }
   editCoverFile = file;
   const r = new FileReader();
   r.onload = e => {
-    const preview = document.getElementById('eeeCoverPreview');
-    const ph      = document.getElementById('eeeCoverPlaceholder');
-    const chg     = document.getElementById('eeeCoverChange');
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-    ph.style.display = 'none';
-    chg.style.display = 'block';
+    // Compress to max 1200px JPEG before storing — keeps upload fast
+    const srcImg = new Image();
+    srcImg.onload = () => {
+      const MAX = 1200;
+      const scale = Math.min(1, MAX / Math.max(srcImg.width, srcImg.height));
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(srcImg.width  * scale);
+      canvas.height = Math.round(srcImg.height * scale);
+      canvas.getContext('2d').drawImage(srcImg, 0, 0, canvas.width, canvas.height);
+      const compressed = canvas.toDataURL('image/jpeg', 0.82);
+      // Store compressed data URL so uploadViaServer can use it directly
+      editCoverFile = compressed; // override with data URL for upload
+      const preview = document.getElementById('eeeCoverPreview');
+      const ph      = document.getElementById('eeeCoverPlaceholder');
+      const chg     = document.getElementById('eeeCoverChange');
+      preview.src = compressed;
+      preview.style.display = 'block';
+      ph.style.display = 'none';
+      chg.style.display = 'block';
+    };
+    srcImg.src = e.target.result;
   };
   r.readAsDataURL(file);
 }
@@ -3307,9 +3321,12 @@ async function saveEditEvent() {
   try {
     // Helper: upload an image file via server (admin key bypasses RLS)
     const uploadViaServer = async (file, type) => {
-      const dataUrl = await new Promise((res, rej) => {
-        const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(file);
-      });
+      // file can be a File object or already a compressed data URL string
+      const dataUrl = (typeof file === 'string' && file.startsWith('data:'))
+        ? file
+        : await new Promise((res, rej) => {
+            const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(file);
+          });
       const upRes = await fetch(`${API_BASE}/api/upload-event-image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
@@ -3393,6 +3410,16 @@ async function saveEditEvent() {
     closeSheet('editEventSheet');
     showToast('Event updated!', 'success');
     fetchMyEvents();
+    // If the event detail page is open for this event, update its hero immediately
+    if (selectedEvent?.id === editEventId && data.cover_url) {
+      selectedEvent.cover_url = data.cover_url;
+      const hero = document.getElementById('detailHero');
+      if (hero) {
+        hero.style.backgroundImage = `url("${data.cover_url.replace(/"/g,'%22')}")`;
+        hero.style.backgroundSize = 'cover';
+        hero.style.backgroundPosition = 'center';
+      }
+    }
   } catch(e) {
     console.error(e);
     document.getElementById('eeeErr').textContent = 'Network error. Try again.';
@@ -3754,6 +3781,7 @@ function epHandlePhoto(input) {
       canvas.getContext('2d').drawImage(srcImg, 0, 0, w, h);
       epAvatarUrl   = canvas.toDataURL('image/jpeg', 0.82);
       epAvatarColor = null;
+      // Update sheet preview
       const prev = document.getElementById('epPreview');
       prev.innerHTML = '';
       prev.style.background = 'transparent';
@@ -3762,6 +3790,16 @@ function epHandlePhoto(input) {
       thumb.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
       prev.appendChild(thumb);
       document.querySelectorAll('.av-btn').forEach(b => b.classList.remove('sel'));
+      // Live-update profile page avatar so user sees it immediately
+      const profAvEl = document.getElementById('profAv');
+      if (profAvEl) {
+        profAvEl.innerHTML = '';
+        profAvEl.style.background = 'transparent';
+        const liveThumb = document.createElement('img');
+        liveThumb.src = epAvatarUrl;
+        liveThumb.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+        profAvEl.appendChild(liveThumb);
+      }
     };
     srcImg.src = e.target.result;
   };
@@ -4072,7 +4110,7 @@ function viewDetail(ev) {
   const detailHero = document.getElementById('detailHero');
   detailHero.style.background = bg;
   if (ev.cover_url) {
-    detailHero.style.backgroundImage = `url(${ev.cover_url})`;
+    detailHero.style.backgroundImage = `url("${ev.cover_url.replace(/"/g,'%22')}")`;
     detailHero.style.backgroundSize  = 'cover';
     detailHero.style.backgroundPosition = 'center';
     document.getElementById('detailEmoji').style.display = 'none';
