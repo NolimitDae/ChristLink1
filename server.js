@@ -440,9 +440,12 @@ app.get('/api/events/:id/forum', async (req, res) => {
     expired = Date.now() > expiry;
   }
 
-  // Treat published events as forum-enabled even if the column is false/null
-  // (handles events created before the forum_enabled column was added)
-  const forumEnabled = ev.forum_enabled || ev.status === 'published';
+  // null  → column never set (old event) → default to enabled if published
+  // false → host explicitly disabled it  → respect that
+  // true  → explicitly enabled           → respect that
+  const forumEnabled = ev.forum_enabled === false
+    ? false
+    : (ev.forum_enabled || ev.status === 'published');
   if (!forumEnabled) {
     return res.json({ enabled: false, expired: false, posts: [] });
   }
@@ -475,8 +478,10 @@ app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
   const { data: ev } = await supabaseAdmin
     .from('events').select('id, status, forum_enabled, end_date').eq('id', req.params.id).single();
   if (!ev) return res.status(404).json({ error: 'Event not found.' });
-  // Allow posting if forum_enabled OR event is published (backwards compat)
-  const forumEnabled = ev.forum_enabled || ev.status === 'published';
+  // null → old event, default enabled for published; false → explicitly off
+  const forumEnabled = ev.forum_enabled === false
+    ? false
+    : (ev.forum_enabled || ev.status === 'published');
   if (!forumEnabled) return res.status(403).json({ error: 'Forum is not enabled for this event.' });
   if (ev.end_date) {
     const expiry = new Date(ev.end_date).getTime() + 48 * 60 * 60 * 1000;
