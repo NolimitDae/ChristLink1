@@ -70,10 +70,12 @@ app.use(express.static(path.join(__dirname, 'public')));
       console.log(`[storage] Created bucket "${b.name}"`);
     }
   }
-  // Ensure all published events have forum_enabled = true (one-time migration fix)
+  // Ensure all published events have forum_enabled = true
+  // Uses or() to catch both false AND null values
   const { error: forumErr } = await supabaseAdmin
     .from('events').update({ forum_enabled: true })
-    .eq('status', 'published').eq('forum_enabled', false);
+    .eq('status', 'published')
+    .or('forum_enabled.eq.false,forum_enabled.is.null');
   if (forumErr) console.warn('[startup] Could not enable forum on existing events:', forumErr.message);
   else console.log('[startup] Forum enabled on all published events.');
 })();

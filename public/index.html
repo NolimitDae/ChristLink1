@@ -1649,12 +1649,17 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       <button class="who-going-see-all" id="detailWhoGoingBtn" onclick="openAttendeesSheet()">See All Attendees ↓</button>
     </div>
 
-    <!-- Forum button -->
-    <div id="detailForumBtn" style="display:none;margin-bottom:20px">
-      <button onclick="openEventForum()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;font-weight:600;color:var(--text)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        Event Forum
-        <span id="detailForumCount" style="font-size:11px;color:var(--muted);font-weight:400"></span>
+    <!-- Forum Section -->
+    <div id="detailForumSection" style="margin-bottom:20px">
+      <button onclick="openEventForum()" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);text-align:left;cursor:pointer;transition:border-color .18s" onmouseenter="this.style.borderColor='rgba(201,168,76,.35)'" onmouseleave="this.style.borderColor='var(--border)'">
+        <div style="width:38px;height:38px;border-radius:var(--r-sm);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600;color:var(--text)">Event Forum</div>
+          <div id="detailForumCount" style="font-size:12px;color:var(--muted2);margin-top:1px">Chat with people going</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
 
@@ -2354,10 +2359,15 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       </div>
 
       <!-- FORUM TOGGLE -->
-      <div class="toggle-row" style="margin-bottom:18px">
-        <div class="toggle-label">
-          <h4>Event Forum</h4>
-          <p style="font-size:12px;color:var(--muted2)">Let attendees discuss — expires 48h after event ends</p>
+      <div class="toggle-row" id="eeeForumRow" style="margin-bottom:18px;border-color:rgba(201,168,76,.2)">
+        <div class="toggle-label" style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:var(--r-sm);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <div>
+            <h4 style="margin:0 0 2px">Event Forum</h4>
+            <p style="font-size:12px;color:var(--muted2);margin:0">Let attendees chat — expires 48h after event ends</p>
+          </div>
         </div>
         <label class="toggle-sw">
           <input type="checkbox" id="eeeForumEnabled">
@@ -3635,10 +3645,14 @@ let forumIsHost    = false;
 
 async function loadForumCount(eventId) {
   try {
-    const res = await fetch(`${API_BASE}/api/events/${eventId}/forum`);
+    const res  = await fetch(`${API_BASE}/api/events/${eventId}/forum`);
     const data = await res.json();
-    const el = document.getElementById('detailForumCount');
-    if (el && data.enabled) el.textContent = `· ${data.posts.length} post${data.posts.length !== 1 ? 's' : ''}`;
+    const el   = document.getElementById('detailForumCount');
+    if (!el) return;
+    if (data.expired)       el.textContent = 'Forum closed';
+    else if (!data.enabled) el.textContent = 'Forum not enabled — enable it in Edit Event';
+    else if (data.posts.length === 0) el.textContent = 'Be the first to post!';
+    else el.textContent = `${data.posts.length} post${data.posts.length !== 1 ? 's' : ''}`;
   } catch {}
 }
 
@@ -3667,14 +3681,22 @@ async function loadForumPosts() {
       document.getElementById('forumExpiredMsg').style.display = 'block'; return;
     }
     if (!data.enabled) {
-      document.getElementById('forumEmpty').style.display = 'block'; return;
+      const empty = document.getElementById('forumEmpty');
+      const isHost = selectedEvent?.host_id === currentUser?.id;
+      empty.innerHTML = `<div style="font-size:32px;margin-bottom:8px">💬</div>
+        <div style="font-weight:600;margin-bottom:6px">Forum not enabled</div>
+        <div style="font-size:13px;color:var(--muted2)">${isHost ? 'Enable it by tapping Edit Event on your profile.' : 'The host hasn\'t enabled the forum for this event.'}</div>`;
+      empty.style.display = 'block'; return;
     }
     if (data.posts.length === 0) {
+      document.getElementById('forumEmpty').innerHTML = `<div style="font-size:32px;margin-bottom:8px">💬</div>
+        <div style="font-weight:600">No posts yet</div>
+        <div style="font-size:13px;margin-top:4px">Be the first to start the conversation!</div>`;
       document.getElementById('forumEmpty').style.display = 'block';
     } else {
       renderForumPosts(data.posts);
     }
-    if (currentUser) document.getElementById('forumInput').style.display = 'block';
+    if (currentUser) document.getElementById('forumInput').style.display = 'flex';
   } catch {
     document.getElementById('forumLoading').style.display = 'none';
     document.getElementById('forumEmpty').style.display   = 'block';
@@ -4177,14 +4199,8 @@ function viewDetail(ev) {
     dhAv.textContent = (ev.host_name||'H').charAt(0).toUpperCase();
     if (ev.host_avatar_color) dhAv.style.background = ev.host_avatar_color;
   }
-  // Forum button
-  const forumBtn = document.getElementById('detailForumBtn');
-  if (ev.forum_enabled) {
-    forumBtn.style.display = 'block';
-    loadForumCount(ev.id);
-  } else {
-    forumBtn.style.display = 'none';
-  }
+  // Forum section — always visible; API determines enabled/expired state
+  loadForumCount(ev.id);
   document.getElementById('detailDesc').textContent = ev.description || 'No description provided.';
   document.getElementById('detailDate').textContent = ev.start_date
     ? new Date(ev.start_date).toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})
