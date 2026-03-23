@@ -1213,8 +1213,40 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 
   <!-- form -->
   <div id="host-form" style="display:block">
+    <!-- TYPE SELECTION — shown before steps -->
+    <div id="hostTypeSelect" style="padding:24px 20px 40px;display:flex;flex-direction:column;align-items:center">
+      <div style="font-size:28px;margin-bottom:8px">✝</div>
+      <div style="font-family:var(--font-display);font-size:24px;font-weight:800;margin-bottom:6px;text-align:center">Host a Gathering</div>
+      <div style="font-size:14px;color:var(--muted2);margin-bottom:32px;text-align:center">What kind of event are you creating?</div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:100%;max-width:380px">
+        <!-- Free -->
+        <button onclick="selectEventType(false)" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:22px 20px;text-align:left;cursor:pointer;transition:border-color .2s;width:100%"
+          onmouseenter="this.style.borderColor='var(--gold)'" onmouseleave="this.style.borderColor='var(--border)'">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:48px;height:48px;border-radius:var(--r-md);background:rgba(78,201,140,.12);border:1px solid rgba(78,201,140,.25);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🙌</div>
+            <div>
+              <div style="font-size:17px;font-weight:700;margin-bottom:3px">Free Event</div>
+              <div style="font-size:13px;color:var(--muted2)">Attendees RSVP at no cost. Perfect for worship nights, Bible studies & community gatherings.</div>
+            </div>
+          </div>
+        </button>
+
+        <!-- Paid -->
+        <button onclick="selectEventType(true)" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:22px 20px;text-align:left;cursor:pointer;transition:border-color .2s;width:100%"
+          onmouseenter="this.style.borderColor='var(--gold)'" onmouseleave="this.style.borderColor='var(--border)'">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:48px;height:48px;border-radius:var(--r-md);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🎟️</div>
+            <div>
+              <div style="font-size:17px;font-weight:700;margin-bottom:3px">Paid Event <span style="font-size:12px;font-weight:600;color:var(--gold);background:var(--gold-dim);padding:2px 8px;border-radius:var(--r-full);margin-left:4px">$19.99 listing fee</span></div>
+              <div style="font-size:13px;color:var(--muted2)">Sell tickets with Stripe. A 5% service fee is added to each ticket — paid by attendees.</div>
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
     <!-- step indicators -->
-    <div class="host-steps" id="hostStepIndicators">
+    <div class="host-steps" id="hostStepIndicators" style="display:none">
       <div class="host-step-item">
         <div class="step-num active" id="si-1">1</div>
         <div class="step-label active" id="sl-1">Details</div>
@@ -1236,7 +1268,9 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       </div>
     </div>
 
-    <div class="host-form-wrap">
+    <div class="host-form-wrap" id="hostFormWrap" style="display:none">
+      <!-- Hidden paid state (replaces removed toggle) -->
+      <input type="checkbox" id="paidToggle" style="display:none">
 
       <!-- STEP 1: Details -->
       <div class="form-step active" id="host-step-1">
@@ -1290,19 +1324,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
         <label class="field-label">Start Date & Time</label>
         <input type="datetime-local" id="evStartDate" class="field" style="max-width:280px">
 
-        <!-- Paid toggle -->
-        <div class="toggle-row">
-          <div class="toggle-label">
-            <h4>Paid Event</h4>
-            <p id="paidDesc">Free — anyone can RSVP</p>
-          </div>
-          <label class="toggle-sw">
-            <input type="checkbox" id="paidToggle" onchange="handlePaidToggle()">
-            <div class="toggle-sw-track"></div>
-          </label>
-        </div>
-
-        <!-- listing fee info (hidden until paid) -->
+        <!-- listing fee shown after type selection for paid events -->
         <div id="listingFeeSection" style="display:none">
           <div class="fee-card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -1326,7 +1348,13 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
         <input type="text" id="evVenue" class="field" placeholder="First Baptist Church">
 
         <label class="field-label">Street Address</label>
-        <input type="text" id="evAddress" class="field" placeholder="123 Main Street">
+        <div style="position:relative">
+          <input type="text" id="evAddress" class="field" placeholder="Start typing address…"
+            autocomplete="off" oninput="addrAutocomplete(this.value)" onblur="setTimeout(closeAddrDropdown,200)">
+          <div id="addrDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:999;
+            background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);
+            box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden;margin-top:4px"></div>
+        </div>
 
         <div class="field-row">
           <div>
@@ -1357,6 +1385,19 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 
       <!-- STEP 3: Tickets -->
       <div class="form-step" id="host-step-3">
+        <!-- listing fee for paid events -->
+        <div id="listingFeeSection" style="display:none">
+          <div class="fee-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="font-weight:700;font-size:15px">Listing Fee</div>
+              <div style="font-size:20px;font-weight:800;color:var(--gold)">$19.99</div>
+            </div>
+            <p style="font-size:13px;color:var(--muted2);margin-bottom:12px">Required to publish a paid event. A 5% service fee is added to each ticket price — paid by attendees, not you.</p>
+            <div id="listingStatus" style="display:none;font-size:13px;color:var(--green);font-weight:600">✅ Listing fee paid — ticketing unlocked</div>
+            <button id="payFeeBtn" class="btn btn-gold btn-sm" onclick="openSheet('listingFeeSheet')">Pay $19.99 to Unlock →</button>
+          </div>
+        </div>
+
         <!-- free events -->
         <div id="freeEventSetup">
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;margin-bottom:18px">
@@ -4608,6 +4649,72 @@ function handleListingFeePaid() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ADDRESS AUTOCOMPLETE (Photon / OpenStreetMap — free, no API key)
+// ═══════════════════════════════════════════════════════════
+let addrDebounce = null;
+
+async function addrAutocomplete(val) {
+  const drop = document.getElementById('addrDropdown');
+  if (!drop) return;
+  clearTimeout(addrDebounce);
+  if (!val || val.length < 3) { drop.style.display = 'none'; return; }
+  addrDebounce = setTimeout(async () => {
+    try {
+      const res  = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(val)}&lang=en&limit=6`);
+      const data = await res.json();
+      const features = (data.features || []).filter(f => f.properties?.country === 'United States' || f.properties?.countrycode === 'US');
+      if (!features.length) { drop.style.display = 'none'; return; }
+      drop.innerHTML = '';
+      features.forEach(f => {
+        const p    = f.properties;
+        const street  = [p.housenumber, p.street].filter(Boolean).join(' ');
+        const city    = p.city || p.town || p.village || p.county || '';
+        const state   = p.state || '';
+        const display = [street, city, state].filter(Boolean).join(', ');
+        if (!display) return;
+        const item = document.createElement('div');
+        item.style.cssText = 'padding:11px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text)';
+        item.textContent = display;
+        item.onmouseenter = () => item.style.background = 'var(--surface3)';
+        item.onmouseleave = () => item.style.background = '';
+        item.onmousedown  = () => {
+          if (street)  document.getElementById('evAddress').value = street;
+          if (city)    document.getElementById('evCity').value    = city;
+          if (state) {
+            const stateInput = document.getElementById('evState');
+            // Convert full state name to 2-letter abbreviation
+            const abbr = STATE_ABBR[state] || state.slice(0,2).toUpperCase();
+            if (stateInput) stateInput.value = abbr;
+          }
+          drop.style.display = 'none';
+          updateReview();
+        };
+        drop.appendChild(item);
+      });
+      drop.style.display = features.length ? 'block' : 'none';
+    } catch { drop.style.display = 'none'; }
+  }, 320);
+}
+
+function closeAddrDropdown() {
+  const drop = document.getElementById('addrDropdown');
+  if (drop) drop.style.display = 'none';
+}
+
+const STATE_ABBR = {
+  'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA',
+  'Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA',
+  'Hawaii':'HI','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA','Kansas':'KS',
+  'Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD','Massachusetts':'MA',
+  'Michigan':'MI','Minnesota':'MN','Mississippi':'MS','Missouri':'MO','Montana':'MT',
+  'Nebraska':'NE','Nevada':'NV','New Hampshire':'NH','New Jersey':'NJ','New Mexico':'NM',
+  'New York':'NY','North Carolina':'NC','North Dakota':'ND','Ohio':'OH','Oklahoma':'OK',
+  'Oregon':'OR','Pennsylvania':'PA','Rhode Island':'RI','South Carolina':'SC','South Dakota':'SD',
+  'Tennessee':'TN','Texas':'TX','Utah':'UT','Vermont':'VT','Virginia':'VA','Washington':'WA',
+  'West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY','District of Columbia':'DC',
+};
+
+// ═══════════════════════════════════════════════════════════
 // COVER PHOTO + GALLERY HANDLERS
 // ═══════════════════════════════════════════════════════════
 function handleCoverPhoto(input) {
@@ -4706,13 +4813,27 @@ function hostNext(from) {
 }
 function hostPrev(from) { setHostStep(from-1); }
 
+function selectEventType(isPaid) {
+  // Hide type selector, show step form
+  document.getElementById('hostTypeSelect').style.display = 'none';
+  document.getElementById('hostStepIndicators').style.display = '';
+  document.getElementById('hostFormWrap').style.display = '';
+  // Set paid state
+  const paidToggle = document.getElementById('paidToggle');
+  if (paidToggle) paidToggle.checked = isPaid;
+  handlePaidToggle();
+}
+
 function handlePaidToggle() {
-  const isPaid = document.getElementById('paidToggle').checked;
-  document.getElementById('listingFeeSection').style.display  = isPaid ? 'block' : 'none';
-  document.getElementById('paidDesc').textContent = isPaid ? 'Charge attendees — $19.99 listing fee required' : 'Free — anyone can RSVP';
-  document.getElementById('step3Label').textContent = isPaid ? 'Tickets' : 'Setup';
-  document.getElementById('freeEventSetup').style.display = isPaid ? 'none' : 'block';
-  document.getElementById('paidEventSetup').style.display = isPaid ? 'block' : 'none';
+  const isPaid = document.getElementById('paidToggle')?.checked || false;
+  const freeSetup    = document.getElementById('freeEventSetup');
+  const paidSetup    = document.getElementById('paidEventSetup');
+  const listingFee   = document.getElementById('listingFeeSection');
+  const step3Label   = document.getElementById('step3Label');
+  if (freeSetup)  freeSetup.style.display  = isPaid ? 'none'  : 'block';
+  if (paidSetup)  paidSetup.style.display  = isPaid ? 'block' : 'none';
+  if (listingFee) listingFee.style.display = isPaid ? 'block' : 'none';
+  if (step3Label) step3Label.textContent   = isPaid ? 'Tickets' : 'Options';
 }
 
 // ─── TICKET ROWS ─────────────────────────────────────────────
