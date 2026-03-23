@@ -484,6 +484,37 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   position:relative;font-size:72px;
   background:linear-gradient(135deg,#1E1E2A,#252533);
 }
+.detail-hero.has-photo{cursor:zoom-in;}
+/* ── Image Lightbox ── */
+#imgLightbox{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,0);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity .22s ease, background .22s ease;
+}
+#imgLightbox.open{
+  opacity:1;pointer-events:all;
+  background:rgba(0,0,0,.92);
+}
+#imgLightbox img{
+  max-width:100%;max-height:92vh;
+  border-radius:10px;
+  object-fit:contain;
+  transform:scale(.92);
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1);
+  user-select:none;
+  -webkit-user-drag:none;
+}
+#imgLightbox.open img{transform:scale(1);}
+#imgLightboxClose{
+  position:absolute;top:calc(var(--safe-t) + 16px);right:16px;
+  width:40px;height:40px;border-radius:50%;
+  background:rgba(255,255,255,.12);backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:20px;line-height:1;cursor:pointer;
+}
 .detail-back{
   position:absolute;top:calc(var(--safe-t) + 12px);left:16px;
   width:38px;height:38px;border-radius:50%;
@@ -4124,10 +4155,14 @@ function viewDetail(ev) {
     const safeUrl = ev.cover_url.replace(/\\/g,'').replace(/"/g,'%22');
     detailHero.style.cssText = `background:url("${safeUrl}") center/cover no-repeat;`;
     document.getElementById('detailEmoji').style.display = 'none';
+    detailHero.classList.add('has-photo');
+    detailHero.onclick = () => openLightbox(ev.cover_url);
   } else {
     detailHero.style.cssText = `background:${bg};`;
     document.getElementById('detailEmoji').style.display = 'block';
     document.getElementById('detailEmoji').textContent = ev.emoji || '✝';
+    detailHero.classList.remove('has-photo');
+    detailHero.onclick = null;
   }
   document.getElementById('detailTitle').textContent = ev.name || 'Event';
   document.getElementById('detailHostName').textContent = ev.host_name || 'Community Host';
@@ -5651,8 +5686,44 @@ function spawnConfetti() {
 // Restore page from hash on load (fixes refresh losing current page)
 restorePageFromHash();
 
+// ── Image Lightbox ──────────────────────────────────────────
+function openLightbox(url) {
+  const lb  = document.getElementById('imgLightbox');
+  const img = document.getElementById('imgLightboxImg');
+  img.src = url;
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Swipe-down to close
+  let startY = 0;
+  lb._onTouchStart = e => { startY = e.touches[0].clientY; };
+  lb._onTouchEnd   = e => { if (e.changedTouches[0].clientY - startY > 60) closeLightbox(); };
+  lb.addEventListener('touchstart', lb._onTouchStart, { passive: true });
+  lb.addEventListener('touchend',   lb._onTouchEnd,   { passive: true });
+
+  // Keyboard close
+  lb._onKey = e => { if (e.key === 'Escape') closeLightbox(); };
+  document.addEventListener('keydown', lb._onKey);
+}
+function closeLightbox() {
+  const lb = document.getElementById('imgLightbox');
+  lb.classList.remove('open');
+  document.body.style.overflow = '';
+  lb.removeEventListener('touchstart', lb._onTouchStart);
+  lb.removeEventListener('touchend',   lb._onTouchEnd);
+  document.removeEventListener('keydown', lb._onKey);
+  // Clear src after transition so there's no flash on next open
+  setTimeout(() => { document.getElementById('imgLightboxImg').src = ''; }, 250);
+}
+
 // Fetch home events on load
 fetchHomeEvents();
 </script>
+
+<!-- ── Image Lightbox ─────────────────────────────────── -->
+<div id="imgLightbox" onclick="closeLightbox()">
+  <button id="imgLightboxClose" onclick="closeLightbox()" aria-label="Close">✕</button>
+  <img id="imgLightboxImg" src="" alt="Event photo" onclick="event.stopPropagation()">
+</div>
 </body>
 </html>
