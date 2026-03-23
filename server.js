@@ -257,17 +257,18 @@ app.post('/api/upload-event-image', requireAuth, async (req, res) => {
 // EVENTS
 // ════════════════════════════════════════════════════════════
 app.get('/api/events', async (req, res) => {
-  const { city, type, is_paid, q, format, limit = 20, offset = 0 } = req.query;
+  const { city, type, is_paid, q, format, host_id, limit = 20, offset = 0 } = req.query;
   let query = supabaseAdmin
     .from('events_with_details').select('*')
     .eq('status', 'published')
     .order('start_date', { ascending: true })
     .range(Number(offset), Number(offset) + Number(limit) - 1);
-  if (city)   query = query.ilike('city', `%${city}%`);
-  if (type)   query = query.ilike('event_type', `%${type}%`);
-  if (format) query = query.eq('format', format);
+  if (city)    query = query.ilike('city', `%${city}%`);
+  if (type)    query = query.ilike('event_type', `%${type}%`);
+  if (format)  query = query.eq('format', format);
+  if (host_id) query = query.eq('host_id', host_id);
   if (is_paid !== undefined) query = query.eq('is_paid', is_paid === 'true');
-  if (q)      query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%,event_type.ilike.%${q}%`);
+  if (q)       query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%,event_type.ilike.%${q}%`);
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
   res.json({ events: data || [] });
