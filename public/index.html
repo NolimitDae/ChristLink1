@@ -1608,12 +1608,13 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
           <div class="detail-meta-sub">Date & Time</div>
         </div>
       </div>
-      <div class="detail-meta-row">
+      <div class="detail-meta-row" id="detailLocationRow" onclick="openMapsChoice()" style="cursor:pointer">
         <div class="detail-meta-icon">📍</div>
-        <div>
+        <div style="flex:1;min-width:0">
           <div class="detail-meta-text" id="detailLocation">—</div>
-          <div class="detail-meta-sub">Location</div>
+          <div class="detail-meta-sub">Tap for directions</div>
         </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
     </div>
     <div style="font-size:14px;line-height:1.7;color:var(--text);margin-bottom:20px" id="detailDesc">—</div>
@@ -1966,6 +1967,53 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       <button class="sheet-close" onclick="closeSheet('footerSheet')">×</button>
     </div>
     <div class="sheet-body" id="footerSheetBody"></div>
+  </div>
+</div>
+
+<!-- MAPS CHOICE SHEET -->
+<div class="overlay" id="mapsSheet">
+  <div class="sheet" style="max-height:60dvh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Get Directions</div>
+      <button class="sheet-close" onclick="closeSheet('mapsSheet')">×</button>
+    </div>
+    <div class="sheet-body">
+      <div style="font-size:13px;color:var(--muted2);margin-bottom:18px;text-align:center" id="mapsAddress">—</div>
+      <!-- Apple Maps -->
+      <a id="mapsAppleBtn" href="#" target="_blank" rel="noopener"
+        style="display:flex;align-items:center;gap:14px;background:var(--surface2);border:1px solid var(--border);
+        border-radius:var(--r-lg);padding:16px 18px;margin-bottom:12px;text-decoration:none;color:var(--text)">
+        <div style="width:44px;height:44px;border-radius:12px;background:#1c1c1e;border:1px solid var(--border);
+          display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:15px">Apple Maps</div>
+          <div style="font-size:12px;color:var(--muted2)">Open in Maps app</div>
+        </div>
+        <svg style="margin-left:auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+      <!-- Google Maps -->
+      <a id="mapsGoogleBtn" href="#" target="_blank" rel="noopener"
+        style="display:flex;align-items:center;gap:14px;background:var(--surface2);border:1px solid var(--border);
+        border-radius:var(--r-lg);padding:16px 18px;margin-bottom:12px;text-decoration:none;color:var(--text)">
+        <div style="width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid var(--border);
+          display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="22" height="22" viewBox="0 0 24 24"><path fill="#4285F4" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle fill="#fff" cx="12" cy="9" r="2.5"/></svg>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:15px">Google Maps</div>
+          <div style="font-size:12px;color:var(--muted2)">Open in Google Maps</div>
+        </div>
+        <svg style="margin-left:auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+      <!-- Copy address -->
+      <button onclick="copyAddress()" style="width:100%;padding:14px;background:transparent;border:1px solid var(--border);
+        border-radius:var(--r-lg);font-size:14px;font-weight:600;color:var(--muted2);cursor:pointer">
+        📋 Copy Address
+      </button>
+    </div>
   </div>
 </div>
 
@@ -4058,9 +4106,14 @@ function viewDetail(ev) {
   document.getElementById('detailDate').textContent = ev.start_date
     ? new Date(ev.start_date).toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})
     : 'Date TBD';
-  document.getElementById('detailLocation').textContent = ev.venue_name
+  const locText = ev.venue_name
     ? `${ev.venue_name}, ${ev.city||''}`
     : (ev.city || (ev.format==='online'?'Online':'TBD'));
+  document.getElementById('detailLocation').textContent = locText;
+  // Build full address string for maps links
+  const fullAddr = [ev.venue_name, ev.address, ev.city, ev.state].filter(Boolean).join(', ');
+  document.getElementById('detailLocationRow').dataset.addr = fullAddr || locText;
+  document.getElementById('detailLocationRow').style.display = (ev.format === 'online') ? 'none' : '';
   // tags
   const tagsEl = document.getElementById('detailTags');
   tagsEl.innerHTML = '';
@@ -4699,6 +4752,29 @@ async function addrAutocomplete(val) {
 function closeAddrDropdown() {
   const drop = document.getElementById('addrDropdown');
   if (drop) drop.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAPS CHOICE
+// ═══════════════════════════════════════════════════════════
+function openMapsChoice() {
+  const row  = document.getElementById('detailLocationRow');
+  const addr = row?.dataset?.addr || '';
+  if (!addr || addr === 'Online' || addr === 'TBD') return;
+  const encoded = encodeURIComponent(addr);
+  document.getElementById('mapsAddress').textContent = addr;
+  document.getElementById('mapsAppleBtn').href  = `maps://maps.apple.com/?q=${encoded}`;
+  document.getElementById('mapsGoogleBtn').href = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+  openSheet('mapsSheet');
+}
+
+function copyAddress() {
+  const addr = document.getElementById('mapsAddress')?.textContent || '';
+  if (!addr) return;
+  navigator.clipboard.writeText(addr).then(() => {
+    showToast('📋 Address copied!', 'success');
+    closeSheet('mapsSheet');
+  }).catch(() => showToast('Could not copy — try manually', 'error'));
 }
 
 const STATE_ABBR = {
