@@ -531,6 +531,24 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   z-index:2;transition:border-color .15s,color .15s;
 }
 .detail-share-btn:active{border-color:var(--gold);color:var(--gold)}
+/* ── Event Gallery ── */
+.detail-gallery{margin-bottom:24px}
+.detail-gallery-label{
+  font-size:12px;font-weight:600;color:var(--muted2);
+  letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;
+}
+.detail-gallery-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+}
+.detail-gallery-thumb{
+  aspect-ratio:1;border-radius:var(--r-sm);overflow:hidden;
+  cursor:zoom-in;position:relative;background:var(--surface2);
+}
+.detail-gallery-thumb img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform .22s ease;
+}
+.detail-gallery-thumb:active img{transform:scale(.96)}
 .detail-content{padding:20px 20px 200px}
 .detail-host-row{
   display:flex;align-items:center;gap:10px;
@@ -1659,6 +1677,12 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
       <div class="who-going-avatars" id="detailWhoGoingAvatars"></div>
       <div id="detailWhoGoingList"></div>
       <button class="who-going-see-all" id="detailWhoGoingBtn" onclick="openAttendeesSheet()">See All Attendees ↓</button>
+    </div>
+
+    <!-- Gallery Section -->
+    <div id="detailGallery" class="detail-gallery" style="display:none">
+      <div class="detail-gallery-label">Photos</div>
+      <div class="detail-gallery-grid" id="detailGalleryGrid"></div>
     </div>
 
     <!-- Forum Section -->
@@ -4237,6 +4261,28 @@ function viewDetail(ev) {
   // Forum section — always visible; API determines enabled/expired state
   loadForumCount(ev.id);
   document.getElementById('detailDesc').textContent = ev.description || 'No description provided.';
+
+  // Gallery section
+  const gallerySection = document.getElementById('detailGallery');
+  const galleryGrid    = document.getElementById('detailGalleryGrid');
+  const urls = Array.isArray(ev.gallery_urls) ? ev.gallery_urls.filter(Boolean) : [];
+  if (urls.length) {
+    galleryGrid.innerHTML = '';
+    urls.forEach(url => {
+      const thumb = document.createElement('div');
+      thumb.className = 'detail-gallery-thumb';
+      thumb.onclick = () => openLightbox(url);
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = 'Event photo';
+      img.loading = 'lazy';
+      thumb.appendChild(img);
+      galleryGrid.appendChild(thumb);
+    });
+    gallerySection.style.display = 'block';
+  } else {
+    gallerySection.style.display = 'none';
+  }
   document.getElementById('detailDate').textContent = ev.start_date
     ? new Date(ev.start_date).toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})
     : 'Date TBD';
@@ -5275,25 +5321,40 @@ function renderCommunityFeed(posts) {
     return;
   }
   feed.innerHTML = '';
-  posts.forEach(p => {
-    const el = document.createElement('div');
-    el.className = 'feed-card';
-    const name = p.profiles?.full_name || 'Anonymous';
-    const initial = name.charAt(0).toUpperCase();
-    const avHTML = p.profiles?.avatar_url
-      ? `<div class="feed-av" style="background:transparent;overflow:hidden;padding:0"><img src="${p.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
-      : `<div class="feed-av" style="background:${p.profiles?.avatar_color||'var(--gold)'}">${initial}</div>`;
-    el.innerHTML = `
-      <div class="feed-header">
-        ${avHTML}
-        <div><div class="feed-name">${escapeHtml(name)}</div><div class="feed-time">${formatTimeAgo(p.created_at)}</div></div>
+  posts.forEach(p => feed.appendChild(makeCommunityPost(p)));
+}
+
+function makeCommunityPost(p) {
+  const el = document.createElement('div');
+  el.className = 'feed-card';
+  el.dataset.postId = p.id;
+  const name    = p.profiles?.full_name || 'Anonymous';
+  const initial = name.charAt(0).toUpperCase();
+  const isOwn   = currentUser && p.author_id === currentUser.id;
+  const avHTML  = p.profiles?.avatar_url
+    ? `<div class="feed-av" style="background:transparent;overflow:hidden;padding:0"><img src="${p.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
+    : `<div class="feed-av" style="background:${p.profiles?.avatar_color||'var(--gold)'}">${initial}</div>`;
+  const ownerActions = isOwn ? `
+    <div style="display:flex;gap:12px;margin-left:auto">
+      <button onclick="editCommunityPost('${p.id}')" style="font-size:12px;color:var(--muted2);background:none;border:none;cursor:pointer;padding:0;font-weight:500">Edit</button>
+      <button onclick="deleteCommunityPost('${p.id}')" style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer;padding:0;font-weight:500">Delete</button>
+    </div>` : '';
+  el.innerHTML = `
+    <div class="feed-header">
+      ${avHTML}
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="feed-name">${escapeHtml(name)}</div>
+          ${ownerActions}
+        </div>
+        <div class="feed-time">${formatTimeAgo(p.created_at)}</div>
       </div>
-      <div class="feed-body" style="white-space:pre-wrap">${escapeHtml(p.body)}</div>
-      <div class="feed-reactions">
-        <button class="reaction-btn" data-post-id="${p.id}" onclick="amenPost('${p.id}',this)">🙏 Amen <span>${p.amen_count||0}</span></button>
-      </div>`;
-    feed.appendChild(el);
-  });
+    </div>
+    <div class="feed-body" id="post-body-${p.id}" style="white-space:pre-wrap">${escapeHtml(p.body)}</div>
+    <div class="feed-reactions">
+      <button class="reaction-btn" data-post-id="${p.id}" onclick="amenPost('${p.id}',this)">🙏 Amen <span>${p.amen_count||0}</span></button>
+    </div>`;
+  return el;
 }
 
 async function amenPost(postId, btn) {
@@ -5336,6 +5397,77 @@ async function postToFeed() {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Post'; }
   }
+}
+
+function editCommunityPost(postId) {
+  const bodyEl = document.getElementById(`post-body-${postId}`);
+  if (!bodyEl) return;
+  const current = bodyEl.textContent;
+  // Replace body with inline editor
+  bodyEl.outerHTML = `
+    <div id="post-edit-wrap-${postId}">
+      <textarea id="post-edit-${postId}" class="post-field" style="min-height:72px;margin-bottom:8px;border-radius:var(--r-sm)">${escapeHtml(current)}</textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="cancelEditCommunityPost('${postId}','${escapeHtml(current).replace(/'/g,'&#39;')}')" style="font-size:13px;font-weight:600;color:var(--muted2);background:none;border:1px solid var(--border);border-radius:var(--r-full);padding:6px 16px;cursor:pointer">Cancel</button>
+        <button onclick="saveCommunityPostEdit('${postId}')" style="font-size:13px;font-weight:700;color:#000;background:var(--gold);border:none;border-radius:var(--r-full);padding:6px 16px;cursor:pointer">Save</button>
+      </div>
+    </div>`;
+  const ta = document.getElementById(`post-edit-${postId}`);
+  if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+}
+
+function cancelEditCommunityPost(postId, original) {
+  const wrap = document.getElementById(`post-edit-wrap-${postId}`);
+  if (!wrap) return;
+  const div = document.createElement('div');
+  div.className = 'feed-body';
+  div.id = `post-body-${postId}`;
+  div.style.whiteSpace = 'pre-wrap';
+  div.textContent = original;
+  wrap.replaceWith(div);
+}
+
+async function saveCommunityPostEdit(postId) {
+  const ta = document.getElementById(`post-edit-${postId}`);
+  if (!ta) return;
+  const newBody = ta.value.trim();
+  if (!newBody) { showToast('Post cannot be empty', 'error'); return; }
+  ta.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/community-posts/${postId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+      body: JSON.stringify({ body: newBody }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Failed to save', 'error'); ta.disabled = false; return; }
+    // Replace editor with updated body
+    const wrap = document.getElementById(`post-edit-wrap-${postId}`);
+    if (wrap) {
+      const div = document.createElement('div');
+      div.className = 'feed-body';
+      div.id = `post-body-${postId}`;
+      div.style.whiteSpace = 'pre-wrap';
+      div.textContent = data.body || newBody;
+      wrap.replaceWith(div);
+    }
+    showToast('Post updated ✓', 'success');
+  } catch { showToast('Could not save. Try again.', 'error'); ta.disabled = false; }
+}
+
+async function deleteCommunityPost(postId) {
+  if (!confirm('Delete this post?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/community-posts/${postId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    if (!res.ok) { const d = await res.json(); showToast(d.error || 'Failed to delete', 'error'); return; }
+    // Remove card from DOM
+    const card = document.querySelector(`.feed-card[data-post-id="${postId}"]`);
+    if (card) card.remove();
+    showToast('Post deleted', 'success');
+  } catch { showToast('Could not delete. Try again.', 'error'); }
 }
 
 // ═══════════════════════════════════════════════════════════

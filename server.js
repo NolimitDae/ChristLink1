@@ -1059,6 +1059,32 @@ app.post('/api/community-posts', requireAuth, async (req, res) => {
   res.json(data);
 });
 
+app.patch('/api/community-posts/:id', requireAuth, async (req, res) => {
+  const { body } = req.body;
+  if (!body?.trim()) return res.status(400).json({ error: 'Body required.' });
+  // Only the author can edit
+  const { data: post } = await supabaseAdmin
+    .from('community_posts').select('author_id').eq('id', req.params.id).single();
+  if (!post) return res.status(404).json({ error: 'Post not found.' });
+  if (post.author_id !== req.userId) return res.status(403).json({ error: 'Not your post.' });
+  const { data, error } = await supabaseAdmin
+    .from('community_posts').update({ body: body.trim() }).eq('id', req.params.id)
+    .select('*, profiles(full_name, avatar_url, avatar_color)').single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+app.delete('/api/community-posts/:id', requireAuth, async (req, res) => {
+  // Only the author can delete
+  const { data: post } = await supabaseAdmin
+    .from('community_posts').select('author_id').eq('id', req.params.id).single();
+  if (!post) return res.status(404).json({ error: 'Post not found.' });
+  if (post.author_id !== req.userId) return res.status(403).json({ error: 'Not your post.' });
+  const { error } = await supabaseAdmin.from('community_posts').delete().eq('id', req.params.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ ok: true });
+});
+
 app.post('/api/community-posts/:id/amen', requireAuth, async (req, res) => {
   const { data: post, error: fetchErr } = await supabaseAdmin
     .from('community_posts').select('amen_count').eq('id', req.params.id).single();
