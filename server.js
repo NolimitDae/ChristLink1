@@ -70,14 +70,14 @@ app.use(express.static(path.join(__dirname, 'public')));
       console.log(`[storage] Created bucket "${b.name}"`);
     }
   }
-  // Ensure all published events have forum_enabled = true
-  // Uses or() to catch both false AND null values
+  // Only enable forum for published events where it was never explicitly set (null).
+  // Do NOT touch events where forum_enabled = false (host deliberately disabled it).
   const { error: forumErr } = await supabaseAdmin
     .from('events').update({ forum_enabled: true })
     .eq('status', 'published')
-    .or('forum_enabled.eq.false,forum_enabled.is.null');
+    .is('forum_enabled', null);
   if (forumErr) console.warn('[startup] Could not enable forum on existing events:', forumErr.message);
-  else console.log('[startup] Forum enabled on all published events.');
+  else console.log('[startup] Forum enabled on published events where it was unset.');
 })();
 
 // ─── RATE LIMITERS ──────────────────────────────────────────

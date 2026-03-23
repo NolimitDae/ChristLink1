@@ -3526,6 +3526,11 @@ async function saveEditEvent() {
     if (selectedEvent && selectedEvent.id === editEventId) {
       selectedEvent = { ...selectedEvent, ...body, cover_url: coverUrl };
       viewDetail(selectedEvent);
+      // Update forum subtitle immediately (loadForumCount is async and may lag)
+      const forumCountEl = document.getElementById('detailForumCount');
+      if (forumCountEl && !body.forum_enabled) {
+        forumCountEl.textContent = 'Forum not enabled — enable it in Edit Event';
+      }
     }
 
   } catch(e) {
