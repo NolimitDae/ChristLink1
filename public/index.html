@@ -522,6 +522,15 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;color:var(--text);
 }
+.detail-share-btn{
+  position:absolute;top:calc(var(--safe-t) + 12px);right:16px;
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(10,10,15,.7);backdrop-filter:blur(10px);
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;color:var(--text);
+  z-index:2;transition:border-color .15s,color .15s;
+}
+.detail-share-btn:active{border-color:var(--gold);color:var(--gold)}
 .detail-content{padding:20px 20px 200px}
 .detail-host-row{
   display:flex;align-items:center;gap:10px;
@@ -1605,6 +1614,9 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
     <button class="detail-back" onclick="goTo('browse')">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
+    <button class="detail-share-btn" id="detailShareBtn" onclick="shareEvent()" aria-label="Share event">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    </button>
     <span id="detailEmoji" style="position:relative;z-index:1">✝</span>
   </div>
   <div class="detail-content">
@@ -2584,7 +2596,10 @@ function goTo(page) {
   document.querySelectorAll('.nav-desktop-links a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
 
   // persist current page in URL hash so refresh restores it
-  const hashPage = (page === 'home') ? '' : page;
+  let hashPage;
+  if (page === 'home') hashPage = '';
+  else if (page === 'event-detail' && selectedEvent?.id) hashPage = `event/${selectedEvent.id}`;
+  else hashPage = page;
   if (window.location.hash.replace('#','') !== hashPage) {
     history.replaceState({}, '', hashPage ? `#${hashPage}` : window.location.pathname);
   }
@@ -2602,11 +2617,31 @@ function goTo(page) {
 
 // Restore page from URL hash on load / back-forward navigation
 function restorePageFromHash() {
-  const hash = window.location.hash.replace('#', '').split('/')[0];
+  const raw   = window.location.hash.replace('#', '');
+  const parts = raw.split('/');
+  // Deep-link: #event/UUID  → fetch that event and open its detail page
+  if (parts[0] === 'event' && parts[1]) {
+    loadEventById(parts[1]);
+    return;
+  }
   const valid = ['home','browse','community','host','profile'];
-  if (hash && valid.includes(hash)) goTo(hash);
+  if (raw && valid.includes(parts[0])) goTo(parts[0]);
 }
 window.addEventListener('hashchange', restorePageFromHash);
+
+// Load a single event by ID (used for shared links)
+async function loadEventById(id) {
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${id}`);
+    if (!res.ok) throw new Error('not found');
+    const ev = await res.json();
+    viewDetail(ev);
+  } catch {
+    // Event not found — fall back to browse
+    goTo('browse');
+    showToast('Event not found or no longer available.', 'error');
+  }
+}
 
 // ═══════════════════════════════════════════════════════════
 // SHEET SYSTEM
@@ -5701,6 +5736,35 @@ function spawnConfetti() {
 
 // Restore page from hash on load (fixes refresh losing current page)
 restorePageFromHash();
+
+// ── Event Sharing ───────────────────────────────────────────
+async function shareEvent() {
+  if (!selectedEvent) return;
+  const url   = `${location.origin}${location.pathname}#event/${selectedEvent.id}`;
+  const title = selectedEvent.name || 'Christ Link Event';
+  const text  = selectedEvent.description
+    ? selectedEvent.description.slice(0, 120) + (selectedEvent.description.length > 120 ? '…' : '')
+    : 'Join me at this faith event on Christ Link!';
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text, url });
+    } catch (e) {
+      if (e.name !== 'AbortError') copyShareLink(url);
+    }
+  } else {
+    copyShareLink(url);
+  }
+}
+
+function copyShareLink(url) {
+  navigator.clipboard.writeText(url)
+    .then(() => showToast('Link copied to clipboard!', 'success'))
+    .catch(() => {
+      // Final fallback: prompt
+      prompt('Copy this link to share:', url);
+    });
+}
 
 // ── Image Lightbox ──────────────────────────────────────────
 function openLightbox(url) {
