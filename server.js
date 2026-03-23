@@ -277,7 +277,9 @@ app.get('/api/events', async (req, res) => {
   if (q)       query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%,event_type.ilike.%${q}%`);
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ events: data || [] });
+  // Alias image_url → cover_url so frontend works regardless of DB column name
+  const events = (data || []).map(e => ({ ...e, cover_url: e.image_url }));
+  res.json({ events });
 });
 
 app.get('/api/events/:id', async (req, res) => {
@@ -285,7 +287,8 @@ app.get('/api/events/:id', async (req, res) => {
     .from('events_with_details').select('*').eq('id', req.params.id).single();
   if (error || !ev) return res.status(404).json({ error: 'Event not found.' });
   const { data: ticketTypes } = await supabaseAdmin.from('ticket_types').select('*').eq('event_id', req.params.id);
-  res.json({ ...ev, ticket_types: ticketTypes || [] });
+  // Alias image_url → cover_url so frontend works regardless of DB column name
+  res.json({ ...ev, cover_url: ev.image_url, ticket_types: ticketTypes || [] });
 });
 
 app.post('/api/events', requireAuth, async (req, res) => {
@@ -299,7 +302,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
   await supabaseAdmin.from('profiles').update({ role: 'host' }).eq('id', req.userId).eq('role', 'attendee');
   const { data, error } = await supabaseAdmin.from('events').insert({
     host_id: req.userId, name, description,
-    cover_url: cover_url || null,
+    image_url: cover_url || null,
     gallery_urls: gallery_urls || [],
     event_type,
     age_group: age_group || 'All Ages',
@@ -325,12 +328,14 @@ app.patch('/api/events/:id', requireAuth, async (req, res) => {
   const allowed = [
     'name','description','event_type','age_group','format','denomination','tags',
     'start_date','end_date','venue_name','address','city','state','zip','online_url',
-    'max_capacity','cover_url','gallery_urls','forum_enabled',
+    'max_capacity','gallery_urls','forum_enabled',
   ];
   const updates = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];
   }
+  // DB column is image_url; frontend sends cover_url — map it over
+  if (req.body.cover_url !== undefined) updates.image_url = req.body.cover_url;
   if (!Object.keys(updates).length) return res.status(400).json({ error: 'No fields to update.' });
   updates.updated_at = new Date().toISOString();
   const { data, error } = await supabaseAdmin
@@ -361,7 +366,9 @@ app.get('/api/my-events', requireAuth, async (req, res) => {
     .eq('host_id', req.userId)
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ events: data || [] });
+  // Alias image_url → cover_url so frontend works regardless of DB column name
+  const events = (data || []).map(e => ({ ...e, cover_url: e.image_url }));
+  res.json({ events });
 });
 
 // ── My Tickets (attendee's purchased tickets) ────────────────
@@ -370,7 +377,7 @@ app.get('/api/my-tickets', requireAuth, async (req, res) => {
     .from('tickets')
     .select(`
       *,
-      events ( name, start_date, city, cover_url ),
+      events ( name, start_date, city, image_url ),
       ticket_types ( name )
     `)
     .eq('user_id', req.userId)
@@ -381,7 +388,7 @@ app.get('/api/my-tickets', requireAuth, async (req, res) => {
     event_name:       t.events?.name,
     event_start_date: t.events?.start_date,
     event_city:       t.events?.city,
-    event_cover_url:  t.events?.cover_url,
+    event_cover_url:  t.events?.image_url,
     ticket_type_name: t.ticket_types?.name,
   }));
   res.json({ tickets });
@@ -509,7 +516,7 @@ app.get('/api/rsvp/:eventId', requireAuth, async (req, res) => {
 app.get('/api/my-rsvps', requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('rsvps')
-    .select('*, events(id, name, start_date, city, cover_url)')
+    .select('*, events(id, name, start_date, city, image_url)')
     .eq('user_id', req.userId)
     .eq('status', 'confirmed')
     .order('created_at', { ascending: false });
@@ -519,7 +526,7 @@ app.get('/api/my-rsvps', requireAuth, async (req, res) => {
     event_name:       r.events?.name,
     event_start_date: r.events?.start_date,
     event_city:       r.events?.city,
-    event_cover_url:  r.events?.cover_url,
+    event_cover_url:  r.events?.image_url,
     event_id:         r.events?.id || r.event_id,
     type: 'rsvp',
   }));
@@ -913,7 +920,7 @@ app.get('/api/tickets/:ticketId/wallet', requireAuth, async (req, res) => {
 
   const { data: ticket } = await supabaseAdmin
     .from('tickets')
-    .select('*, events(name, start_date, end_date, venue_name, city, state, cover_url), ticket_types(name)')
+    .select('*, events(name, start_date, end_date, venue_name, city, state, image_url), ticket_types(name)')
     .eq('id', ticketId)
     .eq('user_id', req.userId)
     .eq('status', 'confirmed')
