@@ -4612,18 +4612,27 @@ function handleListingFeePaid() {
 // ═══════════════════════════════════════════════════════════
 function handleCoverPhoto(input) {
   const file = input.files[0]; if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { showToast('Cover photo must be under 5MB','error'); return; }
   coverPhotoFile = file;
   const r = new FileReader();
   r.onload = e => {
-    coverPhotoB64 = e.target.result;
-    const preview = document.getElementById('coverPhotoPreview');
-    const placeholder = document.getElementById('coverPhotoPlaceholder');
-    const change = document.getElementById('coverPhotoChange');
-    preview.src = coverPhotoB64;
-    preview.style.display = 'block';
-    placeholder.style.display = 'none';
-    change.style.display = 'block';
+    const srcImg = new Image();
+    srcImg.onload = () => {
+      const MAX = 1200;
+      const scale = Math.min(1, MAX / Math.max(srcImg.width, srcImg.height));
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(srcImg.width  * scale);
+      canvas.height = Math.round(srcImg.height * scale);
+      canvas.getContext('2d').drawImage(srcImg, 0, 0, canvas.width, canvas.height);
+      coverPhotoB64 = canvas.toDataURL('image/jpeg', 0.82);
+      const preview     = document.getElementById('coverPhotoPreview');
+      const placeholder = document.getElementById('coverPhotoPlaceholder');
+      const change      = document.getElementById('coverPhotoChange');
+      preview.src = coverPhotoB64;
+      preview.style.display = 'block';
+      placeholder.style.display = 'none';
+      change.style.display = 'block';
+    };
+    srcImg.src = e.target.result;
   };
   r.readAsDataURL(file);
 }
@@ -4780,28 +4789,59 @@ async function publishEvent() {
   const name      = document.getElementById('evName').value.trim();
   const desc      = document.getElementById('evDesc').value.trim();
   const eventType = document.getElementById('evType').value;
-  // upload cover photo to Supabase Storage
+  // Helper: upload image data URL via server (admin key, bypasses RLS)
+  const uploadImgViaServer = async (dataUrl, type) => {
+    const r = await fetch(`${API_BASE}/api/upload-event-image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+      body: JSON.stringify({ dataUrl, type }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Upload failed');
+    return d.url;
+  };
+  // Compress a File to a data URL via canvas
+  const compressFile = (file) => new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1200;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        res(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = rej;
+      img.src = e.target.result;
+    };
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+
+  // Upload cover photo via server
   let coverUrl = null;
-  if (coverPhotoFile && currentUser) {
-    const ext  = coverPhotoFile.type.includes('png') ? 'png' : 'jpg';
-    const path = `events/${currentUser.id}/${Date.now()}-cover.${ext}`;
-    const { error: upErr } = await sb.storage.from('event-images').upload(path, coverPhotoFile, { upsert: true, contentType: coverPhotoFile.type });
-    if (upErr) {
+  if (coverPhotoFile) {
+    btn.innerHTML = '<div class="spinner"></div>&nbsp;Uploading cover…';
+    try {
+      const dataUrl = coverPhotoB64 || await compressFile(coverPhotoFile);
+      coverUrl = await uploadImgViaServer(dataUrl, 'cover');
+    } catch (e) {
       btn.disabled = false; btn.innerHTML = '🚀 Publish Event';
-      showToast('Cover photo upload failed: ' + upErr.message, 'error'); return;
+      showToast('Cover photo upload failed: ' + e.message, 'error'); return;
     }
-    const { data: { publicUrl } } = sb.storage.from('event-images').getPublicUrl(path);
-    coverUrl = publicUrl;
   }
-  // upload gallery images
+  // Upload gallery images via server
   const galleryUrls = [];
-  for (const file of galleryFiles) {
-    const ext  = file.type.includes('png') ? 'png' : 'jpg';
-    const path = `events/${currentUser.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error: upErr } = await sb.storage.from('event-images').upload(path, file, { upsert: true, contentType: file.type });
-    if (!upErr) {
-      const { data: { publicUrl } } = sb.storage.from('event-images').getPublicUrl(path);
-      galleryUrls.push(publicUrl);
+  if (galleryFiles.length) {
+    btn.innerHTML = '<div class="spinner"></div>&nbsp;Uploading photos…';
+    for (const file of galleryFiles) {
+      try {
+        const dataUrl = await compressFile(file);
+        galleryUrls.push(await uploadImgViaServer(dataUrl, 'gallery'));
+      } catch { /* skip failed gallery photos */ }
     }
   }
   const format    = document.getElementById('evFormat').value || 'in_person';
