@@ -415,17 +415,47 @@ function forumExpired(ev) {
 }
 
 app.get('/api/events/:id/forum', async (req, res) => {
+  // Get event to check forum_enabled and expiry
   const { data: ev } = await supabaseAdmin
-    .from('events').select('forum_enabled, end_date, status').eq('id', req.params.id).single();
+    .from('events')
+    .select('id, forum_enabled, end_date, status')
+    .eq('id', req.params.id)
+    .single();
+
   if (!ev) return res.status(404).json({ error: 'Event not found.' });
-  if (!ev.forum_enabled) return res.json({ posts: [], enabled: false, expired: false });
-  if (forumExpired(ev)) return res.json({ posts: [], enabled: false, expired: true });
-  const { data } = await supabaseAdmin
+
+  // Check if forum has expired (48h after event end)
+  let expired = false;
+  if (ev.end_date) {
+    const expiry = new Date(ev.end_date).getTime() + 48 * 60 * 60 * 1000;
+    expired = Date.now() > expiry;
+  }
+
+  // Return enabled/expired even if no posts yet so frontend can react correctly
+  if (!ev.forum_enabled) {
+    return res.json({ enabled: false, expired: false, posts: [] });
+  }
+
+  if (expired) {
+    return res.json({ enabled: true, expired: true, posts: [] });
+  }
+
+  const { data, error } = await supabaseAdmin
     .from('event_forum_posts')
     .select('*, profiles(full_name, avatar_url, avatar_color)')
     .eq('event_id', req.params.id)
     .order('created_at', { ascending: true });
-  res.json({ posts: data || [], enabled: true, expired: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  const posts = (data || []).map(p => ({
+    ...p,
+    author_name:         p.profiles?.full_name || 'Member',
+    author_avatar_url:   p.profiles?.avatar_url,
+    author_avatar_color: p.profiles?.avatar_color,
+  }));
+
+  res.json({ enabled: true, expired: false, posts });
 });
 
 app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
