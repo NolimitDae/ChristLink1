@@ -53,8 +53,24 @@ app.post('/webhook', express.raw({ type: 'application/json' }), handleWebhook);
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: process.env.APP_URL || '*', credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Ensure storage buckets exist (runs once on startup)
+(async () => {
+  const buckets = [
+    { name: 'avatars',      public: true },
+    { name: 'event-images', public: true },
+  ];
+  for (const b of buckets) {
+    const { error } = await supabaseAdmin.storage.createBucket(b.name, { public: b.public });
+    if (error && !error.message.includes('already exists')) {
+      console.warn(`[storage] Could not create bucket "${b.name}":`, error.message);
+    } else if (!error) {
+      console.log(`[storage] Created bucket "${b.name}"`);
+    }
+  }
+})();
 
 // ─── RATE LIMITERS ──────────────────────────────────────────
 const apiLimiter  = rateLimit({ windowMs: 15*60*1000, max: 200, message: { error: 'Too many requests.' } });
