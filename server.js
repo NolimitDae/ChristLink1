@@ -196,6 +196,47 @@ app.patch('/api/profile', requireAuth, async (req, res) => {
   res.json(data);
 });
 
+// Upload avatar via server (bypasses Supabase storage RLS)
+app.post('/api/upload-avatar', requireAuth, async (req, res) => {
+  const { dataUrl } = req.body;
+  if (!dataUrl || !dataUrl.startsWith('data:')) return res.status(400).json({ error: 'Invalid image data.' });
+  try {
+    const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
+    const mimeType = matches[1];
+    const buffer   = Buffer.from(matches[2], 'base64');
+    const ext      = mimeType.includes('png') ? 'png' : 'jpg';
+    const path     = `avatars/${req.userId}/avatar-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabaseAdmin.storage
+      .from('avatars')
+      .upload(path, buffer, { upsert: true, contentType: mimeType });
+    if (upErr) return res.status(400).json({ error: upErr.message });
+    const { data: { publicUrl } } = supabaseAdmin.storage.from('avatars').getPublicUrl(path);
+    res.json({ url: publicUrl });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Upload event image via server (bypasses Supabase storage RLS)
+app.post('/api/upload-event-image', requireAuth, async (req, res) => {
+  const { dataUrl, type } = req.body; // type: 'cover' | 'gallery'
+  if (!dataUrl || !dataUrl.startsWith('data:')) return res.status(400).json({ error: 'Invalid image data.' });
+  try {
+    const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
+    const mimeType = matches[1];
+    const buffer   = Buffer.from(matches[2], 'base64');
+    const ext      = mimeType.includes('png') ? 'png' : 'jpg';
+    const suffix   = type === 'cover' ? 'cover' : `gallery-${Math.random().toString(36).slice(2)}`;
+    const path     = `events/${req.userId}/${Date.now()}-${suffix}.${ext}`;
+    const { error: upErr } = await supabaseAdmin.storage
+      .from('event-images')
+      .upload(path, buffer, { upsert: true, contentType: mimeType });
+    if (upErr) return res.status(400).json({ error: upErr.message });
+    const { data: { publicUrl } } = supabaseAdmin.storage.from('event-images').getPublicUrl(path);
+    res.json({ url: publicUrl });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ════════════════════════════════════════════════════════════
 // EVENTS
 // ════════════════════════════════════════════════════════════

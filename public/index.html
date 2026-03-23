@@ -1480,7 +1480,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
             Joined
           </div>
         </div>
-        <button class="profile-edit-btn" onclick="openSheet('editProfileSheet')">
+        <button class="profile-edit-btn" onclick="openEditProfile()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           Edit
         </button>
@@ -3216,19 +3216,30 @@ async function saveEditEvent() {
   const btn = document.getElementById('eeeSaveBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
+    // Helper: upload an image file via server (admin key bypasses RLS)
+    const uploadViaServer = async (file, type) => {
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(file);
+      });
+      const upRes = await fetch(`${API_BASE}/api/upload-event-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+        body: JSON.stringify({ dataUrl, type }),
+      });
+      const upData = await upRes.json();
+      if (!upRes.ok) throw new Error(upData.error || 'Upload failed');
+      return upData.url;
+    };
+
     // Upload new cover photo
     let coverUrl = editCoverUrl;
-    if (editCoverFile && currentUser) {
+    if (editCoverFile) {
       btn.textContent = 'Uploading cover…';
-      const ext  = editCoverFile.type.includes('png') ? 'png' : 'jpg';
-      const path = `events/${currentUser.id}/${Date.now()}-cover.${ext}`;
-      const { data: coverData, error: upErr } = await sb.storage.from('event-images').upload(path, editCoverFile, { upsert: true, contentType: editCoverFile.type });
-      if (upErr) {
-        document.getElementById('eeeErr').textContent = 'Cover photo upload failed: ' + upErr.message + '. Check Supabase storage bucket permissions.';
+      try { coverUrl = await uploadViaServer(editCoverFile, 'cover'); }
+      catch (e) {
+        document.getElementById('eeeErr').textContent = 'Cover upload failed: ' + e.message;
         btn.disabled = false; btn.textContent = 'Save Changes'; return;
       }
-      const { data: { publicUrl } } = sb.storage.from('event-images').getPublicUrl(path);
-      coverUrl = publicUrl;
     }
 
     // Upload new gallery photos
@@ -3237,14 +3248,10 @@ async function saveEditEvent() {
       btn.textContent = 'Uploading photos…';
       let galleryFailed = 0;
       for (const file of editGalleryNewFiles) {
-        const ext  = file.type.includes('png') ? 'png' : 'jpg';
-        const path = `events/${currentUser.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await sb.storage.from('event-images').upload(path, file, { upsert: true, contentType: file.type });
-        if (upErr) { galleryFailed++; continue; }
-        const { data: { publicUrl } } = sb.storage.from('event-images').getPublicUrl(path);
-        allGalleryUrls.push(publicUrl);
+        try { allGalleryUrls.push(await uploadViaServer(file, 'gallery')); }
+        catch { galleryFailed++; }
       }
-      if (galleryFailed > 0) showToast(`${galleryFailed} photo(s) failed to upload — check storage permissions`, 'error');
+      if (galleryFailed > 0) showToast(`${galleryFailed} photo(s) failed to upload`, 'error');
     }
 
     btn.textContent = 'Saving…';
@@ -3667,28 +3674,26 @@ async function saveProfile() {
   const btn = document.getElementById('epSaveBtn');
   btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Saving…';
 
-  // Upload avatar photo if a new one was selected
+  // Upload avatar photo via server (server uses admin key — bypasses storage RLS)
   let avatarUrl = profileData?.avatar_url || null;
-  let uploadFailed = false;
   if (epAvatarUrl?.startsWith('data:')) {
+    btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Uploading photo…';
     try {
-      const blob = await fetch(epAvatarUrl).then(r => r.blob());
-      const ext  = blob.type.includes('png') ? 'png' : 'jpg';
-      const fn   = `avatars/${currentUser.id}/avatar-${Date.now()}.${ext}`;
-      const { error: upErr } = await sb.storage.from('avatars').upload(fn, blob, { upsert: true, contentType: blob.type });
-      if (!upErr) {
-        const { data: { publicUrl } } = sb.storage.from('avatars').getPublicUrl(fn);
-        avatarUrl = publicUrl;
-      } else {
-        uploadFailed = true;
-      }
-    } catch { uploadFailed = true; }
-    if (uploadFailed) {
+      const upRes = await fetch(`${API_BASE}/api/upload-avatar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+        body: JSON.stringify({ dataUrl: epAvatarUrl }),
+      });
+      const upData = await upRes.json();
+      if (!upRes.ok) throw new Error(upData.error || 'Upload failed');
+      avatarUrl = upData.url;
+    } catch (e) {
       btn.disabled = false; btn.innerHTML = 'Save Changes';
-      errEl.textContent = 'Photo upload failed. Check your connection and try again.';
+      errEl.textContent = 'Photo upload failed: ' + e.message;
       errEl.classList.add('show');
       return;
     }
+    btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Saving…';
   }
 
   const updates = {
