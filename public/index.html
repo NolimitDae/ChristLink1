@@ -2216,7 +2216,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           <span style="font-size:13px">Tap to add cover photo</span>
         </div>
-        <div id="eeeCoverChange" style="display:none;position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:var(--r-full)">Change Photo</div>
+        <div id="eeeCoverChangeBadge" style="display:none;position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:var(--r-full)">Change Photo</div>
       </div>
       <input type="file" id="eeeCoverInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handleEditCoverPhoto(this)">
 
@@ -3109,54 +3109,58 @@ async function deleteEvent(id) {
 let selectedTicketTypeIdx = 0;
 
 let editEventId         = null;
-let editCoverFile       = null;
-let editCoverUrl        = null;
+let eeeCoverFile        = null;   // File object of new cover photo
+let eeeCoverB64         = null;   // Compressed data URL of new cover photo
+let eeeCoverUrlOld      = null;   // Existing cover URL (kept if no new photo chosen)
 let editGalleryNewFiles = [];
 let editGalleryUrls     = [];
 let editEventIsPaid     = false;
 
 function openEditEventSheet(ev) {
   editEventId         = ev.id;
-  editCoverFile       = null;
-  editCoverUrl        = ev.cover_url || null;
+  eeeCoverFile        = null;
+  eeeCoverB64         = null;
+  eeeCoverUrlOld      = ev.cover_url || null;
   editGalleryNewFiles = [];
   editGalleryUrls     = ev.gallery_urls ? [...ev.gallery_urls] : [];
   editEventIsPaid     = ev.is_paid;
 
-  // Cover photo
-  const coverPreview = document.getElementById('eeeCoverPreview');
-  const coverPh      = document.getElementById('eeeCoverPlaceholder');
-  const coverChg     = document.getElementById('eeeCoverChange');
-  if (editCoverUrl) {
-    coverPreview.src = editCoverUrl;
-    coverPreview.style.display = 'block';
-    coverPh.style.display = 'none';
-    coverChg.style.display = 'block';
+  // Cover photo preview
+  const preview     = document.getElementById('eeeCoverPreview');
+  const placeholder = document.getElementById('eeeCoverPlaceholder');
+  const badge       = document.getElementById('eeeCoverChangeBadge');
+  if (ev.cover_url) {
+    preview.src = ev.cover_url;
+    preview.style.display = 'block';
+    placeholder.style.display = 'none';
+    badge.style.display = 'block';
   } else {
-    coverPreview.style.display = 'none';
-    coverPh.style.display = 'flex';
-    coverChg.style.display = 'none';
+    preview.src = '';
+    preview.style.display = 'none';
+    placeholder.style.display = 'flex';
+    badge.style.display = 'none';
   }
 
   // Gallery — render existing + new
   renderEeeGalleryGrid();
 
   // Text fields
-  document.getElementById('eeeName').value          = ev.name         || '';
-  document.getElementById('eeeType').value          = ev.event_type   || '';
-  document.getElementById('eeeFormat').value        = ev.format       || 'in_person';
-  document.getElementById('eeeAgeGroup').value      = ev.age_group    || 'All Ages';
-  document.getElementById('eeeDenomination').value  = ev.denomination || '';
-  document.getElementById('eeeDesc').value          = ev.description  || '';
-  document.getElementById('eeeStartDate').value     = ev.start_date   ? ev.start_date.slice(0,16) : '';
-  document.getElementById('eeeEndDate').value       = ev.end_date     ? ev.end_date.slice(0,16)   : '';
-  document.getElementById('eeeVenue').value         = ev.venue_name   || '';
-  document.getElementById('eeeAddress').value       = ev.address      || '';
-  document.getElementById('eeeCity').value          = ev.city         || '';
-  document.getElementById('eeeState').value         = ev.state        || '';
-  document.getElementById('eeeCapacity').value      = ev.max_capacity || '';
-  document.getElementById('eeeOnlineUrl').value     = ev.online_url   || '';
+  document.getElementById('eeeName').value           = ev.name         || '';
+  document.getElementById('eeeType').value           = ev.event_type   || '';
+  document.getElementById('eeeFormat').value         = ev.format       || 'in_person';
+  document.getElementById('eeeAgeGroup').value       = ev.age_group    || 'All Ages';
+  document.getElementById('eeeDenomination').value   = ev.denomination || '';
+  document.getElementById('eeeDesc').value           = ev.description  || '';
+  document.getElementById('eeeStartDate').value      = ev.start_date   ? ev.start_date.slice(0,16) : '';
+  document.getElementById('eeeEndDate').value        = ev.end_date     ? ev.end_date.slice(0,16)   : '';
+  document.getElementById('eeeVenue').value          = ev.venue_name   || '';
+  document.getElementById('eeeAddress').value        = ev.address      || '';
+  document.getElementById('eeeCity').value           = ev.city         || '';
+  document.getElementById('eeeState').value          = ev.state        || '';
+  document.getElementById('eeeCapacity').value       = ev.max_capacity || '';
+  document.getElementById('eeeOnlineUrl').value      = ev.online_url   || '';
   document.getElementById('eeeForumEnabled').checked = !!ev.forum_enabled;
+  document.getElementById('eeeErr').textContent      = '';
 
   // Ticket types section
   const ticketSection = document.getElementById('eeeTicketSection');
@@ -3169,17 +3173,16 @@ function openEditEventSheet(ev) {
     ticketSection.style.display = 'none';
   }
 
-  document.getElementById('eeeErr').textContent = '';
-  document.getElementById('editEventSheet').classList.add('open');
-  document.body.style.overflow = 'hidden';
+  openSheet('editEventSheet');
 }
 
 function handleEditCoverPhoto(input) {
   const file = input.files[0]; if (!file) return;
-  editCoverFile = file;
+  if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5MB', 'error'); return; }
+  eeeCoverFile = file;
   const r = new FileReader();
   r.onload = e => {
-    // Compress to max 1200px JPEG before storing — keeps upload fast
+    // Compress to max 1200px JPEG — keeps upload fast
     const srcImg = new Image();
     srcImg.onload = () => {
       const MAX = 1200;
@@ -3188,16 +3191,14 @@ function handleEditCoverPhoto(input) {
       canvas.width  = Math.round(srcImg.width  * scale);
       canvas.height = Math.round(srcImg.height * scale);
       canvas.getContext('2d').drawImage(srcImg, 0, 0, canvas.width, canvas.height);
-      const compressed = canvas.toDataURL('image/jpeg', 0.82);
-      // Store compressed data URL so uploadViaServer can use it directly
-      editCoverFile = compressed; // override with data URL for upload
-      const preview = document.getElementById('eeeCoverPreview');
-      const ph      = document.getElementById('eeeCoverPlaceholder');
-      const chg     = document.getElementById('eeeCoverChange');
-      preview.src = compressed;
+      eeeCoverB64 = canvas.toDataURL('image/jpeg', 0.82);
+      const preview     = document.getElementById('eeeCoverPreview');
+      const placeholder = document.getElementById('eeeCoverPlaceholder');
+      const badge       = document.getElementById('eeeCoverChangeBadge');
+      preview.src = eeeCoverB64;
       preview.style.display = 'block';
-      ph.style.display = 'none';
-      chg.style.display = 'block';
+      placeholder.style.display = 'none';
+      badge.style.display = 'block';
     };
     srcImg.src = e.target.result;
   };
@@ -3315,56 +3316,64 @@ function addEeeTicketRow() {
 }
 
 async function saveEditEvent() {
-  const name = document.getElementById('eeeName').value.trim();
-  if (!name) { document.getElementById('eeeErr').textContent = 'Event name is required.'; return; }
+  const name  = document.getElementById('eeeName').value.trim();
+  const errEl = document.getElementById('eeeErr');
+  if (!name) { errEl.textContent = 'Event name is required.'; errEl.classList.add('show'); return; }
+  errEl.classList.remove('show');
   const btn = document.getElementById('eeeSaveBtn');
-  btn.disabled = true; btn.textContent = 'Saving…';
-  try {
-    // Helper: upload an image file via server (admin key bypasses RLS)
-    const uploadViaServer = async (file, type) => {
-      // file can be a File object or already a compressed data URL string
-      const dataUrl = (typeof file === 'string' && file.startsWith('data:'))
-        ? file
-        : await new Promise((res, rej) => {
-            const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(file);
-          });
-      const upRes = await fetch(`${API_BASE}/api/upload-event-image`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
-        body: JSON.stringify({ dataUrl, type }),
-      });
-      const upData = await upRes.json();
-      if (!upRes.ok) throw new Error(upData.error || 'Upload failed');
-      return upData.url;
-    };
+  btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Saving…';
 
-    // Upload new cover photo
-    let coverUrl = editCoverUrl;
-    if (editCoverFile) {
-      btn.textContent = 'Uploading cover…';
-      try { coverUrl = await uploadViaServer(editCoverFile, 'cover'); }
-      catch (e) {
-        document.getElementById('eeeErr').textContent = 'Cover upload failed: ' + e.message;
-        btn.disabled = false; btn.textContent = 'Save Changes'; return;
+  try {
+    // Upload cover photo via server-side route (bypasses RLS)
+    let coverUrl = eeeCoverUrlOld;
+    if (eeeCoverFile && eeeCoverB64) {
+      btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Uploading photo…';
+      try {
+        const upRes = await fetch(`${API_BASE}/api/upload-event-image`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+          body: JSON.stringify({ dataUrl: eeeCoverB64, type: 'cover' }),
+        });
+        const upData = await upRes.json();
+        if (upRes.ok) coverUrl = upData.url;
+        else showToast('Photo upload failed — other changes will still save', 'error');
+      } catch(e) {
+        showToast('Photo upload failed — other changes will still save', 'error');
       }
+      btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Saving…';
     }
 
     // Upload new gallery photos
     const allGalleryUrls = [...editGalleryUrls];
     if (editGalleryNewFiles.length) {
-      btn.textContent = 'Uploading photos…';
+      btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Uploading photos…';
       let galleryFailed = 0;
       for (const file of editGalleryNewFiles) {
-        try { allGalleryUrls.push(await uploadViaServer(file, 'gallery')); }
-        catch { galleryFailed++; }
+        try {
+          const dataUrl = (typeof file === 'string' && file.startsWith('data:'))
+            ? file
+            : await new Promise((res, rej) => {
+                const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(file);
+              });
+          const upRes = await fetch(`${API_BASE}/api/upload-event-image`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+            body: JSON.stringify({ dataUrl, type: 'gallery' }),
+          });
+          const upData = await upRes.json();
+          if (upRes.ok) allGalleryUrls.push(upData.url);
+          else galleryFailed++;
+        } catch { galleryFailed++; }
       }
       if (galleryFailed > 0) showToast(`${galleryFailed} photo(s) failed to upload`, 'error');
     }
 
-    btn.textContent = 'Saving…';
-    const cap = document.getElementById('eeeCapacity').value;
+    btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Saving…';
+    const cap  = document.getElementById('eeeCapacity').value;
     const body = {
       name,
+      cover_url:     coverUrl,
+      gallery_urls:  allGalleryUrls,
       event_type:    document.getElementById('eeeType').value,
       format:        document.getElementById('eeeFormat').value,
       age_group:     document.getElementById('eeeAgeGroup').value,
@@ -3379,20 +3388,19 @@ async function saveEditEvent() {
       max_capacity:  cap ? Number(cap) : null,
       online_url:    document.getElementById('eeeOnlineUrl').value.trim() || null,
       forum_enabled: document.getElementById('eeeForumEnabled').checked,
-      cover_url:     coverUrl,
-      gallery_urls:  allGalleryUrls,
     };
-    const res  = await fetch(`${API_BASE}/api/events/${editEventId}`, {
-      method: 'PATCH',
+
+    const res = await fetch(`${API_BASE}/api/events/${editEventId}`, {
+      method:  'PATCH',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
-      body: JSON.stringify(body),
+      body:    JSON.stringify(body),
     });
     const data = await res.json();
-    if (!res.ok) { document.getElementById('eeeErr').textContent = data.error || 'Failed to save.'; return; }
+    if (!res.ok) { errEl.textContent = data.error || 'Failed to save.'; errEl.classList.add('show'); return; }
 
     // Save new ticket types
     if (editEventIsPaid) {
-      btn.textContent = 'Saving tickets…';
+      btn.innerHTML = '<div class="spinner spinner-gold"></div>&nbsp;Saving tickets…';
       const newRows = document.querySelectorAll('#eeeTicketList [data-tt-id="new"]');
       for (const row of newRows) {
         const ttName  = row.querySelector('[data-field="name"]')?.value.trim();
@@ -3409,21 +3417,25 @@ async function saveEditEvent() {
     }
 
     closeSheet('editEventSheet');
-    showToast('Event updated!', 'success');
+    showToast('Event updated! ✓', 'success');
+
+    // Refresh profile events list
     fetchMyEvents();
-    // If the event detail page is open for this event, update its hero immediately
-    if (selectedEvent?.id === editEventId && data.cover_url) {
-      selectedEvent.cover_url = data.cover_url;
-      const hero = document.getElementById('detailHero');
-      if (hero) {
-        const safeUrl = data.cover_url.replace(/\\/g,'').replace(/"/g,'%22');
-        hero.style.cssText = `background:url("${safeUrl}") center/cover no-repeat;`;
-      }
+
+    // If currently viewing this event's detail page, update it live
+    if (selectedEvent && selectedEvent.id === editEventId) {
+      selectedEvent = { ...selectedEvent, ...body, cover_url: coverUrl };
+      viewDetail(selectedEvent);
     }
+
   } catch(e) {
     console.error(e);
-    document.getElementById('eeeErr').textContent = 'Network error. Try again.';
-  } finally { btn.disabled = false; btn.textContent = 'Save Changes'; }
+    errEl.textContent = 'Network error. Try again.';
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Save Changes';
+  }
 }
 
 function renderProfilePage() {
