@@ -2622,6 +2622,8 @@ function goTo(page) {
   if (!next || curr === next) return;
   // Reset browseReady when leaving browse so re-navigation always fetches fresh events
   if (curr?.id === 'page-browse') browseReady = false;
+  // Stop forum live updates when leaving the forum page
+  if (curr?.id === 'page-event-forum') stopForumLive();
   curr.classList.remove('active');
   next.classList.add('active');
 
@@ -3753,6 +3755,55 @@ async function loadForumCount(eventId) {
   }
 }
 
+// ── Live update state ─────────────────────────────────────────
+let _forumChannel   = null;
+let _forumPollTimer = null;
+let _commChannel    = null;
+let _commPollTimer  = null;
+
+function startForumLive(eventId) {
+  stopForumLive();
+  // Supabase Realtime — instant updates
+  try {
+    _forumChannel = sb.channel(`forum-${eventId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_forum_posts', filter: `event_id=eq.${eventId}` },
+        () => loadForumPosts(true))
+      .subscribe();
+  } catch(e) { /* realtime not enabled — fall through to polling */ }
+  // Polling fallback — refresh every 8 s while on the forum page
+  _forumPollTimer = setInterval(() => {
+    if (document.getElementById('page-event-forum')?.classList.contains('active')) {
+      loadForumPosts(true);
+    } else {
+      stopForumLive();
+    }
+  }, 8000);
+}
+
+function stopForumLive() {
+  if (_forumChannel)   { try { sb.removeChannel(_forumChannel); } catch(e){} _forumChannel = null; }
+  if (_forumPollTimer) { clearInterval(_forumPollTimer); _forumPollTimer = null; }
+}
+
+function startCommunityLive() {
+  stopCommunityLive();
+  try {
+    _commChannel = sb.channel('community-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, () => {
+        if (document.getElementById('page-community')?.classList.contains('active')) initCommunityFeed();
+      })
+      .subscribe();
+  } catch(e) {}
+  _commPollTimer = setInterval(() => {
+    if (document.getElementById('page-community')?.classList.contains('active')) initCommunityFeed();
+  }, 15000);
+}
+
+function stopCommunityLive() {
+  if (_commChannel)   { try { sb.removeChannel(_commChannel); } catch(e){} _commChannel = null; }
+  if (_commPollTimer) { clearInterval(_commPollTimer); _commPollTimer = null; }
+}
+
 function openEventForum() {
   if (!selectedEvent) return;
   forumEventId = selectedEvent.id;
@@ -3765,37 +3816,55 @@ function openEventForum() {
   document.getElementById('forumInput').style.display      = 'none';
   document.getElementById('forumLoading').style.display    = 'block';
   goTo('event-forum');
-  loadForumPosts();
+  loadForumPosts(false);
+  startForumLive(forumEventId);
 }
 
-async function loadForumPosts() {
+async function loadForumPosts(silent = false) {
   try {
     const res  = await fetch(`${API_BASE}/api/events/${forumEventId}/forum`);
     const data = await res.json();
-    document.getElementById('forumLoading').style.display = 'none';
+    if (!silent) document.getElementById('forumLoading').style.display = 'none';
     if (data.expired) {
       document.getElementById('forumExpiredMsg').style.display = 'block'; return;
     }
     if (data.enabled === false) {
-      const empty = document.getElementById('forumEmpty');
-      const isHost = selectedEvent?.host_id === currentUser?.id;
-      empty.innerHTML = `<div style="font-size:32px;margin-bottom:8px">💬</div>
-        <div style="font-weight:600;margin-bottom:6px">Forum not enabled</div>
-        <div style="font-size:13px;color:var(--muted2)">${isHost ? 'Enable it by tapping Edit Event on your profile.' : 'The host hasn\'t enabled the forum for this event.'}</div>`;
-      empty.style.display = 'block'; return;
+      if (!silent) {
+        const empty = document.getElementById('forumEmpty');
+        const isHost = selectedEvent?.host_id === currentUser?.id;
+        empty.innerHTML = `<div style="font-size:32px;margin-bottom:8px">💬</div>
+          <div style="font-weight:600;margin-bottom:6px">Forum not enabled</div>
+          <div style="font-size:13px;color:var(--muted2)">${isHost ? 'Enable it in Edit Event.' : 'The host hasn\'t enabled the forum.'}</div>`;
+        empty.style.display = 'block';
+      }
+      return;
     }
-    if (data.posts.length === 0) {
-      document.getElementById('forumEmpty').innerHTML = `<div style="font-size:32px;margin-bottom:8px">💬</div>
-        <div style="font-weight:600">No posts yet</div>
+    const posts = data.posts || [];
+    const postsEl = document.getElementById('forumPosts');
+    const emptyEl = document.getElementById('forumEmpty');
+    if (posts.length === 0) {
+      postsEl.style.display = 'none';
+      emptyEl.innerHTML = `<div style="font-size:40px;margin-bottom:12px">💬</div>
+        <div style="font-weight:600;font-size:16px">No posts yet</div>
         <div style="font-size:13px;margin-top:4px">Be the first to start the conversation!</div>`;
-      document.getElementById('forumEmpty').style.display = 'block';
+      emptyEl.style.display = 'block';
     } else {
-      renderForumPosts(data.posts);
+      emptyEl.style.display = 'none';
+      // Only re-render if post count changed (avoids scroll reset on no-op refreshes)
+      const current = postsEl.querySelectorAll('[data-post-id]').length;
+      if (current !== posts.length) {
+        const wasAtBottom = postsEl.scrollHeight - postsEl.scrollTop <= postsEl.clientHeight + 60;
+        renderForumPosts(posts);
+        if (wasAtBottom || silent) postsEl.scrollTop = postsEl.scrollHeight;
+      }
     }
+    if (!silent) document.getElementById('forumLoading').style.display = 'none';
     if (currentUser) document.getElementById('forumInput').style.display = 'flex';
   } catch {
-    document.getElementById('forumLoading').style.display = 'none';
-    document.getElementById('forumEmpty').style.display   = 'block';
+    if (!silent) {
+      document.getElementById('forumLoading').style.display = 'none';
+      document.getElementById('forumEmpty').style.display   = 'block';
+    }
   }
 }
 
@@ -3808,6 +3877,7 @@ function renderForumPosts(posts) {
 
 function makeForumPost(p) {
   const div = document.createElement('div');
+  div.dataset.postId = p.id;
   div.style.cssText = 'display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)';
   const name  = p.profiles?.full_name || 'Member';
   const avBg  = p.profiles?.avatar_color || 'var(--gold)';
@@ -5967,8 +6037,9 @@ function closeLightbox() {
   setTimeout(() => { document.getElementById('imgLightboxImg').src = ''; }, 250);
 }
 
-// Fetch home events on load
+// Fetch home events on load and start live listeners
 fetchHomeEvents();
+startCommunityLive();
 </script>
 
 <!-- ── Image Lightbox ─────────────────────────────────── -->
