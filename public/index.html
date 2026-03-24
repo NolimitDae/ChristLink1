@@ -2235,7 +2235,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 
 <!-- EVENT FORUM SHEET -->
 <div class="overlay" id="eventForumSheet">
-  <div class="sheet" style="max-height:92dvh;display:flex;flex-direction:column;overflow:hidden">
+  <div class="sheet" style="height:100dvh;max-height:100dvh;display:flex;flex-direction:column;overflow:hidden;border-radius:0">
     <div class="sheet-handle" style="flex-shrink:0"></div>
     <div class="sheet-head" style="flex-shrink:0">
       <div>
@@ -2265,7 +2265,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 
     <!-- Input bar always visible at bottom -->
     <div id="forumInput" style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:var(--surface2)">
-      <div style="display:flex;gap:8px;align-items:flex-end">
+      <div style="display:flex;align-items:flex-end;gap:8px;width:100%">
         <textarea id="forumPostBody" class="field"
           placeholder="Share a thought or question…"
           rows="1"
@@ -2273,7 +2273,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
           oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"
         ></textarea>
         <button class="btn btn-gold btn-sm"
-          style="flex-shrink:0;height:42px;width:64px;padding:0;border-radius:var(--r-full);align-self:flex-end;font-size:13px"
+          style="flex-shrink:0;height:42px;width:64px;padding:0;border-radius:var(--r-full);align-self:flex-end;font-size:13px;margin-left:auto"
           onclick="submitForumPost()">Post</button>
       </div>
     </div>
