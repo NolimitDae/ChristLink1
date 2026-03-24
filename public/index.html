@@ -726,6 +726,35 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 .reaction-btn.active{background:var(--gold-dim);border-color:rgba(201,168,76,.3);color:var(--gold)}
 
 /* ═══════════════════════════════════════════════════════════
+   COMMUNITY REPLIES
+═══════════════════════════════════════════════════════════ */
+.reply-section{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);animation:pageIn .2s var(--ease) both}
+.reply-section.open{display:block}
+.reply-row{display:flex;gap:10px;padding:10px 0 10px 10px;border-bottom:1px solid rgba(255,255,255,.04);position:relative}
+.reply-row:last-of-type{border-bottom:none}
+.reply-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--gold),transparent);border-radius:2px;opacity:.4}
+.reply-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;overflow:hidden;margin-top:1px}
+.reply-body-wrap{flex:1;min-width:0}
+.reply-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.reply-time{font-size:10px;color:var(--muted);font-weight:400}
+.reply-text{font-size:13px;color:var(--muted2);line-height:1.55;word-break:break-word;white-space:pre-wrap}
+.reply-actions{display:flex;align-items:center;gap:12px;margin-top:6px}
+.reply-amen-btn{height:24px;padding:0 10px;border-radius:var(--r-full);background:var(--surface2);border:1px solid var(--border);font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:4px;transition:all .15s;cursor:pointer}
+.reply-amen-btn.active{background:var(--gold-dim);border-color:rgba(201,168,76,.3);color:var(--gold)}
+.reply-delete-btn{font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;transition:color .15s}
+.reply-delete-btn:hover{color:var(--red)}
+.reply-input-wrap{display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.reply-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:8px 14px;font-size:13px;color:var(--text);resize:none;line-height:1.45;min-height:36px;max-height:100px;overflow-y:auto;transition:border-color .18s;font-family:var(--font-body)}
+.reply-input:focus{border-color:rgba(201,168,76,.35);outline:none}
+.reply-input::placeholder{color:var(--muted)}
+.reply-submit-btn{width:32px;height:32px;border-radius:50%;background:var(--gold);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .18s;margin-top:2px}
+.reply-submit-btn:active{transform:scale(.9);opacity:.85}
+.reply-toggle-btn{height:30px;padding:0 12px;border-radius:var(--r-full);background:var(--surface2);border:1px solid var(--border);font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:4px;transition:all .15s;cursor:pointer}
+.reply-toggle-btn.has-replies{color:var(--gold);border-color:rgba(201,168,76,.25);background:var(--gold-dim)}
+.reply-toggle-btn:active{transform:scale(.96)}
+.view-replies-btn{font-size:12px;font-weight:600;color:var(--gold);background:none;border:none;cursor:pointer;padding:4px 0;display:block;margin-bottom:8px}
+
+/* ═══════════════════════════════════════════════════════════
    PROFILE PAGE
 ═══════════════════════════════════════════════════════════ */
 .profile-hero{
@@ -5708,6 +5737,7 @@ async function initCommunityFeed() {
 }
 
 function renderCommunityFeed(posts) {
+  _repliesLoaded.clear(); // clear cache on full feed refresh
   const feed = document.getElementById('communityFeed');
   if (!feed) return;
   if (!posts.length) {
@@ -5722,19 +5752,23 @@ function renderCommunityFeed(posts) {
 
 function makeCommunityPost(p) {
   const el = document.createElement('div');
-  el.className = 'feed-card reveal';
+  el.className = 'feed-card';
   el.dataset.postId = p.id;
-  const name    = p.profiles?.full_name || 'Anonymous';
-  const initial = name.charAt(0).toUpperCase();
-  const isOwn   = currentUser && p.author_id === currentUser.id;
-  const avHTML  = p.profiles?.avatar_url
+  const name       = p.profiles?.full_name || 'Anonymous';
+  const initial    = name.charAt(0).toUpperCase();
+  const isOwn      = currentUser && p.author_id === currentUser.id;
+  const replyCount = p.reply_count || 0;
+
+  const avHTML = p.profiles?.avatar_url
     ? `<div class="feed-av" style="background:transparent;overflow:hidden;padding:0"><img src="${p.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
     : `<div class="feed-av" style="background:${p.profiles?.avatar_color||'var(--gold)'}">${initial}</div>`;
+
   const ownerActions = isOwn ? `
     <div style="display:flex;gap:12px;margin-left:auto">
       <button onclick="editCommunityPost('${p.id}')" style="font-size:12px;color:var(--muted2);background:none;border:none;cursor:pointer;padding:0;font-weight:500">Edit</button>
       <button onclick="deleteCommunityPost('${p.id}')" style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer;padding:0;font-weight:500">Delete</button>
     </div>` : '';
+
   el.innerHTML = `
     <div class="feed-header">
       ${avHTML}
@@ -5749,7 +5783,34 @@ function makeCommunityPost(p) {
     <div class="feed-body" id="post-body-${p.id}" style="white-space:pre-wrap">${escapeHtml(p.body)}</div>
     <div class="feed-reactions">
       <button class="reaction-btn" data-post-id="${p.id}" onclick="amenPost('${p.id}',this)">🙏 Amen <span>${p.amen_count||0}</span></button>
+      <button class="reply-toggle-btn ${replyCount > 0 ? 'has-replies' : ''}" id="reply-toggle-${p.id}" onclick="toggleReplies('${p.id}', this)">
+        💬 ${replyCount > 0 ? replyCount + ' repl' + (replyCount === 1 ? 'y' : 'ies') : 'Reply'}
+      </button>
+    </div>
+    <div class="reply-section" id="reply-section-${p.id}">
+      <div id="reply-list-${p.id}"></div>
+      ${currentUser ? `
+        <div class="reply-input-wrap" id="reply-input-wrap-${p.id}">
+          <textarea
+            class="reply-input"
+            id="reply-input-${p.id}"
+            placeholder="Write a reply…"
+            rows="1"
+            maxlength="500"
+            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitReply('${p.id}')}"
+          ></textarea>
+          <button class="reply-submit-btn" onclick="submitReply('${p.id}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>` : `
+        <div style="font-size:12px;color:var(--muted);padding:8px 0">
+          <button onclick="openAuth('signup')" style="color:var(--gold);font-weight:600;background:none;border:none;cursor:pointer;font-size:12px">Sign in</button> to reply
+        </div>`}
     </div>`;
+
   return el;
 }
 
@@ -6379,6 +6440,170 @@ function closeLightbox() {
 // Fetch home events on load and start live listeners
 fetchHomeEvents();
 startCommunityLive();
+
+// ═══════════════════════════════════════════════════════════
+// COMMUNITY REPLIES
+// ═══════════════════════════════════════════════════════════
+
+// Track which reply sections have been loaded to avoid re-fetching
+const _repliesLoaded = new Set();
+
+async function toggleReplies(postId, btn) {
+  const section = document.getElementById(`reply-section-${postId}`);
+  if (!section) return;
+  const isOpen = section.classList.contains('open');
+  if (isOpen) { section.classList.remove('open'); return; }
+  section.classList.add('open');
+  if (!_repliesLoaded.has(postId)) { await loadReplies(postId); }
+  const input = document.getElementById(`reply-input-${postId}`);
+  if (input) setTimeout(() => input.focus(), 150);
+}
+
+async function loadReplies(postId) {
+  const list = document.getElementById(`reply-list-${postId}`);
+  if (!list) return;
+  list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">Loading…</div>';
+  try {
+    const res  = await fetch(`${API_BASE}/api/community-posts/${postId}/replies`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to load');
+    _repliesLoaded.add(postId);
+    renderReplies(postId, data.replies || []);
+  } catch(e) {
+    if (list) list.innerHTML = '<div style="font-size:12px;color:var(--red);padding:4px 0">Could not load replies.</div>';
+  }
+}
+
+function renderReplies(postId, replies) {
+  const list = document.getElementById(`reply-list-${postId}`);
+  if (!list) return;
+  list.innerHTML = '';
+  if (replies.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0 8px">No replies yet — be the first!</div>';
+    return;
+  }
+  replies.forEach(r => list.appendChild(makeReplyEl(postId, r)));
+}
+
+function makeReplyEl(postId, r) {
+  const el     = document.createElement('div');
+  el.className = 'reply-row';
+  el.dataset.replyId = r.id;
+  const name    = r.profiles?.full_name || 'Anonymous';
+  const initial = name.charAt(0).toUpperCase();
+  const avBg    = r.profiles?.avatar_color || 'var(--gold)';
+  const avUrl   = r.profiles?.avatar_url;
+  const isOwn   = currentUser && r.author_id === currentUser.id;
+  const time    = formatTimeAgo(r.created_at);
+  const avInner = avUrl ? `<img src="${avUrl}" style="width:100%;height:100%;object-fit:cover">` : initial;
+  el.innerHTML = `
+    <div class="reply-av" style="background:${avUrl ? 'transparent' : avBg}">${avInner}</div>
+    <div class="reply-body-wrap">
+      <div class="reply-name">
+        <span>${escapeHtml(name)}</span>
+        <span class="reply-time">${time}</span>
+      </div>
+      <div class="reply-text">${escapeHtml(r.body)}</div>
+      <div class="reply-actions">
+        <button class="reply-amen-btn" onclick="amenReply('${r.id}', this)">
+          🙏 <span>${r.amen_count || 0}</span>
+        </button>
+        ${isOwn ? `<button class="reply-delete-btn" onclick="deleteReply('${postId}','${r.id}',this)">Delete</button>` : ''}
+      </div>
+    </div>`;
+  return el;
+}
+
+async function submitReply(postId) {
+  if (!currentUser) { openAuth('signup'); return; }
+  const input = document.getElementById(`reply-input-${postId}`);
+  if (!input) return;
+  const body = input.value.trim();
+  if (!body) return;
+  const btn = document.querySelector(`#reply-input-wrap-${postId} .reply-submit-btn`);
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  try {
+    const res  = await fetch(`${API_BASE}/api/community-posts/${postId}/replies`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+      body:    JSON.stringify({ body }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Failed to reply', 'error'); return; }
+    input.value = '';
+    input.style.height = 'auto';
+    const list = document.getElementById(`reply-list-${postId}`);
+    if (list) {
+      if (list.querySelector('div[style*="No replies"]')) list.innerHTML = '';
+      list.appendChild(makeReplyEl(postId, data));
+    }
+    updateReplyToggleBtn(postId, 1);
+    showToast('Reply posted! 🙏', 'success');
+  } catch(e) {
+    showToast('Could not post reply. Try again.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+  }
+}
+
+async function amenReply(replyId, btn) {
+  if (!currentUser) { openAuth('signup'); return; }
+  try {
+    const res  = await fetch(`${API_BASE}/api/community-replies/${replyId}/amen`, {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      const countEl = btn.querySelector('span');
+      if (countEl) countEl.textContent = data.amen_count;
+      btn.classList.add('active');
+    }
+  } catch {}
+}
+
+async function deleteReply(postId, replyId, btn) {
+  if (!confirm('Delete this reply?')) return;
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/community-posts/${postId}/replies/${replyId}`, {
+      method:  'DELETE',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    if (res.ok) {
+      const row = document.querySelector(`.reply-row[data-reply-id="${replyId}"]`);
+      if (row) row.remove();
+      updateReplyToggleBtn(postId, -1);
+      const list = document.getElementById(`reply-list-${postId}`);
+      if (list && list.children.length === 0) {
+        list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0 8px">No replies yet — be the first!</div>';
+      }
+      showToast('Reply deleted');
+    } else {
+      const d = await res.json().catch(() => ({}));
+      showToast(d.error || 'Could not delete', 'error');
+      btn.disabled = false;
+    }
+  } catch {
+    showToast('Could not delete. Try again.', 'error');
+    btn.disabled = false;
+  }
+}
+
+function updateReplyToggleBtn(postId, delta) {
+  const btn = document.getElementById(`reply-toggle-${postId}`);
+  if (!btn) return;
+  const match = btn.textContent.match(/(\d+)/);
+  const current = match ? parseInt(match[1]) : 0;
+  const newCount = Math.max(0, current + delta);
+  if (newCount > 0) {
+    btn.innerHTML = `💬 ${newCount} repl${newCount === 1 ? 'y' : 'ies'}`;
+    btn.classList.add('has-replies');
+  } else {
+    btn.innerHTML = '💬 Reply';
+    btn.classList.remove('has-replies');
+  }
+}
 
 // iOS keyboard: shrink forum scroll area so input stays visible
 if (window.visualViewport) {

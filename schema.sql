@@ -344,3 +344,54 @@ end $$;
 -- 4. Forum backfill — enable forum on all published events (one-time, idempotent)
 update public.events set forum_enabled = true
 where status = 'published' and forum_enabled = false;
+
+-- ════════════════════════════════════════════════════════════
+-- MIGRATION 5: COMMUNITY REPLIES
+-- Run this in Supabase SQL Editor
+-- ════════════════════════════════════════════════════════════
+
+-- 5a. Community replies table
+create table if not exists public.community_replies (
+  id          uuid primary key default uuid_generate_v4(),
+  post_id     uuid not null references public.community_posts(id) on delete cascade,
+  author_id   uuid not null references public.profiles(id) on delete cascade,
+  body        text not null check (char_length(body) <= 500),
+  amen_count  integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+alter table public.community_replies enable row level security;
+
+-- 5b. RLS policies for community_replies
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='community_replies' and policyname='Anyone can read replies') then
+    create policy "Anyone can read replies" on public.community_replies for select using (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='community_replies' and policyname='Authenticated users can post replies') then
+    create policy "Authenticated users can post replies" on public.community_replies for insert with check (auth.uid() = author_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='community_replies' and policyname='Authors can delete own replies') then
+    create policy "Authors can delete own replies" on public.community_replies for delete using (auth.uid() = author_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='community_replies' and policyname='Authors can update own replies') then
+    create policy "Authors can update own replies" on public.community_replies for update using (auth.uid() = author_id);
+  end if;
+end $$;
+
+-- 5c. Indexes
+create index if not exists replies_post_id_idx on public.community_replies(post_id);
+create index if not exists replies_created_idx on public.community_replies(created_at);
+
+-- 5d. Add reply_count to community_posts
+alter table public.community_posts add column if not exists reply_count integer not null default 0;
+update public.community_posts set reply_count = 0 where reply_count is null;
+
+-- 5e. Atomic increment/decrement function
+create or replace function public.increment_reply_count(p_post_id uuid, p_delta integer)
+returns void as $$
+begin
+  update public.community_posts
+  set reply_count = greatest(0, reply_count + p_delta)
+  where id = p_post_id;
+end;
+$$ language plpgsql security definer;
+

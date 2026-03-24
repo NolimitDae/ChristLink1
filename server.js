@@ -1099,6 +1099,79 @@ app.post('/api/community-posts/:id/amen', requireAuth, async (req, res) => {
   res.json({ amen_count: newCount });
 });
 
+// ════════════════════════════════════════════════════════════
+// COMMUNITY REPLIES
+// ════════════════════════════════════════════════════════════
+
+// GET /api/community-posts/:id/replies
+app.get('/api/community-posts/:id/replies', async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('community_replies')
+    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .eq('post_id', req.params.id)
+    .order('created_at', { ascending: true });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ replies: data || [] });
+});
+
+// POST /api/community-posts/:id/replies
+app.post('/api/community-posts/:id/replies', requireAuth, async (req, res) => {
+  const { body } = req.body;
+  if (!body?.trim()) return res.status(400).json({ error: 'Reply body required.' });
+  if (body.trim().length > 500) return res.status(400).json({ error: 'Reply must be 500 characters or less.' });
+
+  // Verify parent post exists
+  const { data: post } = await supabaseAdmin
+    .from('community_posts').select('id').eq('id', req.params.id).single();
+  if (!post) return res.status(404).json({ error: 'Post not found.' });
+
+  const { data, error } = await supabaseAdmin
+    .from('community_replies')
+    .insert({ post_id: req.params.id, author_id: req.userId, body: body.trim() })
+    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .single();
+  if (error) return res.status(400).json({ error: error.message });
+
+  // Increment reply_count on parent post
+  await supabaseAdmin.rpc('increment_reply_count', {
+    p_post_id: req.params.id,
+    p_delta: 1,
+  });
+
+  res.json(data);
+});
+
+// DELETE /api/community-posts/:postId/replies/:replyId
+app.delete('/api/community-posts/:postId/replies/:replyId', requireAuth, async (req, res) => {
+  const { data: reply } = await supabaseAdmin
+    .from('community_replies').select('author_id').eq('id', req.params.replyId).single();
+  if (!reply) return res.status(404).json({ error: 'Reply not found.' });
+  if (reply.author_id !== req.userId)
+    return res.status(403).json({ error: 'Not your reply.' });
+
+  const { error } = await supabaseAdmin
+    .from('community_replies').delete().eq('id', req.params.replyId);
+  if (error) return res.status(400).json({ error: error.message });
+
+  // Decrement reply_count on parent post
+  await supabaseAdmin.rpc('increment_reply_count', {
+    p_post_id: req.params.postId,
+    p_delta: -1,
+  });
+
+  res.json({ ok: true });
+});
+
+// POST /api/community-replies/:id/amen
+app.post('/api/community-replies/:id/amen', requireAuth, async (req, res) => {
+  const { data: reply, error: fetchErr } = await supabaseAdmin
+    .from('community_replies').select('amen_count').eq('id', req.params.id).single();
+  if (fetchErr || !reply) return res.status(404).json({ error: 'Reply not found.' });
+  const newCount = (reply.amen_count || 0) + 1;
+  await supabaseAdmin.from('community_replies').update({ amen_count: newCount }).eq('id', req.params.id);
+  res.json({ amen_count: newCount });
+});
+
 // ─── SPA FALLBACK ───────────────────────────────────────────
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
