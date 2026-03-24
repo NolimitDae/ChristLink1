@@ -479,6 +479,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
    EVENT DETAIL PAGE
 ═══════════════════════════════════════════════════════════ */
 #page-event-detail,#page-event-forum{padding-top:0}
+#page-event-forum.active{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
 .detail-hero{
   height:240px;display:flex;align-items:center;justify-content:center;
   position:relative;font-size:72px;
@@ -2234,7 +2235,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 </div>
 
 <!-- EVENT FORUM PAGE -->
-<div class="page" id="page-event-forum" style="display:flex;flex-direction:column;padding:0;overflow:hidden">
+<div class="page" id="page-event-forum" style="padding:0">
 
   <!-- Header -->
   <div style="flex-shrink:0;display:flex;align-items:center;gap:10px;padding:calc(var(--safe-t) + 12px) 16px 12px;border-bottom:1px solid var(--border);background:var(--bg)">
