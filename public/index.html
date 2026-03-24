@@ -478,7 +478,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 /* ═══════════════════════════════════════════════════════════
    EVENT DETAIL PAGE
 ═══════════════════════════════════════════════════════════ */
-#page-event-detail{padding-top:0}
+#page-event-detail,#page-event-forum{padding-top:0}
 .detail-hero{
   height:240px;display:flex;align-items:center;justify-content:center;
   position:relative;font-size:72px;
@@ -2233,49 +2233,50 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   </div>
 </div>
 
-<!-- EVENT FORUM SHEET -->
-<div class="overlay" id="eventForumSheet">
-  <div class="sheet" style="height:100dvh;max-height:100dvh;display:flex;flex-direction:column;overflow:hidden;border-radius:0">
-    <div class="sheet-handle" style="flex-shrink:0"></div>
-    <div class="sheet-head" style="flex-shrink:0">
-      <div>
-        <div class="sheet-title">Event Forum</div>
-        <div style="font-size:12px;color:var(--muted)" id="forumEventName">—</div>
-      </div>
-      <button class="sheet-close" onclick="closeSheet('eventForumSheet')">×</button>
-    </div>
+<!-- EVENT FORUM PAGE -->
+<div class="page" id="page-event-forum" style="display:flex;flex-direction:column;padding:0;height:100dvh;overflow:hidden">
 
-    <!-- Scrollable content fills remaining height -->
-    <div style="flex:1;overflow-y:auto;min-height:0">
-      <div id="forumLoading" style="text-align:center;padding:48px 0">
-        <div class="spinner spinner-gold" style="margin:0 auto"></div>
-      </div>
-      <div id="forumPosts" style="display:none;padding:8px 20px 8px"></div>
-      <div id="forumEmpty" style="display:none;text-align:center;padding:48px 24px;color:var(--muted2)">
-        <div style="font-size:36px;margin-bottom:10px">💬</div>
-        <div style="font-weight:600;font-size:15px">No posts yet</div>
-        <div style="font-size:13px;margin-top:4px">Be the first to start the conversation!</div>
-      </div>
-      <div id="forumExpiredMsg" style="display:none;text-align:center;padding:48px 24px;color:var(--muted2)">
-        <div style="font-size:36px;margin-bottom:10px">🔒</div>
-        <div style="font-weight:600;font-size:15px">Forum has closed</div>
-        <div style="font-size:13px;margin-top:4px">This forum expired 30 days after the event ended.</div>
-      </div>
+  <!-- Header -->
+  <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;padding:calc(var(--safe-t) + 14px) 16px 14px;border-bottom:1px solid var(--border);background:var(--bg)">
+    <button onclick="goTo('event-detail')" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div style="min-width:0">
+      <div style="font-size:16px;font-weight:700;color:var(--text)">Event Forum</div>
+      <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="forumEventName">—</div>
     </div>
+  </div>
 
-    <!-- Input bar always visible at bottom -->
-    <div id="forumInput" style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:var(--surface2)">
-      <div style="display:flex;align-items:flex-end;gap:8px;width:100%">
-        <textarea id="forumPostBody" class="field"
-          placeholder="Share a thought or question…"
-          rows="1"
-          style="margin:0;flex:1;resize:none;font-size:14px;min-height:42px;max-height:110px;overflow-y:auto;line-height:1.5;padding:10px 12px;box-sizing:border-box"
-          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"
-        ></textarea>
-        <button class="btn btn-gold btn-sm"
-          style="flex-shrink:0;height:42px;width:64px;padding:0;border-radius:var(--r-full);align-self:flex-end;font-size:13px;margin-left:auto"
-          onclick="submitForumPost()">Post</button>
-      </div>
+  <!-- Scrollable posts -->
+  <div style="flex:1;overflow-y:auto;min-height:0">
+    <div id="forumLoading" style="text-align:center;padding:60px 0">
+      <div class="spinner spinner-gold" style="margin:0 auto"></div>
+    </div>
+    <div id="forumPosts" style="display:none;padding:12px 20px 16px"></div>
+    <div id="forumEmpty" style="display:none;text-align:center;padding:60px 24px;color:var(--muted2)">
+      <div style="font-size:40px;margin-bottom:12px">💬</div>
+      <div style="font-weight:600;font-size:16px">No posts yet</div>
+      <div style="font-size:13px;margin-top:4px">Be the first to start the conversation!</div>
+    </div>
+    <div id="forumExpiredMsg" style="display:none;text-align:center;padding:60px 24px;color:var(--muted2)">
+      <div style="font-size:40px;margin-bottom:12px">🔒</div>
+      <div style="font-weight:600;font-size:16px">Forum has closed</div>
+      <div style="font-size:13px;margin-top:4px">This forum expired 30 days after the event ended.</div>
+    </div>
+  </div>
+
+  <!-- Sticky input bar -->
+  <div id="forumInput" style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:var(--surface2)">
+    <div style="display:flex;align-items:flex-end;gap:8px;width:100%">
+      <textarea id="forumPostBody" class="field"
+        placeholder="Share a thought or question…"
+        rows="1"
+        style="margin:0;flex:1;resize:none;font-size:14px;min-height:42px;max-height:110px;overflow-y:auto;line-height:1.5;padding:10px 12px;box-sizing:border-box"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"
+      ></textarea>
+      <button class="btn btn-gold btn-sm"
+        style="flex-shrink:0;height:42px;width:64px;padding:0;border-radius:var(--r-full);align-self:flex-end;font-size:13px"
+        onclick="submitForumPost()">Post</button>
     </div>
   </div>
 </div>
@@ -2624,7 +2625,9 @@ function goTo(page) {
   curr.classList.remove('active');
   next.classList.add('active');
 
-  // update tab bar
+  // update tab bar — hide on full-screen pages
+  const noTab = ['event-detail','event-forum'];
+  document.getElementById('tabbar').style.display = noTab.includes(page) ? 'none' : '';
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   const tab = document.getElementById('tab-' + page);
   if (tab) tab.classList.add('active');
@@ -2661,7 +2664,7 @@ function restorePageFromHash() {
     loadEventById(parts[1]);
     return;
   }
-  const valid = ['home','browse','community','host','profile'];
+  const valid = ['home','browse','community','host','profile','event-detail','event-forum'];
   if (raw && valid.includes(parts[0])) goTo(parts[0]);
 }
 window.addEventListener('hashchange', restorePageFromHash);
@@ -3756,13 +3759,12 @@ function openEventForum() {
   forumIsHost  = selectedEvent.host_id === currentUser?.id;
   document.getElementById('forumEventName').textContent = selectedEvent.name || '';
   document.getElementById('forumPosts').innerHTML = '';
-  document.getElementById('forumPosts').style.display     = 'none';
-  document.getElementById('forumEmpty').style.display     = 'none';
+  document.getElementById('forumPosts').style.display      = 'none';
+  document.getElementById('forumEmpty').style.display      = 'none';
   document.getElementById('forumExpiredMsg').style.display = 'none';
-  document.getElementById('forumInput').style.display     = 'none';
-  document.getElementById('forumLoading').style.display   = 'block';
-  document.getElementById('eventForumSheet').classList.add('open');
-  document.body.style.overflow = 'hidden';
+  document.getElementById('forumInput').style.display      = 'none';
+  document.getElementById('forumLoading').style.display    = 'block';
+  goTo('event-forum');
   loadForumPosts();
 }
 
