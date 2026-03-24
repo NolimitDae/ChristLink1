@@ -1049,6 +1049,201 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   /* extra safe area for hero on mobile */
   .page{padding-top:calc(var(--nav-h) + var(--safe-t))}
 }
+
+/* ═══════════════════════════════════════════════════════════
+   UI/UX ENHANCEMENTS
+═══════════════════════════════════════════════════════════ */
+
+/* ── SKELETON LOADER ─────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 37%, var(--surface2) 63%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: var(--r-sm);
+}
+.skeleton-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; width: 260px;
+}
+.skeleton-card-img  { height: 130px; }
+.skeleton-card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+.skeleton-line       { height: 12px; }
+.skeleton-line-short { height: 12px; width: 60%; }
+.skeleton-line-xshort{ height: 12px; width: 40%; }
+.events-grid .skeleton-card { width: auto; }
+.events-grid .skeleton-card-img { height: 160px; }
+
+/* ── CTA PULSE GLOW ──────────────────────────────────────── */
+@keyframes goldPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
+  50%       { box-shadow: 0 0 0 8px rgba(201,168,76,0.18); }
+}
+@keyframes goldPulseStrong {
+  0%, 100% { box-shadow: 0 4px 20px var(--gold-glow), 0 0 0 0 rgba(201,168,76,0); }
+  50%       { box-shadow: 0 4px 20px var(--gold-glow), 0 0 0 10px rgba(201,168,76,0.15); }
+}
+.detail-rsvp-btn:not(.confirmed) { animation: goldPulseStrong 2.8s ease-in-out infinite; }
+.nav-badge-gold  { animation: goldPulse 3s ease-in-out infinite; }
+.tab-host-circle { animation: goldPulse 2.5s ease-in-out infinite; }
+.detail-rsvp-btn.confirmed { animation: none; }
+
+/* ── SCROLL REVEAL ───────────────────────────────────────── */
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes revealFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.reveal { opacity: 0; animation: none; }
+.reveal.visible      { animation: revealUp 0.45s cubic-bezier(.4,0,.2,1) forwards; }
+.reveal-fade.visible { animation: revealFade 0.4s ease forwards; }
+.reveal-stagger.visible > *:nth-child(1) { animation-delay: 0s; }
+.reveal-stagger.visible > *:nth-child(2) { animation-delay: 0.08s; }
+.reveal-stagger.visible > *:nth-child(3) { animation-delay: 0.16s; }
+.reveal-stagger.visible > *:nth-child(4) { animation-delay: 0.24s; }
+.reveal-stagger.visible > *:nth-child(5) { animation-delay: 0.32s; }
+
+/* ── CARD SHINE ON HOVER ─────────────────────────────────── */
+@keyframes cardShine {
+  from { transform: translateX(-100%) skewX(-15deg); }
+  to   { transform: translateX(250%) skewX(-15deg); }
+}
+.event-card::after {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 40%; height: 100%;
+  background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
+  transform: translateX(-100%) skewX(-15deg);
+  pointer-events: none; z-index: 2;
+}
+.event-card:hover::after { animation: cardShine 0.6s ease forwards; }
+
+/* ── ENHANCED PAGE TRANSITION ────────────────────────────── */
+@keyframes pageOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes tabBounce {
+  0%   { transform: translateY(0) scale(1); }
+  40%  { transform: translateY(-4px) scale(1.15); }
+  100% { transform: translateY(-1px) scale(1); }
+}
+.tab-item.active svg { animation: tabBounce 0.3s cubic-bezier(.175,.885,.32,1.275) forwards; }
+
+/* ── BUTTON PRESS MICRO-FEEDBACK ────────────────────────── */
+.btn-gold:active,
+.detail-rsvp-btn:active {
+  transform: scale(0.96) !important;
+  filter: brightness(0.92);
+  transition: transform 0.08s ease, filter 0.08s ease !important;
+}
+.pill:active, .near-toggle:active { transform: scale(0.94); transition: transform 0.1s ease !important; }
+.tab-item:active > svg { transform: scale(0.88) !important; transition: transform 0.08s ease !important; }
+
+/* ── RSVP SUCCESS BADGE ──────────────────────────────────── */
+@keyframes badgePop {
+  0%   { transform: scale(0) rotate(-10deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(3deg); opacity: 1; }
+  80%  { transform: scale(0.95) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes successGlow {
+  0%, 100% { box-shadow: 0 4px 20px rgba(78,201,140,0.3); }
+  50%       { box-shadow: 0 4px 32px rgba(78,201,140,0.55), 0 0 0 6px rgba(78,201,140,0.1); }
+}
+.detail-rsvp-btn.confirmed { animation: successGlow 2s ease-in-out infinite; }
+
+/* ── FORM FIELD FOCUS ENHANCEMENT ───────────────────────── */
+.field:focus {
+  border-color: rgba(201,168,76,0.5) !important;
+  background: var(--surface) !important;
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.08);
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.otp-box:focus {
+  border-color: var(--gold) !important;
+  background: rgba(201,168,76,0.06) !important;
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+  transform: scale(1.05);
+  transition: all 0.15s cubic-bezier(.175,.885,.32,1.275);
+}
+.otp-box.filled { background: rgba(201,168,76,0.08) !important; border-color: var(--gold) !important; }
+
+/* ── VERSE ENHANCED TRANSITION ──────────────────────────── */
+@keyframes verseReveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.verse-text.animating, .verse-ref.animating { animation: verseReveal 0.5s ease forwards; }
+
+/* ── STICKY CTA ENTRANCE ─────────────────────────────────── */
+@keyframes stickySlideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+#page-event-detail.active .detail-sticky {
+  animation: stickySlideUp 0.4s cubic-bezier(.175,.885,.32,1.275) both;
+  animation-delay: 0.3s;
+}
+
+/* ── PARALLAX HERO CROSS ─────────────────────────────────── */
+@keyframes crossDrift {
+  0%   { transform: translateY(0) rotate(0deg) scale(1); }
+  33%  { transform: translateY(-8px) rotate(1deg) scale(1.02); }
+  66%  { transform: translateY(4px) rotate(-0.5deg) scale(0.99); }
+  100% { transform: translateY(0) rotate(0deg) scale(1); }
+}
+.hero-cross { animation: crossDrift 12s ease-in-out infinite; }
+
+/* ── LIVE ACTIVITY DOT ───────────────────────────────────── */
+@keyframes liveDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.3); opacity: 0.7; }
+}
+#communityDot { animation: liveDot 1.8s ease-in-out infinite; }
+
+/* ── TOAST ENHANCED ──────────────────────────────────────── */
+@keyframes toastIn {
+  from { transform: translateX(-50%) translateY(80px) scale(0.9); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+}
+#toast.show { animation: toastIn 0.35s cubic-bezier(.175,.885,.32,1.275) forwards !important; }
+#toast.success { border-left: 3px solid var(--green) !important; }
+#toast.error   { border-left: 3px solid var(--red) !important; }
+#toast:not(.success):not(.error) { border-left: 3px solid var(--gold) !important; }
+
+/* ── NAV AVATAR ACTIVE RING ──────────────────────────────── */
+@keyframes avatarRing { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+#navAvatarBtn { position: relative; }
+#navAvatarBtn::before {
+  content: ''; position: absolute; inset: -3px; border-radius: 50%;
+  background: conic-gradient(var(--gold) 0deg, transparent 120deg, var(--gold2) 240deg, transparent 360deg);
+  animation: avatarRing 4s linear infinite;
+  z-index: -1; opacity: 0.7;
+}
+#navAvatarBtn::after {
+  content: ''; position: absolute; inset: -1px; border-radius: 50%;
+  background: var(--bg); z-index: -1;
+}
+
+/* ── EMPTY STATE FLOAT ───────────────────────────────────── */
+@keyframes emptyFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+.empty-icon { animation: emptyFloat 3s ease-in-out infinite; display: inline-block; }
+
+/* ── REDUCED MOTION (accessibility) ─────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .detail-rsvp-btn, .nav-badge-gold, .tab-host-circle,
+  .hero-cross, #communityDot, .empty-icon { animation: none !important; }
+  .reveal, .reveal-fade { opacity: 1 !important; animation: none !important; }
+  .event-card::after { display: none; }
+  .tab-item.active svg { animation: none; }
+  #navAvatarBtn::before { animation: none; }
+}
 </style>
 </head>
 <body>
@@ -1110,9 +1305,12 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
     Host
   </div>
   <div class="tab-item" id="tab-community" onclick="goTo('community')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
-    </svg>
+    <div style="position:relative;display:inline-block">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+      <div id="communityDot" style="position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:#4EC98C;border:1.5px solid var(--bg);display:none"></div>
+    </div>
     Community
   </div>
   <div class="tab-item" id="tab-profile" onclick="goTo('profile')">
@@ -1130,6 +1328,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 
   <!-- Hero -->
   <div class="hero">
+    <canvas id="heroCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.35"></canvas>
     <div class="hero-cross"></div>
     <div class="hero-eyebrow">✦ Discover Faith Events</div>
     <h1 class="hero-title">Find Your <em>Community</em>,<br>Deepen Your Faith.</h1>
@@ -1156,7 +1355,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   </div>
 
   <!-- Upcoming events (horizontal scroll) -->
-  <div class="section">
+  <div class="section reveal">
     <div class="section-head">
       <div class="section-title">Upcoming</div>
       <button id="nearMeHomeBtn" class="near-toggle" onclick="enableNearMeHome(this)">
@@ -1176,7 +1375,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   </div>
 
   <!-- Verse -->
-  <div class="verse-banner">
+  <div class="verse-banner reveal">
     <div class="verse-mark">"</div>
     <div class="verse-text" id="verseText">I can do all things through Christ who strengthens me.</div>
     <div class="verse-ref" id="verseRef">— Philippians 4:13</div>
@@ -1184,7 +1383,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   </div>
 
   <!-- Host promo -->
-  <div class="host-promo">
+  <div class="host-promo reveal">
     <div class="host-promo-icon"><svg width="32" height="40" viewBox="0 0 18 22" fill="none"><rect x="7" y="0" width="4" height="22" rx="2" fill="#C9A84C"/><rect x="0" y="6" width="18" height="4" rx="2" fill="#C9A84C"/></svg></div>
     <div>
       <h3>Host a Gathering</h3>
@@ -4209,7 +4408,7 @@ function makeCardHTML(ev, scrollMode) {
       </div>
       <div class="card-footer">
         ${price ? `<span style="font-size:13px;font-weight:700;color:var(--gold)">${price}</span>` : `<span style="font-size:12px;color:var(--green);font-weight:600">Free</span>`}
-        <span style="font-size:11px;color:var(--muted)">Tap to view →</span>
+        ${Number(ev.confirmed_rsvps) > 0 ? `<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted2)"><div style="display:flex">${[...Array(Math.min(3,Number(ev.confirmed_rsvps)))].map((_,i)=>`<div style="width:16px;height:16px;border-radius:50%;background:${['#C9A84C','#4E7CFF','#4EC98C'][i]};border:1.5px solid var(--bg);margin-left:${i>0?'-5px':'0'};font-size:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">${['★','✝','♡'][i]}</div>`).join('')}</div><span>${ev.confirmed_rsvps} going</span></div>` : `<span style="font-size:11px;color:var(--muted)">Tap to view →</span>`}
       </div>
     </div>`;
   card.onclick = () => viewDetail(ev);
@@ -4227,7 +4426,11 @@ function renderInto(container, events, scrollMode) {
     </div>`;
     return;
   }
-  events.forEach(ev => container.appendChild(makeCardHTML(ev, scrollMode)));
+  events.forEach(ev => {
+    const card = makeCardHTML(ev, scrollMode);
+    card.classList.add('reveal');
+    container.appendChild(card);
+  });
 }
 
 
@@ -4242,7 +4445,15 @@ function homePill(el, filter) {
 
 async function fetchHomeEvents(params = {}) {
   const scroll = document.getElementById('homeScroll');
-  scroll.innerHTML = '<div style="width:100%;display:flex;align-items:center;justify-content:center;padding:48px 20px;gap:10px"><div class="spinner spinner-gold"></div><span style="color:var(--muted)">Loading…</span></div>';
+  scroll.innerHTML = [1,2,3].map(() => `
+    <div class="skeleton-card">
+      <div class="skeleton skeleton-card-img"></div>
+      <div class="skeleton-card-body">
+        <div class="skeleton skeleton-line skeleton-line-xshort"></div>
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line skeleton-line-short"></div>
+      </div>
+    </div>`).join('');
   try {
     const qs = new URLSearchParams(params);
     const res = await fetch(`${API_BASE}/api/events?${qs}`);
@@ -4290,7 +4501,15 @@ async function runBrowse() {
   const grid    = document.getElementById('browseGrid');
   const count   = document.getElementById('browseCount');
   if (!grid) return;
-  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px 20px;display:flex;align-items:center;justify-content:center;gap:12px"><div class="spinner spinner-gold"></div><span style="color:var(--muted)">Loading…</span></div>`;
+  grid.innerHTML = [1,2,3].map(() => `
+    <div class="skeleton-card events-grid">
+      <div class="skeleton skeleton-card-img" style="height:160px"></div>
+      <div class="skeleton-card-body">
+        <div class="skeleton skeleton-line skeleton-line-xshort"></div>
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line skeleton-line-short"></div>
+      </div>
+    </div>`).join('');
   const params = new URLSearchParams();
   if (q) params.set('q', q);
   if (activeFilters.type.length)   params.set('type',   activeFilters.type[0]);
@@ -4550,6 +4769,7 @@ function handleRsvp() {
       document.getElementById('detailWhoGoing').style.display = 'block';
       loadInlineAttendees(selectedEvent.id, selectedEvent.is_paid);
       spawnConfetti();
+      setTimeout(() => spawnConfetti(), 600);
       showSuccess('🙌', 'You\'re Going!', `Spot reserved for ${selectedEvent?.name || 'the event'}. See you there!`);
     } else {
       const d = await r.json().catch(() => ({}));
@@ -5465,7 +5685,18 @@ function formatTimeAgo(iso) {
 async function initCommunityFeed() {
   const feed = document.getElementById('communityFeed');
   if (!feed) return;
-  feed.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--muted2);font-size:14px">Loading…</div>';
+  feed.innerHTML = [1,2].map(() => `
+    <div class="feed-card" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="skeleton" style="width:38px;height:38px;border-radius:50%;flex-shrink:0"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+          <div class="skeleton skeleton-line" style="width:40%"></div>
+          <div class="skeleton skeleton-line" style="width:25%"></div>
+        </div>
+      </div>
+      <div class="skeleton skeleton-line" style="width:90%"></div>
+      <div class="skeleton skeleton-line" style="width:70%"></div>
+    </div>`).join('');
   try {
     const res = await fetch(`${API_BASE}/api/community-posts`);
     const { posts, error } = await res.json();
@@ -5485,11 +5716,13 @@ function renderCommunityFeed(posts) {
   }
   feed.innerHTML = '';
   posts.forEach(p => feed.appendChild(makeCommunityPost(p)));
+  const dot = document.getElementById('communityDot');
+  if (dot && posts.length > 0) dot.style.display = 'block';
 }
 
 function makeCommunityPost(p) {
   const el = document.createElement('div');
-  el.className = 'feed-card';
+  el.className = 'feed-card reveal';
   el.dataset.postId = p.id;
   const name    = p.profiles?.full_name || 'Anonymous';
   const initial = name.charAt(0).toUpperCase();
@@ -5657,6 +5890,9 @@ function goVerse(i) {
     vt.textContent = VERSES[i].t;
     vr.textContent = VERSES[i].r;
     vt.style.opacity = vr.style.opacity = '1';
+    vt.classList.remove('animating'); vr.classList.remove('animating');
+    void vt.offsetWidth;
+    vt.classList.add('animating'); vr.classList.add('animating');
     document.querySelectorAll('.v-dot').forEach((d,j)=>d.classList.toggle('active',j===i));
   }, 400);
 }
@@ -6090,6 +6326,55 @@ function closeLightbox() {
   // Clear src after transition so there's no flash on next open
   setTimeout(() => { document.getElementById('imgLightboxImg').src = ''; }, 250);
 }
+
+// ── SCROLL REVEAL OBSERVER ───────────────────────────────
+(function initReveal() {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.15 });
+  function attachReveal() {
+    document.querySelectorAll('.reveal, .reveal-fade').forEach(el => {
+      el.classList.remove('visible');
+      obs.observe(el);
+    });
+  }
+  const _goTo = window.goTo;
+  window.goTo = function(page) { _goTo(page); setTimeout(attachReveal, 100); };
+  setTimeout(attachReveal, 300);
+})();
+
+// ── HERO PARTICLE CANVAS ────────────────────────────────
+(function initHeroParticles() {
+  const canvas = document.getElementById('heroCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+  const GOLD = 'rgba(201,168,76,';
+  function resize() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+  for (let i = 0; i < 28; i++) {
+    particles.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+      r: Math.random()*1.5+0.5, vx: (Math.random()-.5)*.3, vy: -Math.random()*.4-.1,
+      a: Math.random()*.5+.1, life: Math.random() });
+  }
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.life += 0.004;
+      const alpha = p.a * Math.abs(Math.sin(p.life * Math.PI));
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = GOLD + alpha + ')'; ctx.fill();
+      if (p.y < -5) p.y = canvas.height+5;
+      if (p.x < -5) p.x = canvas.width+5;
+      if (p.x > canvas.width+5) p.x = -5;
+    });
+    requestAnimationFrame(tick);
+  }
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) tick();
+})();
 
 // Fetch home events on load and start live listeners
 fetchHomeEvents();
