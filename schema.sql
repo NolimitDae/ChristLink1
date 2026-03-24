@@ -177,11 +177,23 @@ create policy "Users can view own tickets" on public.tickets for select using (a
 create policy "Service role manages tickets" on public.tickets for all using (true);
 
 -- ─── EVENTS VIEW (with host info + ticket types) ─────────────
+-- NOTE: uses explicit column list so e.* expansion stays stable
+-- as columns are added. Always recreate this view after schema changes.
 create or replace view public.events_with_details as
 select
-  e.*,
-  p.full_name   as host_name,
-  p.avatar_url  as host_avatar,
+  e.id, e.host_id, e.name, e.description,
+  e.cover_url,          -- canonical column name (was image_url before migration)
+  e.gallery_urls,
+  e.event_type, e.age_group, e.format, e.denomination, e.tags,
+  e.is_paid, e.absorb_stripe_fee,
+  e.start_date, e.end_date,
+  e.venue_name, e.address, e.city, e.state, e.zip, e.online_url,
+  e.max_capacity, e.rsvp_count,
+  e.forum_enabled,      -- explicit: was absent when column was added later
+  e.status, e.listing_fee_paid, e.listing_payment_id,
+  e.created_at, e.updated_at,
+  p.full_name    as host_name,
+  p.avatar_url   as host_avatar,
   p.avatar_color as host_avatar_color,
   coalesce(
     (select json_agg(t order by t.price_cents asc)
@@ -269,3 +281,66 @@ where code is null;
 -- Storage policy (run after creating bucket):
 -- insert into storage.policies (name, bucket_id, definition) values
 -- ('allow_authenticated_uploads', 'avatars', '(auth.role() = ''authenticated'')');
+
+-- ─── MIGRATIONS (run these in Supabase SQL Editor if upgrading) ──────────────
+
+-- 1. Rename image_url → cover_url (skip if running schema fresh — table already uses cover_url)
+do $$ begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'events' and column_name = 'image_url'
+  ) then
+    alter table public.events rename column image_url to cover_url;
+  end if;
+end $$;
+
+-- 2. Recreate events_with_details view with explicit column list so
+--    forum_enabled and cover_url are always present (run after rename above).
+create or replace view public.events_with_details as
+select
+  e.id, e.host_id, e.name, e.description,
+  e.cover_url, e.gallery_urls,
+  e.event_type, e.age_group, e.format, e.denomination, e.tags,
+  e.is_paid, e.absorb_stripe_fee,
+  e.start_date, e.end_date,
+  e.venue_name, e.address, e.city, e.state, e.zip, e.online_url,
+  e.max_capacity, e.rsvp_count, e.forum_enabled,
+  e.status, e.listing_fee_paid, e.listing_payment_id,
+  e.created_at, e.updated_at,
+  p.full_name    as host_name,
+  p.avatar_url   as host_avatar,
+  p.avatar_color as host_avatar_color,
+  coalesce(
+    (select json_agg(t order by t.price_cents asc)
+     from public.ticket_types t where t.event_id = e.id),
+    '[]'::json
+  ) as ticket_types,
+  (select count(*) from public.rsvps r
+   where r.event_id = e.id and r.status = 'confirmed') as confirmed_rsvps
+from public.events e
+join public.profiles p on p.id = e.host_id;
+
+-- 3. Create event_forum_posts table if not already created
+create table if not exists public.event_forum_posts (
+  id         uuid primary key default uuid_generate_v4(),
+  event_id   uuid not null references public.events(id) on delete cascade,
+  author_id  uuid not null references public.profiles(id) on delete cascade,
+  body       text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.event_forum_posts enable row level security;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Anyone can read forum posts') then
+    create policy "Anyone can read forum posts" on public.event_forum_posts for select using (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Authenticated users can post') then
+    create policy "Authenticated users can post" on public.event_forum_posts for insert with check (auth.uid() = author_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Authors can delete own forum posts') then
+    create policy "Authors can delete own forum posts" on public.event_forum_posts for delete using (auth.uid() = author_id);
+  end if;
+end $$;
+
+-- 4. Forum backfill — enable forum on all published events (one-time, idempotent)
+update public.events set forum_enabled = true
+where status = 'published' and forum_enabled = false;

@@ -3830,6 +3830,13 @@ function stopCommunityLive() {
   if (_commPollTimer) { clearInterval(_commPollTimer); _commPollTimer = null; }
 }
 
+// Clean up all Realtime channels and poll timers on page unload
+// to avoid WebSocket leaks / orphaned subscriptions in the Supabase dashboard.
+window.addEventListener('beforeunload', () => {
+  stopForumLive();
+  stopCommunityLive();
+});
+
 function openEventForum() {
   if (!selectedEvent) return;
   forumEventId = selectedEvent.id;

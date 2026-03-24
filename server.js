@@ -70,15 +70,7 @@ app.use(express.static(path.join(__dirname, 'public')));
       console.log(`[storage] Created bucket "${b.name}"`);
     }
   }
-  // Enable forum on ALL published events that still have the DB default (false).
-  // The column is NOT NULL DEFAULT false, so IS NULL never matches — we use .eq(false).
-  // This is a one-time backfill; new events are created with forum_enabled = true.
-  const { error: forumErr } = await supabaseAdmin
-    .from('events').update({ forum_enabled: true })
-    .eq('status', 'published')
-    .eq('forum_enabled', false);
-  if (forumErr) console.warn('[startup] forum backfill error:', forumErr.message);
-  else console.log('[startup] forum backfill done.');
+  // Forum backfill removed — now a schema migration in schema.sql (migrations section).
 })();
 
 // ─── RATE LIMITERS ──────────────────────────────────────────
@@ -270,7 +262,7 @@ app.get('/api/events', async (req, res) => {
   let query = supabaseAdmin
     .from('events_with_details').select('*')
     .eq('status', 'published')
-    .order('start_date', { ascending: true })
+    .order('start_date', { ascending: true, nullsFirst: false })
     .range(Number(offset), Number(offset) + Number(limit) - 1);
   if (city)    query = query.ilike('city', `%${city}%`);
   if (type)    query = query.ilike('event_type', `%${type}%`);
@@ -280,28 +272,17 @@ app.get('/api/events', async (req, res) => {
   if (q)       query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%,event_type.ilike.%${q}%`);
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
-  // events_with_details view may not include forum_enabled if it predates the column.
-  // Batch-fetch forum_enabled from the events table and merge it in.
-  const rows = data || [];
-  if (rows.length) {
-    const ids = rows.map(e => e.id);
-    const { data: flags } = await supabaseAdmin.from('events').select('id,forum_enabled').in('id', ids);
-    const flagMap = Object.fromEntries((flags || []).map(f => [f.id, f.forum_enabled]));
-    const events = rows.map(e => ({ ...e, cover_url: e.image_url, forum_enabled: flagMap[e.id] ?? false }));
-    return res.json({ events });
-  }
-  res.json({ events: [] });
+  // View now has explicit cover_url and forum_enabled columns — no aliasing needed.
+  res.json({ events: data || [] });
 });
 
 app.get('/api/events/:id', async (req, res) => {
   const { data: ev, error } = await supabaseAdmin
     .from('events_with_details').select('*').eq('id', req.params.id).single();
   if (error || !ev) return res.status(404).json({ error: 'Event not found.' });
-  const [{ data: ticketTypes }, { data: flags }] = await Promise.all([
-    supabaseAdmin.from('ticket_types').select('*').eq('event_id', req.params.id),
-    supabaseAdmin.from('events').select('forum_enabled').eq('id', req.params.id).single(),
-  ]);
-  res.json({ ...ev, cover_url: ev.image_url, ticket_types: ticketTypes || [], forum_enabled: flags?.forum_enabled ?? false });
+  const { data: ticketTypes } = await supabaseAdmin.from('ticket_types').select('*').eq('event_id', req.params.id);
+  // View now has explicit cover_url and forum_enabled — no aliasing needed.
+  res.json({ ...ev, ticket_types: ticketTypes || [] });
 });
 
 app.post('/api/events', requireAuth, async (req, res) => {
@@ -315,7 +296,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
   await supabaseAdmin.from('profiles').update({ role: 'host' }).eq('id', req.userId).eq('role', 'attendee');
   const { data, error } = await supabaseAdmin.from('events').insert({
     host_id: req.userId, name, description,
-    image_url: cover_url || null,
+    cover_url: cover_url || null,
     gallery_urls: gallery_urls || [],
     event_type,
     age_group: age_group || 'All Ages',
@@ -347,8 +328,8 @@ app.patch('/api/events/:id', requireAuth, async (req, res) => {
   for (const key of allowed) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];
   }
-  // DB column is image_url; frontend sends cover_url — map it over
-  if (req.body.cover_url !== undefined) updates.image_url = req.body.cover_url;
+  // cover_url is now the canonical column name; add it to allowed fields
+  if (req.body.cover_url !== undefined) updates.cover_url = req.body.cover_url;
   if (!Object.keys(updates).length) return res.status(400).json({ error: 'No fields to update.' });
   updates.updated_at = new Date().toISOString();
   const { data, error } = await supabaseAdmin
@@ -379,14 +360,8 @@ app.get('/api/my-events', requireAuth, async (req, res) => {
     .eq('host_id', req.userId)
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
-  const rows = data || [];
-  if (rows.length) {
-    const ids = rows.map(e => e.id);
-    const { data: flags } = await supabaseAdmin.from('events').select('id,forum_enabled').in('id', ids);
-    const flagMap = Object.fromEntries((flags || []).map(f => [f.id, f.forum_enabled]));
-    return res.json({ events: rows.map(e => ({ ...e, cover_url: e.image_url, forum_enabled: flagMap[e.id] ?? false })) });
-  }
-  res.json({ events: [] });
+  // View now has explicit cover_url and forum_enabled — no aliasing needed.
+  res.json({ events: data || [] });
 });
 
 // ── My Tickets (attendee's purchased tickets) ────────────────
@@ -395,7 +370,7 @@ app.get('/api/my-tickets', requireAuth, async (req, res) => {
     .from('tickets')
     .select(`
       *,
-      events ( name, start_date, city, image_url ),
+      events ( name, start_date, city, cover_url ),
       ticket_types ( name )
     `)
     .eq('user_id', req.userId)
@@ -406,7 +381,7 @@ app.get('/api/my-tickets', requireAuth, async (req, res) => {
     event_name:       t.events?.name,
     event_start_date: t.events?.start_date,
     event_city:       t.events?.city,
-    event_cover_url:  t.events?.image_url,
+    event_cover_url:  t.events?.cover_url,
     ticket_type_name: t.ticket_types?.name,
   }));
   res.json({ tickets });
@@ -546,7 +521,7 @@ app.get('/api/rsvp/:eventId', requireAuth, async (req, res) => {
 app.get('/api/my-rsvps', requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('rsvps')
-    .select('*, events(id, name, start_date, city, image_url)')
+    .select('*, events(id, name, start_date, city, cover_url)')
     .eq('user_id', req.userId)
     .eq('status', 'confirmed')
     .order('created_at', { ascending: false });
@@ -556,7 +531,7 @@ app.get('/api/my-rsvps', requireAuth, async (req, res) => {
     event_name:       r.events?.name,
     event_start_date: r.events?.start_date,
     event_city:       r.events?.city,
-    event_cover_url:  r.events?.image_url,
+    event_cover_url:  r.events?.cover_url,
     event_id:         r.events?.id || r.event_id,
     type: 'rsvp',
   }));
@@ -950,7 +925,7 @@ app.get('/api/tickets/:ticketId/wallet', requireAuth, async (req, res) => {
 
   const { data: ticket } = await supabaseAdmin
     .from('tickets')
-    .select('*, events(name, start_date, end_date, venue_name, city, state, image_url), ticket_types(name)')
+    .select('*, events(name, start_date, end_date, venue_name, city, state, cover_url), ticket_types(name)')
     .eq('id', ticketId)
     .eq('user_id', req.userId)
     .eq('status', 'confirmed')
