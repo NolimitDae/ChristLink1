@@ -304,7 +304,7 @@ select
   e.is_paid, e.absorb_stripe_fee,
   e.start_date, e.end_date,
   e.venue_name, e.address, e.city, e.state, e.zip, e.online_url,
-  e.max_capacity, e.rsvp_count, e.forum_enabled,
+  e.max_capacity, e.forum_enabled,
   e.status, e.listing_fee_paid, e.listing_payment_id,
   e.created_at, e.updated_at,
   p.full_name    as host_name,
