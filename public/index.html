@@ -1468,7 +1468,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
         <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;margin-bottom:18px">
           <div>
             <div style="font-size:14px;font-weight:600">Enable Event Forum</div>
-            <div style="font-size:12px;color:var(--muted2);margin-top:2px">Let attendees discuss — expires 48h after event ends</div>
+            <div style="font-size:12px;color:var(--muted2);margin-top:2px">Let attendees discuss — expires 30 days after event ends</div>
           </div>
           <label class="toggle-sw"><input type="checkbox" id="evForumEnabled" checked><span class="toggle-sw-track"></span></label>
         </div>
@@ -1630,7 +1630,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 ═══════════════════════════════════════════════════ -->
 <div class="page" id="page-event-detail">
   <div class="detail-hero" id="detailHero">
-    <button class="detail-back" onclick="goTo('browse')">
+    <button class="detail-back" onclick="goTo(prevPage||'browse')">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <button class="detail-share-btn" id="detailShareBtn" onclick="shareEvent()" aria-label="Share event">
@@ -2419,7 +2419,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
           </div>
           <div>
             <h4 style="margin:0 0 2px">Event Forum</h4>
-            <p style="font-size:12px;color:var(--muted2);margin:0">Let attendees chat — expires 48h after event ends</p>
+            <p style="font-size:12px;color:var(--muted2);margin:0">Let attendees chat — expires 30 days after event ends</p>
           </div>
         </div>
         <label class="toggle-sw">
@@ -2619,10 +2619,13 @@ function outsideDrop(e) {
 // ═══════════════════════════════════════════════════════════
 // PAGE ROUTING
 // ═══════════════════════════════════════════════════════════
+let prevPage = 'browse'; // track where the user came from for back buttons
 function goTo(page) {
   const curr = document.querySelector('.page.active');
   const next = document.getElementById('page-' + page);
   if (!next || curr === next) return;
+  // Track previous page so back buttons can return correctly
+  if (curr?.id) prevPage = curr.id.replace('page-', '');
   // Reset browseReady when leaving browse so re-navigation always fetches fresh events
   if (curr?.id === 'page-browse') browseReady = false;
   // Stop forum live updates when leaving the forum page
@@ -4986,8 +4989,6 @@ document.getElementById('listingFeeSheet').addEventListener('click', e => {
   if (!lfMounted) setTimeout(mountListingCard, 100);
 }, {once:true});
 
-// also mount when opened
-const _origOpenSheet = window.openSheet;
 function openSheet(id) {
   document.getElementById(id).classList.add('open');
   document.body.style.overflow = 'hidden';

@@ -42,7 +42,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder'
 });
 
 // ─── CONSTANTS ──────────────────────────────────────────────
-const PLATFORM_FEE_PCT = 0.05;
+const PLATFORM_FEE_PCT = 0.07;
 const HOST_LISTING_FEE = 1999;
 const STRIPE_PCT       = 0.029;
 const STRIPE_FIXED     = 30;
