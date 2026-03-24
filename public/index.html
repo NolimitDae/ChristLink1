@@ -3717,13 +3717,22 @@ async function loadForumCount(eventId) {
   try {
     const res  = await fetch(`${API_BASE}/api/events/${eventId}/forum`);
     const data = await res.json();
-    const el   = document.getElementById('detailForumCount');
+    const el      = document.getElementById('detailForumCount');
+    const section = document.getElementById('detailForumSection');
     if (!el) return;
-    if (data.expired)       el.textContent = 'Forum closed';
-    else if (!data.enabled) el.textContent = 'Forum not enabled — enable it in Edit Event';
-    else if (data.posts.length === 0) el.textContent = 'Be the first to post!';
-    else el.textContent = `${data.posts.length} post${data.posts.length !== 1 ? 's' : ''}`;
-  } catch {}
+    if (!data.enabled) {
+      // Hide the button entirely when forum is off
+      if (section) section.style.display = 'none';
+      return;
+    }
+    if (section) section.style.display = 'block';
+    if (data.expired)              el.textContent = 'Forum closed';
+    else if (data.posts?.length)   el.textContent = `${data.posts.length} post${data.posts.length !== 1 ? 's' : ''}`;
+    else                           el.textContent = 'Be the first to post!';
+  } catch {
+    const el = document.getElementById('detailForumCount');
+    if (el) el.textContent = 'Chat with people going';
+  }
 }
 
 function openEventForum() {
@@ -4269,14 +4278,10 @@ function viewDetail(ev) {
     dhAv.textContent = (ev.host_name||'H').charAt(0).toUpperCase();
     if (ev.host_avatar_color) dhAv.style.background = ev.host_avatar_color;
   }
-  // Forum section — show only when forum is enabled
-  const forumSection = document.getElementById('detailForumSection');
-  if (ev.forum_enabled) {
-    forumSection.style.display = 'block';
-    loadForumCount(ev.id);
-  } else {
-    forumSection.style.display = 'none';
-  }
+  // Show forum section immediately; loadForumCount will hide it if disabled
+  document.getElementById('detailForumSection').style.display = 'block';
+  document.getElementById('detailForumCount').textContent = 'Loading…';
+  loadForumCount(ev.id);
   document.getElementById('detailDesc').textContent = ev.description || 'No description provided.';
 
   // Gallery section

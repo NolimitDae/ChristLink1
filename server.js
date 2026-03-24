@@ -280,18 +280,28 @@ app.get('/api/events', async (req, res) => {
   if (q)       query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%,event_type.ilike.%${q}%`);
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
-  // Alias image_url → cover_url so frontend works regardless of DB column name
-  const events = (data || []).map(e => ({ ...e, cover_url: e.image_url }));
-  res.json({ events });
+  // events_with_details view may not include forum_enabled if it predates the column.
+  // Batch-fetch forum_enabled from the events table and merge it in.
+  const rows = data || [];
+  if (rows.length) {
+    const ids = rows.map(e => e.id);
+    const { data: flags } = await supabaseAdmin.from('events').select('id,forum_enabled').in('id', ids);
+    const flagMap = Object.fromEntries((flags || []).map(f => [f.id, f.forum_enabled]));
+    const events = rows.map(e => ({ ...e, cover_url: e.image_url, forum_enabled: flagMap[e.id] ?? false }));
+    return res.json({ events });
+  }
+  res.json({ events: [] });
 });
 
 app.get('/api/events/:id', async (req, res) => {
   const { data: ev, error } = await supabaseAdmin
     .from('events_with_details').select('*').eq('id', req.params.id).single();
   if (error || !ev) return res.status(404).json({ error: 'Event not found.' });
-  const { data: ticketTypes } = await supabaseAdmin.from('ticket_types').select('*').eq('event_id', req.params.id);
-  // Alias image_url → cover_url so frontend works regardless of DB column name
-  res.json({ ...ev, cover_url: ev.image_url, ticket_types: ticketTypes || [] });
+  const [{ data: ticketTypes }, { data: flags }] = await Promise.all([
+    supabaseAdmin.from('ticket_types').select('*').eq('event_id', req.params.id),
+    supabaseAdmin.from('events').select('forum_enabled').eq('id', req.params.id).single(),
+  ]);
+  res.json({ ...ev, cover_url: ev.image_url, ticket_types: ticketTypes || [], forum_enabled: flags?.forum_enabled ?? false });
 });
 
 app.post('/api/events', requireAuth, async (req, res) => {
@@ -369,9 +379,14 @@ app.get('/api/my-events', requireAuth, async (req, res) => {
     .eq('host_id', req.userId)
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
-  // Alias image_url → cover_url so frontend works regardless of DB column name
-  const events = (data || []).map(e => ({ ...e, cover_url: e.image_url }));
-  res.json({ events });
+  const rows = data || [];
+  if (rows.length) {
+    const ids = rows.map(e => e.id);
+    const { data: flags } = await supabaseAdmin.from('events').select('id,forum_enabled').in('id', ids);
+    const flagMap = Object.fromEntries((flags || []).map(f => [f.id, f.forum_enabled]));
+    return res.json({ events: rows.map(e => ({ ...e, cover_url: e.image_url, forum_enabled: flagMap[e.id] ?? false })) });
+  }
+  res.json({ events: [] });
 });
 
 // ── My Tickets (attendee's purchased tickets) ────────────────
