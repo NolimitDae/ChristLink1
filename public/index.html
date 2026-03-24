@@ -2235,33 +2235,46 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 
 <!-- EVENT FORUM SHEET -->
 <div class="overlay" id="eventForumSheet">
-  <div class="sheet" style="max-height:92dvh">
-    <div class="sheet-handle"></div>
-    <div class="sheet-head">
+  <div class="sheet" style="max-height:92dvh;display:flex;flex-direction:column;overflow:hidden">
+    <div class="sheet-handle" style="flex-shrink:0"></div>
+    <div class="sheet-head" style="flex-shrink:0">
       <div>
         <div class="sheet-title">Event Forum</div>
         <div style="font-size:12px;color:var(--muted)" id="forumEventName">—</div>
       </div>
       <button class="sheet-close" onclick="closeSheet('eventForumSheet')">×</button>
     </div>
-    <div class="sheet-body" style="display:flex;flex-direction:column;gap:0;padding-bottom:0">
-      <div id="forumLoading" style="text-align:center;padding:32px 0"><div class="spinner spinner-gold" style="margin:0 auto"></div></div>
-      <div id="forumPosts" style="flex:1;overflow-y:auto;display:none;padding-bottom:12px"></div>
-      <div id="forumEmpty" style="display:none;text-align:center;padding:32px 0;color:var(--muted2)">
-        <div style="font-size:32px;margin-bottom:8px">💬</div>
-        <div style="font-weight:600">No posts yet</div>
+
+    <!-- Scrollable content fills remaining height -->
+    <div style="flex:1;overflow-y:auto;min-height:0">
+      <div id="forumLoading" style="text-align:center;padding:48px 0">
+        <div class="spinner spinner-gold" style="margin:0 auto"></div>
+      </div>
+      <div id="forumPosts" style="display:none;padding:8px 20px 8px"></div>
+      <div id="forumEmpty" style="display:none;text-align:center;padding:48px 24px;color:var(--muted2)">
+        <div style="font-size:36px;margin-bottom:10px">💬</div>
+        <div style="font-weight:600;font-size:15px">No posts yet</div>
         <div style="font-size:13px;margin-top:4px">Be the first to start the conversation!</div>
       </div>
-      <div id="forumExpiredMsg" style="display:none;text-align:center;padding:32px 0;color:var(--muted2)">
-        <div style="font-size:32px;margin-bottom:8px">🕰️</div>
-        <div style="font-weight:600">Forum has closed</div>
-        <div style="font-size:13px;margin-top:4px">This forum expired 48 hours after the event ended.</div>
+      <div id="forumExpiredMsg" style="display:none;text-align:center;padding:48px 24px;color:var(--muted2)">
+        <div style="font-size:36px;margin-bottom:10px">🔒</div>
+        <div style="font-weight:600;font-size:15px">Forum has closed</div>
+        <div style="font-size:13px;margin-top:4px">This forum expired 30 days after the event ended.</div>
       </div>
-      <div id="forumInput" style="display:none;border-top:1px solid var(--border);padding:12px 0 4px;background:var(--surface)">
-        <div style="display:flex;gap:8px;align-items:flex-end">
-          <textarea id="forumPostBody" class="field" placeholder="Share a thought or question…" rows="2" style="margin:0;flex:1;resize:none;font-size:14px"></textarea>
-          <button class="btn btn-gold btn-sm" style="flex-shrink:0;height:44px;padding:0 16px" onclick="submitForumPost()">Post</button>
-        </div>
+    </div>
+
+    <!-- Input bar always visible at bottom -->
+    <div id="forumInput" style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--surface2)">
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <textarea id="forumPostBody" class="field"
+          placeholder="Share a thought or question…"
+          rows="1"
+          style="margin:0;flex:1;resize:none;font-size:14px;min-height:42px;max-height:110px;overflow-y:auto;line-height:1.5;padding:10px 14px"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"
+        ></textarea>
+        <button class="btn btn-gold btn-sm"
+          style="flex-shrink:0;height:42px;padding:0 20px;border-radius:var(--r-full);align-self:flex-end"
+          onclick="submitForumPost()">Post</button>
       </div>
     </div>
   </div>
