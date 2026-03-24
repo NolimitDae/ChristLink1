@@ -2264,16 +2264,16 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
     </div>
 
     <!-- Input bar always visible at bottom -->
-    <div id="forumInput" style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--surface2)">
-      <div style="display:flex;gap:10px;align-items:flex-end">
+    <div id="forumInput" style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:var(--surface2)">
+      <div style="display:flex;gap:8px;align-items:flex-end">
         <textarea id="forumPostBody" class="field"
           placeholder="Share a thought or question…"
           rows="1"
-          style="margin:0;flex:1;resize:none;font-size:14px;min-height:42px;max-height:110px;overflow-y:auto;line-height:1.5;padding:10px 14px"
+          style="margin:0;flex:1;resize:none;font-size:14px;min-height:42px;max-height:110px;overflow-y:auto;line-height:1.5;padding:10px 12px;box-sizing:border-box"
           oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"
         ></textarea>
         <button class="btn btn-gold btn-sm"
-          style="flex-shrink:0;height:42px;padding:0 20px;border-radius:var(--r-full);align-self:flex-end"
+          style="flex-shrink:0;height:42px;width:64px;padding:0;border-radius:var(--r-full);align-self:flex-end;font-size:13px"
           onclick="submitForumPost()">Post</button>
       </div>
     </div>
