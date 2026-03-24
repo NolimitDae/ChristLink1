@@ -2238,18 +2238,16 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 <div class="page" id="page-event-forum" style="padding:0">
 
   <!-- Header -->
-  <div style="flex-shrink:0;display:flex;align-items:center;gap:10px;padding:calc(var(--safe-t) + 12px) 16px 12px;border-bottom:1px solid var(--border);background:var(--bg)">
+  <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;padding:calc(var(--safe-t) + 14px) 16px 14px;border-bottom:1px solid var(--border);background:var(--bg)">
     <button onclick="goTo('event-detail')"
-      style="display:flex;align-items:center;gap:6px;height:40px;padding:0 14px 0 10px;border-radius:var(--r-full);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:600;flex-shrink:0;touch-action:manipulation">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      style="display:flex;align-items:center;gap:5px;height:38px;padding:0 14px 0 10px;border-radius:var(--r-full);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0;touch-action:manipulation">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
       Back to Event
     </button>
-    <div style="flex:1;min-width:0;text-align:center">
-      <div style="font-size:15px;font-weight:700;color:var(--text)">Forum</div>
-      <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="forumEventName">—</div>
+    <div style="min-width:0">
+      <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.2">Forum</div>
+      <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="forumEventName">—</div>
     </div>
-    <!-- spacer to balance back button -->
-    <div style="width:100px;flex-shrink:0"></div>
   </div>
 
   <!-- Scrollable posts -->
@@ -2270,22 +2268,18 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
     </div>
   </div>
 
-  <!-- Sticky input bar (keyboard-aware) -->
-  <div id="forumInput" style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:var(--bg)">
+  <!-- Sticky input bar -->
+  <div id="forumInput" style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--surface2)">
     <div style="display:flex;align-items:flex-end;gap:10px">
-      <textarea id="forumPostBody"
-        placeholder="Say something…"
+      <textarea id="forumPostBody" class="field"
+        placeholder="Share a thought or question…"
         rows="1"
-        style="flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:20px;padding:11px 16px;font-size:15px;color:var(--text);resize:none;min-height:44px;max-height:120px;overflow-y:auto;line-height:1.5;box-sizing:border-box;font-family:inherit;transition:border-color .15s;-webkit-appearance:none"
+        style="margin:0;flex:1;resize:none;font-size:14px;min-height:44px;max-height:120px;overflow-y:auto;line-height:1.5;padding:10px 14px;box-sizing:border-box"
         oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
-        onfocus="this.style.borderColor='rgba(201,168,76,.5)'"
-        onblur="this.style.borderColor='var(--border)'"
       ></textarea>
-      <button
-        style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:var(--gold);border:none;display:flex;align-items:center;justify-content:center;align-self:flex-end;touch-action:manipulation;cursor:pointer"
-        onclick="submitForumPost()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
+      <button class="btn btn-gold btn-sm"
+        style="flex-shrink:0;height:44px;padding:0 20px;border-radius:var(--r-full);align-self:flex-end;font-size:14px;font-weight:700;touch-action:manipulation"
+        onclick="submitForumPost()">Post</button>
     </div>
   </div>
 </div>
