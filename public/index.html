@@ -3720,13 +3720,15 @@ async function loadForumCount(eventId) {
     const el      = document.getElementById('detailForumCount');
     const section = document.getElementById('detailForumSection');
     if (!el) return;
-    if (!data.enabled) {
-      // Hide the button entirely when forum is off
+    // Only hide when host has explicitly disabled it (enabled === false).
+    // undefined/error states keep the section visible.
+    if (data.enabled === false) {
       if (section) section.style.display = 'none';
       return;
     }
     if (section) section.style.display = 'block';
     if (data.expired)              el.textContent = 'Forum closed';
+    else if (data.error)           el.textContent = 'Chat with people going';
     else if (data.posts?.length)   el.textContent = `${data.posts.length} post${data.posts.length !== 1 ? 's' : ''}`;
     else                           el.textContent = 'Be the first to post!';
   } catch {
@@ -3759,7 +3761,7 @@ async function loadForumPosts() {
     if (data.expired) {
       document.getElementById('forumExpiredMsg').style.display = 'block'; return;
     }
-    if (!data.enabled) {
+    if (data.enabled === false) {
       const empty = document.getElementById('forumEmpty');
       const isHost = selectedEvent?.host_id === currentUser?.id;
       empty.innerHTML = `<div style="font-size:32px;margin-bottom:8px">💬</div>
