@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0A0A0F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -58,19 +58,46 @@
    RESET
 ═══════════════════════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html{height:100%;background:var(--bg);overscroll-behavior:none}
-body{
-  min-height:100%;background:var(--bg);color:var(--text);
-  font-family:var(--font-body);font-size:15px;line-height:1.5;
-  -webkit-font-smoothing:antialiased;
-  padding-bottom:calc(var(--tab-h) + var(--safe-b));
+html {
+  height: 100%;
+  background: var(--bg);
+  overscroll-behavior: none;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
-button,input,textarea,select{
-  font-family:inherit;font-size:inherit;color:inherit;
-  border:none;background:none;outline:none;
+body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--tab-h) + var(--safe-b));
+  overflow-x: hidden;
+  max-width: 100vw;
+  position: relative;
+  overscroll-behavior-x: none;
 }
-button{cursor:pointer}
-a{color:inherit;text-decoration:none}
+button, input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  border: none;
+  background: none;
+  outline: none;
+  -webkit-text-size-adjust: 100%;
+}
+/* Prevent iOS auto-zoom — all inputs must be >= 16px */
+input, textarea, select { font-size: max(16px, 1em) !important; }
+/* Explicit 16px on key fields */
+input.field, textarea.field, select.field,
+.reply-input, .post-field,
+#forumPostBody, #postInput, .otp-box,
+#authEmail, #authName, #manualCodeInput,
+#heroSearch, #browseSearch { font-size: 16px !important; }
+button { cursor: pointer; touch-action: manipulation; }
+a { color: inherit; text-decoration: none; touch-action: manipulation; }
 img{display:block;max-width:100%}
 
 /* ═══════════════════════════════════════════════════════════
@@ -479,7 +506,44 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
    EVENT DETAIL PAGE
 ═══════════════════════════════════════════════════════════ */
 #page-event-detail,#page-event-forum{padding-top:0}
-#page-event-forum.active{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+#page-event-forum.active {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  z-index: 500; /* above topnav (z-index:400) so forum header is never blocked */
+}
+/* ── Forum page layout ───────────────────────────────────── */
+#forumScrollArea {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  overscroll-behavior-y: contain;
+}
+#forumInput {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  background: var(--surface2);
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  transition: padding-bottom 0.12s ease;
+}
+#forumInput textarea { font-size: 16px !important; line-height: 1.5; }
+/* ── Select dropdown — prevent iOS zoom + custom arrow ──── */
+select.field {
+  font-size: 16px !important;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5' stroke='%23666070' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
 .detail-hero{
   height:240px;display:flex;align-items:center;justify-content:center;
   position:relative;font-size:72px;
@@ -1273,6 +1337,22 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   .tab-item.active svg { animation: none; }
   #navAvatarBtn::before { animation: none; }
 }
+
+/* ── Native-app tap feel: no 300ms delay, no double-tap zoom ── */
+button, a, [onclick],
+.tab-item, .pill, .filter-chip, .event-card, .card-btn, .btn,
+.reaction-btn, .reply-toggle-btn, .reply-amen-btn, .reply-delete-btn,
+.sheet-close, input[type="submit"], label[onclick] {
+  touch-action: manipulation;
+}
+
+/* ── Hard viewport width cap ─────────────────────────────── */
+*, *::before, *::after { max-width: 100%; box-sizing: border-box; }
+/* Exceptions: containers that scroll horizontally by design */
+.events-scroll, .pills-scroll, .filter-chips, .otp-row, .who-going-avatars {
+  max-width: none;
+  overflow-x: auto;
+}
 </style>
 </head>
 <body>
@@ -1364,7 +1444,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
     <p class="hero-sub">RSVPs, tickets & gatherings — all in one place.</p>
     <div class="search-wrap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="heroSearch" type="search" placeholder="City, event type, church…" onkeydown="if(event.key==='Enter')heroSearchGo()">
+      <input id="heroSearch" type="search" placeholder="City, event type, church…" enterkeyhint="search" inputmode="search" onkeydown="if(event.key==='Enter')heroSearchGo()">
       <button class="search-btn" onclick="heroSearchGo()">Go</button>
     </div>
   </div>
@@ -1446,7 +1526,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <div class="search-wrap" style="flex:1;border-radius:var(--r-md)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="browseSearch" type="search" placeholder="Search events…" oninput="debounceBrowse(this.value)">
+        <input id="browseSearch" type="search" placeholder="Search events…" enterkeyhint="search" inputmode="search" oninput="debounceBrowse(this.value)">
       </div>
       <button class="filter-btn" id="filterToggleBtn" onclick="openSheet('filterSheet')">
         <svg width="15" height="13" viewBox="0 0 15 13" fill="none"><rect y="0" width="15" height="2" rx="1" fill="currentColor"/><rect x="2" y="5.5" width="11" height="2" rx="1" fill="currentColor"/><rect x="4" y="11" width="7" height="2" rx="1" fill="currentColor"/></svg>
@@ -1756,7 +1836,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
     <div id="community-form">
       <div class="post-input-row">
         <div class="post-av" id="commAv">🙏</div>
-        <textarea class="post-field" id="postInput" placeholder="Share a prayer, testimony or encouragement…" rows="1"></textarea>
+        <textarea class="post-field" id="postInput" placeholder="Share a prayer, testimony or encouragement…" rows="1" enterkeyhint="send" inputmode="text" autocorrect="on" autocapitalize="sentences" style="-webkit-appearance:none"></textarea>
       </div>
       <div class="post-submit" id="postSubmitRow" style="display:none">
         <button class="btn btn-gold btn-sm" onclick="postToFeed()">Post</button>
@@ -2015,7 +2095,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
           <input type="text" id="authName" class="field" placeholder="David Johnson" autocomplete="name">
         </div>
         <label class="field-label">Email Address</label>
-        <input type="email" id="authEmail" class="field" placeholder="you@example.com" autocomplete="email"
+        <input type="email" id="authEmail" class="field" placeholder="you@example.com" autocomplete="email" enterkeyhint="go" inputmode="email"
           onkeydown="if(event.key==='Enter')sendOtp()">
         <div class="error-msg" id="err-email"></div>
         <button class="btn btn-gold" id="sendOtpBtn" onclick="sendOtp()">Send Verification Code →</button>
@@ -2026,12 +2106,12 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
           We sent a 6-digit code to <strong id="otpEmailDisplay" style="color:var(--text)">—</strong>
         </p>
         <div class="otp-row">
-          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
-          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
-          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
-          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
-          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
-          <input class="otp-box" type="number" maxlength="1" inputmode="numeric">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric" enterkeyhint="next">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric" enterkeyhint="next">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric" enterkeyhint="next">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric" enterkeyhint="next">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric" enterkeyhint="next">
+          <input class="otp-box" type="number" maxlength="1" inputmode="numeric" enterkeyhint="done">
         </div>
         <div class="error-msg" id="err-otp"></div>
         <button class="btn btn-gold" id="verifyOtpBtn" onclick="verifyOtp()">Verify Code ✓</button>
@@ -2463,7 +2543,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 </div>
 
 <!-- EVENT FORUM PAGE -->
-<div class="page" id="page-event-forum" style="padding:0">
+<div class="page" id="page-event-forum" style="padding:0;flex-direction:column">
 
   <!-- Header -->
   <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;padding:calc(var(--safe-t) + 14px) 16px 14px;border-bottom:1px solid var(--border);background:var(--bg)">
@@ -2479,7 +2559,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   </div>
 
   <!-- Scrollable posts -->
-  <div id="forumScrollArea" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0">
+  <div id="forumScrollArea">
     <div id="forumLoading" style="text-align:center;padding:60px 0">
       <div class="spinner spinner-gold" style="margin:0 auto"></div>
     </div>
@@ -2497,12 +2577,17 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   </div>
 
   <!-- Sticky input bar -->
-  <div id="forumInput" style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--surface2)">
+  <div id="forumInput" style="display:none">
     <div style="display:flex;align-items:flex-end;gap:10px">
       <textarea id="forumPostBody" class="field"
         placeholder="Share a thought or question…"
         rows="1"
-        style="margin:0;flex:1;resize:none;font-size:14px;min-height:44px;max-height:120px;overflow-y:auto;line-height:1.5;padding:10px 14px;box-sizing:border-box"
+        enterkeyhint="send"
+        inputmode="text"
+        autocorrect="on"
+        autocapitalize="sentences"
+        spellcheck="true"
+        style="margin:0;flex:1;resize:none;font-size:16px;min-height:44px;max-height:120px;overflow-y:auto;line-height:1.5;padding:10px 14px;box-sizing:border-box;-webkit-appearance:none;border-radius:var(--r-full)"
         oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
       ></textarea>
       <button class="btn btn-gold btn-sm"
@@ -2944,7 +3029,13 @@ async function loadEventForumById(eventId) {
 // ═══════════════════════════════════════════════════════════
 function closeSheet(id) {
   document.getElementById(id).classList.remove('open');
-  document.body.style.overflow = '';
+  // Restore body scroll — undo iOS position:fixed lock
+  document.body.style.overflow  = '';
+  document.body.style.position  = '';
+  document.body.style.width     = '';
+  const scrollY = parseFloat(document.body.dataset.scrollY || '0');
+  window.scrollTo(0, scrollY);
+  document.body.dataset.scrollY = '';
   // When ticket sheet closes, destroy the Stripe card element so it remounts cleanly on next open
   if (id === 'ticketSheet' && cardEl) {
     cardEl.destroy();
@@ -2955,7 +3046,13 @@ document.querySelectorAll('.overlay, .sheet-overlay').forEach(o => {
   o.addEventListener('click', e => {
     if (e.target === o) {
       o.classList.remove('open');
-      document.body.style.overflow = '';
+      // Restore body scroll — undo iOS position:fixed lock
+      document.body.style.overflow  = '';
+      document.body.style.position  = '';
+      document.body.style.width     = '';
+      const scrollY = parseFloat(document.body.dataset.scrollY || '0');
+      window.scrollTo(0, scrollY);
+      document.body.dataset.scrollY = '';
       // Destroy Stripe card element if ticket sheet closed via backdrop
       if (o.id === 'ticketSheet' && cardEl) { cardEl.destroy(); cardEl = null; }
     }
@@ -5247,7 +5344,11 @@ document.getElementById('listingFeeSheet').addEventListener('click', e => {
 
 function openSheet(id) {
   document.getElementById(id).classList.add('open');
-  document.body.style.overflow = 'hidden';
+  // iOS requires position:fixed + overflow:hidden to truly lock body scroll
+  document.body.dataset.scrollY = window.scrollY;
+  document.body.style.overflow  = 'hidden';
+  document.body.style.position  = 'fixed';
+  document.body.style.width     = '100%';
   if (id === 'listingFeeSheet') setTimeout(mountListingCard, 200);
 }
 
@@ -6605,17 +6706,52 @@ function updateReplyToggleBtn(postId, delta) {
   }
 }
 
-// iOS keyboard: shrink forum scroll area so input stays visible
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => {
+// ── FORUM KEYBOARD HANDLER ────────────────────────────────
+// Uses visualViewport API to keep forum input above keyboard on iOS + Android
+(function initForumKeyboard() {
+  if (!window.visualViewport) return;
+  let _rafPending = false;
+  function adjustForumLayout() {
+    if (_rafPending) return;
+    _rafPending = true;
+    requestAnimationFrame(() => {
+      _rafPending = false;
+      const page = document.getElementById('page-event-forum');
+      if (!page || !page.classList.contains('active')) return;
+      const vv        = window.visualViewport;
+      const fullH     = window.innerHeight;
+      const visibleH  = vv.height;
+      const offsetTop = vv.offsetTop || 0;
+      const keyboardH = Math.max(0, fullH - visibleH - offsetTop);
+      page.style.height = visibleH + 'px';
+      page.style.top    = offsetTop + 'px';
+      const inputBar = document.getElementById('forumInput');
+      if (inputBar) inputBar.style.paddingBottom = '12px';
+      // Scroll to bottom when keyboard opens so newest message stays visible
+      if (keyboardH > 100) {
+        const scrollArea = document.getElementById('forumScrollArea');
+        if (scrollArea) setTimeout(() => { scrollArea.scrollTop = scrollArea.scrollHeight; }, 50);
+      }
+    });
+  }
+  function resetForumLayout() {
     const page = document.getElementById('page-event-forum');
-    if (!page?.classList.contains('active')) return;
-    const keyboardH = window.innerHeight - window.visualViewport.height;
-    page.style.height = (window.visualViewport.height) + 'px';
-    const input = document.getElementById('forumInput');
-    if (input) input.style.paddingBottom = Math.max(10, keyboardH > 10 ? 10 : parseInt(getComputedStyle(input).paddingBottom)) + 'px';
-  });
-}
+    if (!page) return;
+    page.style.height = '';
+    page.style.top    = '';
+    const inputBar = document.getElementById('forumInput');
+    if (inputBar) inputBar.style.paddingBottom = '';
+  }
+  window.visualViewport.addEventListener('resize', adjustForumLayout);
+  window.visualViewport.addEventListener('scroll', adjustForumLayout);
+  // Hook into goTo to reset layout when leaving forum
+  const _goTo = window.goTo;
+  window.goTo = function(p) {
+    if (p !== 'event-forum') resetForumLayout();
+    _goTo(p);
+    if (p === 'event-forum') setTimeout(adjustForumLayout, 100);
+  };
+})();
 </script>
 
 <!-- ── Image Lightbox ─────────────────────────────────── -->
