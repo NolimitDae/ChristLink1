@@ -509,37 +509,58 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 #page-event-forum.active {
   display: flex;
   flex-direction: column;
+  /* JS will override height via visualViewport — these are initial values */
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0; left: 0;
+  /* NO bottom:0 — it fights with JS-set height in Safari */
   width: 100%;
-  z-index: 500; /* above topnav so forum header is never blocked */
+  right: 0;
+  z-index: 500;
+  /* GPU layer — prevents Safari from flickering during keyboard animation */
+  will-change: transform, height;
+  transform: translateY(0);
 }
-/* iOS Safari — use fill-available which respects the browser chrome height */
+/* iOS Safari — fill-available correctly excludes the browser chrome bar */
 @supports (-webkit-touch-callout: none) {
-  #page-event-forum.active { height: -webkit-fill-available; }
+  #page-event-forum.active {
+    height: -webkit-fill-available;
+  }
 }
-/* ── Forum page layout ───────────────────────────────────── */
+/* ── Forum scroll area ───────────────────────────────────── */
 #forumScrollArea {
   flex: 1;
-  min-height: 0; /* critical — lets flex child shrink below content size */
+  min-height: 0; /* critical — lets flex child shrink below content */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  width: 100%;
 }
+/* ── Forum input bar — always visible above keyboard ─────── */
 #forumInput {
   flex-shrink: 0;
-  border-top: 1px solid var(--border);
-  padding: 12px 16px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
-  background: var(--surface2);
   width: 100%;
+  box-sizing: border-box;
+  border-top: 1px solid var(--border);
+  /* safe-area-inset-bottom covers the iPhone home indicator */
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: var(--surface2);
   position: relative;
   z-index: 10;
 }
-#forumInput textarea { font-size: 16px !important; line-height: 1.5; }
+#forumInput > div {
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+}
+#forumInput textarea {
+  font-size: 16px !important; /* prevent iOS zoom */
+  line-height: 1.5;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
 /* ── Select dropdown — prevent iOS zoom + custom arrow ──── */
 select.field {
   font-size: 16px !important;
@@ -602,6 +623,130 @@ select.field {
   z-index:2;transition:border-color .15s,color .15s;
 }
 .detail-share-btn:active{border-color:var(--gold);color:var(--gold)}
+
+/* ═══════════════════════════════════════════════════════════
+   SHARE SYSTEM
+═══════════════════════════════════════════════════════════ */
+
+/* ── Share button on event card ── */
+.card-share-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted2);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all .18s var(--ease);
+  touch-action: manipulation;
+}
+.card-share-btn:hover,
+.card-share-btn:active {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: scale(1.1);
+}
+
+/* ── Custom share popover (desktop fallback) ── */
+.share-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+}
+
+.share-popover {
+  position: fixed;
+  z-index: 801;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-lg);
+  padding: 6px;
+  min-width: 220px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.3);
+  backdrop-filter: blur(16px);
+  animation: popoverPop .2s cubic-bezier(.175,.885,.32,1.275) both;
+}
+
+@keyframes popoverPop {
+  from { opacity: 0; transform: scale(.9) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.share-popover-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: 8px 12px 4px;
+}
+
+.share-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background .15s;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  touch-action: manipulation;
+}
+.share-popover-item:hover {
+  background: var(--surface3);
+}
+.share-popover-item:active {
+  background: var(--gold-dim);
+  color: var(--gold);
+}
+
+.share-popover-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.share-popover-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* ── Copy link success flash ── */
+@keyframes copyFlash {
+  0%   { background: rgba(78,201,140,.15); border-color: rgba(78,201,140,.4); }
+  100% { background: var(--surface3); border-color: var(--border); }
+}
+.card-share-btn.copied {
+  animation: copyFlash .6s ease forwards;
+  color: var(--green) !important;
+}
+.detail-share-btn.copied {
+  animation: copyFlash .6s ease forwards;
+  color: var(--green) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .share-popover { animation: none; }
+  .card-share-btn.copied, .detail-share-btn.copied { animation: none; }
+}
+
 /* ── Event Gallery ── */
 .detail-gallery{margin-bottom:24px}
 .detail-gallery-label{
@@ -2597,9 +2742,9 @@ button, a, [onclick],
     </div>
   </div>
 
-  <!-- Sticky input bar -->
+  <!-- Sticky input bar — floats above keyboard on iOS Safari -->
   <div id="forumInput" style="display:none">
-    <div style="position:relative;width:100%">
+    <div style="position:relative;width:100%;box-sizing:border-box">
       <textarea id="forumPostBody"
         placeholder="Write something…"
         rows="1"
@@ -2607,11 +2752,11 @@ button, a, [onclick],
         autocorrect="on"
         autocapitalize="sentences"
         spellcheck="true"
-        style="display:block;width:100%;margin:0;resize:none;font-size:16px;min-height:44px;max-height:120px;overflow-y:auto;line-height:1.5;padding:10px 52px 10px 14px;box-sizing:border-box;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-full);color:var(--text);font-family:var(--font-body);-webkit-appearance:none;outline:none;"
+        style="display:block;width:100%;margin:0;resize:none;font-size:16px;min-height:44px;max-height:120px;overflow-y:auto;line-height:1.5;padding:10px 52px 10px 16px;box-sizing:border-box;background:var(--surface2);border:1.5px solid var(--border2);border-radius:var(--r-full);color:var(--text);font-family:var(--font-body);-webkit-appearance:none;outline:none;"
         oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
       ></textarea>
       <button
-        style="position:absolute;right:6px;bottom:6px;width:36px;height:36px;border-radius:50%;background:var(--gold);border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;cursor:pointer;"
+        style="position:absolute;right:8px;bottom:4px;width:36px;height:36px;border-radius:50%;background:var(--gold);border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;cursor:pointer;"
         onclick="submitForumPost()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -3494,6 +3639,7 @@ function makeHostedEventCard(ev) {
         ${ev.status === 'published' ? '<button onclick="event.stopPropagation();openScannerSheet(\''+ev.id+'\',\''+encodeURIComponent(ev.name||'')+'\')" style="font-size:11px;font-weight:600;color:#4EC98C;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);padding:5px 10px;border-radius:var(--r-full)">Scan</button>' : ''}
         <button onclick="event.stopPropagation();openEditEventSheet(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:#7EB8F7;background:rgba(126,184,247,.1);border:1px solid rgba(126,184,247,.25);padding:5px 10px;border-radius:var(--r-full)">Edit</button>
         <button onclick="event.stopPropagation();viewDetail(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:5px 10px;border-radius:var(--r-full)">View</button>
+        <button onclick="event.stopPropagation();shareEventById('${ev.id}','${escapeAttr(ev.name)}','${escapeAttr(ev.description||'')}',this)" style="font-size:11px;font-weight:600;color:var(--muted2);background:var(--surface3);border:1px solid var(--border);padding:5px 10px;border-radius:var(--r-full)">Share</button>
         <button onclick="event.stopPropagation();confirmDeleteEvent('${ev.id}')" style="font-size:11px;font-weight:600;color:var(--red);background:rgba(224,80,80,.08);border:1px solid rgba(224,80,80,.2);padding:5px 10px;border-radius:var(--r-full)">Delete</button>
       </div>
     </div>`;
@@ -4601,7 +4747,10 @@ function makeCardHTML(ev, scrollMode) {
       </div>
       <div class="card-footer">
         ${price ? `<span style="font-size:13px;font-weight:700;color:var(--gold)">${price}</span>` : `<span style="font-size:12px;color:var(--green);font-weight:600">Free</span>`}
-        ${Number(ev.confirmed_rsvps) > 0 ? `<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted2)"><div style="display:flex">${[...Array(Math.min(3,Number(ev.confirmed_rsvps)))].map((_,i)=>`<div style="width:16px;height:16px;border-radius:50%;background:${['#C9A84C','#4E7CFF','#4EC98C'][i]};border:1.5px solid var(--bg);margin-left:${i>0?'-5px':'0'};font-size:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">${['★','✝','♡'][i]}</div>`).join('')}</div><span>${ev.confirmed_rsvps} going</span></div>` : `<span style="font-size:11px;color:var(--muted)">Tap to view →</span>`}
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          ${Number(ev.confirmed_rsvps) > 0 ? `<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted2)"><div style="display:flex">${[...Array(Math.min(3,Number(ev.confirmed_rsvps)))].map((_,i)=>`<div style="width:16px;height:16px;border-radius:50%;background:${['#C9A84C','#4E7CFF','#4EC98C'][i]};border:1.5px solid var(--bg);margin-left:${i>0?'-5px':'0'};font-size:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">${['★','✝','♡'][i]}</div>`).join('')}</div><span>${ev.confirmed_rsvps} going</span></div>` : `<span style="font-size:11px;color:var(--muted)">View →</span>`}
+          <button class="card-share-btn" aria-label="Share event" onclick="event.stopPropagation();shareEventById('${ev.id}','${escapeAttr(ev.name)}','${escapeAttr(ev.description||'')}',this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
+        </div>
       </div>
     </div>`;
   card.onclick = () => viewDetail(ev);
@@ -5881,6 +6030,15 @@ async function publishEvent() {
 function escapeHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+// Escape text for use inside HTML attribute values (onclick strings)
+function escapeAttr(str) {
+  return String(str || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '&quot;')
+    .replace(/\n/g, ' ')
+    .slice(0, 120);
+}
 function formatTimeAgo(iso) {
   if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
@@ -6542,34 +6700,239 @@ function spawnConfetti() {
 // Restore page from hash on load (fixes refresh losing current page)
 restorePageFromHash();
 
-// ── Event Sharing ───────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SHARE SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+// Share platforms config
+const SHARE_PLATFORMS = [
+  {
+    id:    'native',
+    label: 'Share…',
+    icon:  '📤',
+    color: '#C9A84C',
+    // handled separately — uses Web Share API
+  },
+  {
+    id:    'messages',
+    label: 'Messages',
+    icon:  '💬',
+    color: '#4EC98C',
+    url:   (u, t) => `sms:?body=${enc(t + ' ' + u)}`,
+  },
+  {
+    id:    'whatsapp',
+    label: 'WhatsApp',
+    icon:  '📱',
+    color: '#25D366',
+    url:   (u, t) => `https://wa.me/?text=${enc(t + '\n' + u)}`,
+  },
+  {
+    id:    'twitter',
+    label: 'X / Twitter',
+    icon:  '𝕏',
+    color: '#fff',
+    url:   (u, t) => `https://twitter.com/intent/tweet?text=${enc(t)}&url=${enc(u)}`,
+  },
+  {
+    id:    'facebook',
+    label: 'Facebook',
+    icon:  '👥',
+    color: '#1877F2',
+    url:   (u, t) => `https://www.facebook.com/sharer/sharer.php?u=${enc(u)}`,
+  },
+  {
+    id:    'copy',
+    label: 'Copy Link',
+    icon:  '🔗',
+    color: 'var(--gold)',
+    url:   null, // handled separately
+  },
+];
+
+function enc(str) { return encodeURIComponent(str || ''); }
+
+// Build the share URL for an event
+function buildShareUrl(eventId) {
+  return `${location.origin}${location.pathname}#event/${eventId}`;
+}
+
+// Build share text
+function buildShareText(name, description) {
+  const desc = description
+    ? ' — ' + description.slice(0, 80) + (description.length > 80 ? '…' : '')
+    : '';
+  return `${name}${desc} | Christ Link`;
+}
+
+// ── Share from event DETAIL page (uses selectedEvent) ────────
 async function shareEvent() {
   if (!selectedEvent) return;
-  const url   = `${location.origin}${location.pathname}#event/${selectedEvent.id}`;
-  const title = selectedEvent.name || 'Christ Link Event';
-  const text  = selectedEvent.description
-    ? selectedEvent.description.slice(0, 120) + (selectedEvent.description.length > 120 ? '…' : '')
-    : 'Join me at this faith event on Christ Link!';
+  await doShare(
+    selectedEvent.id,
+    selectedEvent.name,
+    selectedEvent.description,
+    document.getElementById('detailShareBtn')
+  );
+}
 
+// ── Share from event CARD (called with event data directly) ──
+async function shareEventById(eventId, name, description, anchorBtn) {
+  await doShare(eventId, name, description, anchorBtn);
+}
+
+// ── Core share logic ─────────────────────────────────────────
+async function doShare(eventId, name, description, anchorBtn) {
+  const url   = buildShareUrl(eventId);
+  const title = name || 'Christ Link Event';
+  const text  = buildShareText(name, description);
+
+  // Try native Web Share API first (works on iOS Safari, Android Chrome)
   if (navigator.share) {
     try {
       await navigator.share({ title, text, url });
+      // Flash the button green on success
+      if (anchorBtn) flashShareBtn(anchorBtn);
+      return;
     } catch (e) {
-      if (e.name !== 'AbortError') copyShareLink(url);
+      // User cancelled (AbortError) — don't show fallback
+      if (e.name === 'AbortError') return;
+      // Other error — fall through to popover
     }
-  } else {
-    copyShareLink(url);
+  }
+
+  // Desktop / unsupported browser — show custom popover
+  openSharePopover(eventId, url, text, anchorBtn);
+}
+
+// ── Custom share popover for desktop ─────────────────────────
+function openSharePopover(eventId, url, text, anchorBtn) {
+  // Close any existing popover
+  closeSharePopover();
+
+  // Backdrop
+  const backdrop = document.createElement('div');
+  backdrop.className = 'share-popover-backdrop';
+  backdrop.id = 'share-popover-backdrop';
+  backdrop.onclick = closeSharePopover;
+  document.body.appendChild(backdrop);
+
+  // Popover
+  const popover = document.createElement('div');
+  popover.className = 'share-popover';
+  popover.id = 'share-popover';
+
+  // Title
+  const titleEl = document.createElement('div');
+  titleEl.className = 'share-popover-title';
+  titleEl.textContent = 'Share Event';
+  popover.appendChild(titleEl);
+
+  // Platform buttons
+  SHARE_PLATFORMS.forEach(({ id, label, icon, color, url: urlFn }) => {
+    if (id === 'native') return; // skip — handled above
+
+    const btn = document.createElement('button');
+    btn.className = 'share-popover-item';
+    btn.innerHTML = `
+      <div class="share-popover-icon" style="background:${color}22;color:${color}">${icon}</div>
+      <span>${label}</span>
+    `;
+
+    if (id === 'copy') {
+      btn.onclick = async () => {
+        closeSharePopover();
+        await copyToClipboard(url, anchorBtn);
+      };
+    } else {
+      btn.onclick = () => {
+        closeSharePopover();
+        window.open(urlFn(url, text), '_blank', 'noopener,noreferrer');
+        if (anchorBtn) flashShareBtn(anchorBtn);
+      };
+    }
+
+    // Add divider before Copy Link
+    if (id === 'copy') {
+      const divider = document.createElement('div');
+      divider.className = 'share-popover-divider';
+      popover.appendChild(divider);
+    }
+
+    popover.appendChild(btn);
+  });
+
+  document.body.appendChild(popover);
+
+  // Position popover near anchor button
+  positionSharePopover(popover, anchorBtn);
+
+  // Close on Escape
+  const onKey = (e) => {
+    if (e.key === 'Escape') { closeSharePopover(); document.removeEventListener('keydown', onKey); }
+  };
+  document.addEventListener('keydown', onKey);
+}
+
+function positionSharePopover(popover, anchor) {
+  if (!anchor) {
+    // Center of screen
+    popover.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)';
+    return;
+  }
+  const rect = anchor.getBoundingClientRect();
+  const pw   = 220;
+  const ph   = 280; // approx height
+
+  let left = rect.left + rect.width / 2 - pw / 2;
+  let top  = rect.top - ph - 8;
+
+  // Flip below if too close to top
+  if (top < 60) top = rect.bottom + 8;
+
+  // Clamp to viewport
+  left = Math.max(12, Math.min(left, window.innerWidth - pw - 12));
+  top  = Math.max(60, Math.min(top, window.innerHeight - ph - 12));
+
+  popover.style.cssText = `left:${left}px;top:${top}px;width:${pw}px`;
+}
+
+function closeSharePopover() {
+  document.getElementById('share-popover-backdrop')?.remove();
+  document.getElementById('share-popover')?.remove();
+}
+
+// ── Copy to clipboard ─────────────────────────────────────────
+async function copyToClipboard(url, anchorBtn) {
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('🔗 Link copied!', 'success');
+    if (anchorBtn) flashShareBtn(anchorBtn);
+  } catch {
+    // Fallback: execCommand
+    const input = document.createElement('input');
+    input.value = url;
+    input.style.cssText = 'position:fixed;top:-999px';
+    document.body.appendChild(input);
+    input.select();
+    try { document.execCommand('copy'); showToast('🔗 Link copied!', 'success'); } catch {}
+    input.remove();
+    if (anchorBtn) flashShareBtn(anchorBtn);
   }
 }
 
-function copyShareLink(url) {
-  navigator.clipboard.writeText(url)
-    .then(() => showToast('Link copied to clipboard!', 'success'))
-    .catch(() => {
-      // Final fallback: prompt
-      prompt('Copy this link to share:', url);
-    });
+// ── Flash the share button green briefly ─────────────────────
+function flashShareBtn(btn) {
+  btn.classList.add('copied');
+  setTimeout(() => btn.classList.remove('copied'), 800);
 }
+
+// Close share popover on page navigation
+const _goToBeforeShare = window.goTo;
+window.goTo = function(page) {
+  closeSharePopover();
+  _goToBeforeShare(page);
+};
 
 // ── Image Lightbox ──────────────────────────────────────────
 function openLightbox(url) {
@@ -6826,25 +7189,29 @@ function updateReplyToggleBtn(postId, delta) {
   function applyHeight() {
     const p = getPage();
     if (!p || !p.classList.contains('active')) return;
-    // visualViewport correctly reports visible height accounting for
-    // both the on-screen keyboard AND Safari's floating URL bar
-    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    const t = window.visualViewport ? (window.visualViewport.offsetTop || 0) : 0;
-    p.style.height = h + 'px';
-    p.style.top    = t + 'px';
-  }
-
-  function onViewportChange() {
+    if (window.visualViewport) {
+      const vv = window.visualViewport;
+      // transform:translateY is more reliable than setting top in Safari —
+      // avoids layout thrash and correctly tracks the floating URL bar
+      p.style.height    = vv.height + 'px';
+      p.style.transform = `translateY(${vv.offsetTop}px)`;
+    } else {
+      p.style.height    = window.innerHeight + 'px';
+      p.style.transform = 'translateY(0)';
+    }
     requestAnimationFrame(() => {
-      applyHeight();
       const s = getScroll();
       if (s) s.scrollTop = s.scrollHeight;
     });
   }
 
+  function onViewportChange() {
+    requestAnimationFrame(applyHeight);
+  }
+
   function resetLayout() {
     const p = getPage();
-    if (p) { p.style.height = ''; p.style.top = ''; }
+    if (p) { p.style.height = ''; p.style.transform = ''; }
   }
 
   if (window.visualViewport) {
@@ -6852,6 +7219,23 @@ function updateReplyToggleBtn(postId, delta) {
     window.visualViewport.addEventListener('scroll', onViewportChange);
   }
   window.addEventListener('resize', onViewportChange);
+
+  // focusin fires immediately when textarea is tapped — before visualViewport
+  // resize fires (~100-200ms later). Staggered calls catch Safari's multi-stage
+  // keyboard animation.
+  document.addEventListener('focusin', (e) => {
+    if (e.target && e.target.id === 'forumPostBody') {
+      setTimeout(applyHeight, 50);
+      setTimeout(applyHeight, 200);
+      setTimeout(applyHeight, 400);
+    }
+  });
+  document.addEventListener('focusout', (e) => {
+    if (e.target && e.target.id === 'forumPostBody') {
+      setTimeout(applyHeight, 100);
+      setTimeout(applyHeight, 350);
+    }
+  });
 
   // Hook into goTo — apply height when entering forum, reset when leaving
   const _origGoTo = window.goTo;
@@ -6862,7 +7246,7 @@ function updateReplyToggleBtn(postId, delta) {
       // Three timed calls — iOS renders the page in stages
       requestAnimationFrame(applyHeight);
       setTimeout(applyHeight, 150);
-      setTimeout(applyHeight, 400);
+      setTimeout(applyHeight, 500);
     }
   };
 })();
