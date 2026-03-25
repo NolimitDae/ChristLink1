@@ -1696,6 +1696,60 @@ input[type="datetime-local"] {
 .admin-action-btn.danger  { background: rgba(224,80,80,.08);  color: var(--red);    border: 1px solid rgba(224,80,80,.2); }
 .admin-action-btn.view    { background: var(--gold-dim);      color: var(--gold);   border: 1px solid rgba(201,168,76,.3); }
 
+/* ── Publish mode option cards (Step 4 of host flow) ── */
+.publish-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  margin-bottom: 8px;
+  background: var(--surface2);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  flex-direction: column;
+}
+.publish-opt-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+.publish-opt.selected {
+  border-color: var(--gold);
+  background: var(--gold-dim);
+}
+.publish-opt-icon { font-size: 22px; line-height: 1; flex-shrink: 0; }
+.publish-opt-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.publish-opt-sub   { font-size: 12px; color: var(--muted2); line-height: 1.4; }
+.publish-opt-check {
+  margin-left: auto;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.publish-opt.selected .publish-opt-check {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+  font-size: 11px;
+  font-weight: 700;
+}
+.schedule-picker-wrap {
+  width: 100%;
+  padding-top: 10px;
+  border-top: 1px solid rgba(201,168,76,.2);
+  margin-top: 4px;
+  display: none;
+}
+.schedule-picker-wrap.visible { display: block; }
+
 /* ── Native-app tap feel: no 300ms delay, no double-tap zoom ── */
 button, a, [onclick],
 .tab-item, .pill, .filter-chip, .event-card, .card-btn, .btn,
@@ -2148,6 +2202,7 @@ button, a, [onclick],
 
       <!-- STEP 4: Review & Publish -->
       <div class="form-step" id="host-step-4">
+        <!-- Event preview card -->
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:20px">
           <div id="reviewCoverWrap" style="height:140px;background:linear-gradient(135deg,#1E1E2A,#252533);display:flex;align-items:center;justify-content:center;position:relative">
             <img id="reviewCoverImg" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
@@ -2160,15 +2215,60 @@ button, a, [onclick],
           </div>
         </div>
 
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:20px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:24px">
           <div class="breakdown-row" style="padding:12px 16px"><span class="breakdown-label">Date</span><span id="reviewDate">—</span></div>
           <div class="breakdown-row" style="padding:12px 16px"><span class="breakdown-label">Location</span><span id="reviewLocation">—</span></div>
           <div class="breakdown-row" style="padding:12px 16px;border-bottom:none"><span class="breakdown-label">Pricing</span><span id="reviewPricing">—</span></div>
         </div>
 
-        <div class="step-nav">
+        <!-- Publish mode selector -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Choose how to publish</div>
+
+        <!-- Save as Draft -->
+        <div class="publish-opt" id="popt-draft" onclick="selectPublishMode('draft')">
+          <div class="publish-opt-row">
+            <div class="publish-opt-icon">📋</div>
+            <div style="flex:1">
+              <div class="publish-opt-title">Save as Draft</div>
+              <div class="publish-opt-sub">Save privately. Come back and publish whenever you're ready.</div>
+            </div>
+            <div class="publish-opt-check"></div>
+          </div>
+        </div>
+
+        <!-- Schedule -->
+        <div class="publish-opt" id="popt-scheduled" onclick="selectPublishMode('scheduled')">
+          <div class="publish-opt-row">
+            <div class="publish-opt-icon">📅</div>
+            <div style="flex:1">
+              <div class="publish-opt-title">Schedule Publishing</div>
+              <div class="publish-opt-sub">Go live automatically on a date you choose.</div>
+            </div>
+            <div class="publish-opt-check"></div>
+          </div>
+          <div class="schedule-picker-wrap" id="schedulePickerWrap">
+            <label class="field-label" style="margin-bottom:6px">Publish on</label>
+            <input type="datetime-local" id="scheduleAt" class="field"
+              style="width:100%;max-width:100%;box-sizing:border-box;margin:0">
+            <div style="font-size:11px;color:var(--muted2);margin-top:6px">Your event will go live automatically at this time.</div>
+          </div>
+        </div>
+
+        <!-- Publish Now -->
+        <div class="publish-opt selected" id="popt-publish" onclick="selectPublishMode('publish')">
+          <div class="publish-opt-row">
+            <div class="publish-opt-icon">🚀</div>
+            <div style="flex:1">
+              <div class="publish-opt-title">Publish Now</div>
+              <div class="publish-opt-sub">Go live immediately — visible to your community right away.</div>
+            </div>
+            <div class="publish-opt-check">✓</div>
+          </div>
+        </div>
+
+        <div class="step-nav" style="margin-top:24px">
           <button class="btn btn-outline" style="flex:0 0 auto;width:auto;padding:0 20px" onclick="hostPrev(4)">←</button>
-          <button class="btn btn-gold" id="publishBtn" onclick="publishEvent()">🚀 Publish Event</button>
+          <button class="btn btn-gold" id="publishBtn" onclick="publishEvent()">🚀 Publish Now</button>
         </div>
       </div>
 
@@ -3236,6 +3336,7 @@ let selectedEvent  = null;
 let currentQty     = 1;
 let listingFeePaid = false;
 let listingFeePaymentMethodId = null;
+let publishMode = 'publish'; // 'draft' | 'scheduled' | 'publish'
 let listingFeeHostEmail = null;
 let authMode       = 'signin';
 let pendingAction  = null;
@@ -3423,6 +3524,15 @@ function goTo(page) {
     if (document.getElementById('ptab-events')?.classList.contains('active')) fetchMyEvents();
   }
   if (page === 'community') initCommunityFeed(false); // first load — show spinner
+  if (page === 'host') {
+    // Reset the publish mode selector and type selector every time host page is opened
+    publishMode = 'publish';
+    selectPublishMode('publish');
+    document.getElementById('hostTypeSelect').style.display = '';
+    document.getElementById('hostStepIndicators').style.display = 'none';
+    document.getElementById('hostFormWrap').style.display = 'none';
+    setHostStep(1);
+  }
 }
 
 // Restore page from URL hash on load / back-forward navigation
@@ -6187,10 +6297,47 @@ function buildReview() {
   document.getElementById('reviewPricing').textContent  = isPaid ? 'Paid · 7% platform fee' : 'Free · Instant RSVPs';
 }
 
+function selectPublishMode(mode) {
+  publishMode = mode;
+  // Update card selected states
+  ['draft','scheduled','publish'].forEach(m => {
+    const card  = document.getElementById(`popt-${m}`);
+    const check = card?.querySelector('.publish-opt-check');
+    if (m === mode) {
+      card?.classList.add('selected');
+      if (check) check.textContent = '✓';
+    } else {
+      card?.classList.remove('selected');
+      if (check) check.textContent = '';
+    }
+  });
+  // Show/hide schedule datetime picker
+  const picker = document.getElementById('schedulePickerWrap');
+  if (picker) picker.classList.toggle('visible', mode === 'scheduled');
+  // Update action button label
+  const btn = document.getElementById('publishBtn');
+  if (btn) {
+    const labels = { draft: '💾 Save as Draft', scheduled: '📅 Schedule Event', publish: '🚀 Publish Now' };
+    btn.textContent = labels[mode];
+  }
+}
+
 async function publishEvent() {
   if (!currentUser) { openAuth('signup'); return; }
   const btn = document.getElementById('publishBtn');
-  btn.disabled=true; btn.innerHTML='<div class="spinner"></div>&nbsp;Publishing…';
+  const isDraft     = publishMode === 'draft';
+  const isScheduled = publishMode === 'scheduled';
+  // Validate schedule date before uploading anything
+  let scheduleAt = null;
+  if (isScheduled) {
+    scheduleAt = document.getElementById('scheduleAt')?.value;
+    if (!scheduleAt || new Date(scheduleAt) <= new Date()) {
+      showToast('Please pick a future date and time to schedule', 'error');
+      return;
+    }
+  }
+  const spinnerLabels = { draft: 'Saving…', scheduled: 'Scheduling…', publish: 'Publishing…' };
+  btn.disabled=true; btn.innerHTML=`<div class="spinner"></div>&nbsp;${spinnerLabels[publishMode]}`;
   const isPaid    = document.getElementById('paidToggle').checked;
   const name      = document.getElementById('evName').value.trim();
   const desc      = document.getElementById('evDesc').value.trim();
@@ -6261,13 +6408,15 @@ async function publishEvent() {
   const onlineUrl = document.getElementById('evOnlineUrl').value.trim();
   if (!name) {
     showToast('Please add an event name','error');
-    btn.disabled=false; btn.innerHTML='🚀 Publish Event';
+    btn.disabled=false; btn.textContent = { draft:'💾 Save as Draft', scheduled:'📅 Schedule Event', publish:'🚀 Publish Now' }[publishMode];
     setHostStep(1); return;
   }
+  const authHeader = { 'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}` };
   try {
+    // ── 1. Create event (always as draft) ────────────────────
     const createRes = await fetch(`${API_BASE}/api/events`,{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
+      headers: authHeader,
       body: JSON.stringify({
         name, description:desc, cover_url:coverUrl, gallery_urls:galleryUrls, event_type:eventType,
         format, is_paid:isPaid, start_date:startDate||null, end_date:endDate||null,
@@ -6278,21 +6427,44 @@ async function publishEvent() {
     });
     if (!createRes.ok) { const e=await createRes.json(); throw new Error(e.error||'Failed to create'); }
     const event = await createRes.json();
+
+    // ── 2. Draft — save and stop here (no fee, no publish) ───
+    if (isDraft) {
+      listingFeePaymentMethodId = null; listingFeeHostEmail = null; listingFeePaid = false;
+      publishMode = 'publish'; // reset for next use
+      showToast('📋 Event saved as draft','success');
+      setTimeout(()=>goTo('profile'),1200);
+      return;
+    }
+
+    // ── 3. Charge listing fee (paid events — scheduled & publish) ──
     if (isPaid) {
-      if (!listingFeePaymentMethodId) throw new Error('Please complete the listing fee card step before publishing.');
+      if (!listingFeePaymentMethodId) throw new Error('Please complete the listing fee card step before continuing.');
+      btn.innerHTML='<div class="spinner"></div>&nbsp;Processing payment…';
       const feeRes = await fetch(`${API_BASE}/api/charge-listing-fee`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
+        method:'POST', headers: authHeader,
         body: JSON.stringify({paymentMethodId:listingFeePaymentMethodId,eventId:event.id,hostEmail:listingFeeHostEmail}),
       });
       const feeData = await feeRes.json();
       if (!feeData.success) throw new Error(feeData.error||'Listing fee payment failed.');
     }
-    const pubRes = await fetch(`${API_BASE}/api/events/${event.id}/publish`,{
-      method:'PATCH',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
-    });
-    if (!pubRes.ok) { const e=await pubRes.json(); throw new Error(e.error||'Failed to publish'); }
+
+    // ── 4a. Scheduled — store publish_at, auto-publisher handles the rest ──
+    if (isScheduled) {
+      const schedRes = await fetch(`${API_BASE}/api/events/${event.id}/schedule`,{
+        method:'PATCH', headers: authHeader,
+        body: JSON.stringify({ publish_at: scheduleAt }),
+      });
+      if (!schedRes.ok) { const e=await schedRes.json(); throw new Error(e.error||'Failed to schedule'); }
+    } else {
+      // ── 4b. Publish now ───────────────────────────────────
+      const pubRes = await fetch(`${API_BASE}/api/events/${event.id}/publish`,{
+        method:'PATCH', headers: authHeader,
+      });
+      if (!pubRes.ok) { const e=await pubRes.json(); throw new Error(e.error||'Failed to publish'); }
+    }
+
+    // ── 5. Create ticket types (paid events) ──────────────────
     if (isPaid) {
       const rows = document.querySelectorAll('.ticket-row');
       for (const row of rows) {
@@ -6301,8 +6473,7 @@ async function publishEvent() {
         const price  = Math.round(parseFloat(inputs[1]?.value || 25) * 100);
         const qty    = parseInt(inputs[2]?.value || 100);
         const ttRes  = await fetch(`${API_BASE}/api/ticket-types`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+          method: 'POST', headers: authHeader,
           body: JSON.stringify({ event_id: event.id, name: ttName, price_cents: price, quantity: qty }),
         });
         if (!ttRes.ok) {
@@ -6311,13 +6482,22 @@ async function publishEvent() {
         }
       }
     }
+
+    // ── 6. Done ───────────────────────────────────────────────
     listingFeePaymentMethodId = null; listingFeeHostEmail = null; listingFeePaid = false;
-    showToast('🚀 Event is live!','success');
-    spawnConfetti();
+    publishMode = 'publish'; // reset for next use
+    if (isScheduled) {
+      const schedDate = new Date(scheduleAt).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+      showToast(`📅 Scheduled for ${schedDate}`,'success');
+    } else {
+      showToast('🚀 Event is live!','success');
+      spawnConfetti();
+    }
     setTimeout(()=>goTo('profile'),1400);
   } catch(e) {
-    showToast(e.message||'Failed to publish. Please try again.','error');
-    btn.disabled=false; btn.innerHTML='🚀 Publish Event';
+    showToast(e.message||'Something went wrong. Please try again.','error');
+    btn.disabled=false;
+    btn.textContent = { draft:'💾 Save as Draft', scheduled:'📅 Schedule Event', publish:'🚀 Publish Now' }[publishMode];
   }
 }
 

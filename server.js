@@ -318,7 +318,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
     name, description, cover_url, gallery_urls, event_type, age_group, format,
     denomination, tags, is_paid, absorb_stripe_fee,
     start_date, end_date, venue_name, address, city, state, zip, online_url, max_capacity,
-    forum_enabled,
+    forum_enabled, publish_at,
   } = req.body;
   if (!name) return res.status(400).json({ error: 'Event name is required.' });
   await supabaseAdmin.from('profiles').update({ role: 'host' }).eq('id', req.userId).eq('role', 'attendee');
@@ -336,6 +336,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
     venue_name, address, city, state, zip, online_url,
     max_capacity: max_capacity || null,
     forum_enabled: forum_enabled !== false,
+    publish_at: publish_at || null,
     status: 'draft',
   }).select().single();
   if (error) return res.status(400).json({ error: error.message });
@@ -374,7 +375,27 @@ app.patch('/api/events/:id/publish', requireAuth, async (req, res) => {
   if (ev.status !== 'draft') return res.status(400).json({ error: 'Only draft events can be published.' });
   if (ev.is_paid && !ev.listing_fee_paid) return res.status(402).json({ error: 'Listing fee required.' });
   const { data, error } = await supabaseAdmin
-    .from('events').update({ status: 'published' })
+    .from('events').update({ status: 'published', publish_at: null })
+    .eq('id', req.params.id).select().single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+// Schedule an event to auto-publish at a future datetime
+app.patch('/api/events/:id/schedule', requireAuth, async (req, res) => {
+  const { publish_at } = req.body;
+  if (!publish_at) return res.status(400).json({ error: 'publish_at is required.' });
+  const scheduleDate = new Date(publish_at);
+  if (isNaN(scheduleDate.getTime()) || scheduleDate <= new Date())
+    return res.status(400).json({ error: 'Schedule date must be in the future.' });
+  const { data: ev } = await supabaseAdmin
+    .from('events').select('id, is_paid, listing_fee_paid, status')
+    .eq('id', req.params.id).eq('host_id', req.userId).single();
+  if (!ev) return res.status(404).json({ error: 'Event not found or not yours.' });
+  if (ev.status !== 'draft') return res.status(400).json({ error: 'Only draft events can be scheduled.' });
+  if (ev.is_paid && !ev.listing_fee_paid) return res.status(402).json({ error: 'Listing fee required to schedule a paid event.' });
+  const { data, error } = await supabaseAdmin
+    .from('events').update({ publish_at: scheduleDate.toISOString() })
     .eq('id', req.params.id).select().single();
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
@@ -1615,6 +1636,29 @@ app.delete('/api/admin/posts/:id', requireAdmin, async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// ─── SCHEDULED EVENT AUTO-PUBLISHER ─────────────────────────
+// Checks every 60 seconds for draft events whose publish_at has passed
+setInterval(async () => {
+  try {
+    const { data: due } = await supabaseAdmin
+      .from('events')
+      .select('id, is_paid, listing_fee_paid')
+      .eq('status', 'draft')
+      .not('publish_at', 'is', null)
+      .lte('publish_at', new Date().toISOString());
+    for (const ev of due || []) {
+      if (ev.is_paid && !ev.listing_fee_paid) continue; // skip if fee not settled
+      await supabaseAdmin
+        .from('events')
+        .update({ status: 'published', publish_at: null })
+        .eq('id', ev.id);
+      console.log(`[scheduler] Auto-published event ${ev.id}`);
+    }
+  } catch (e) {
+    console.error('[scheduler] Auto-publish check failed:', e.message);
+  }
+}, 60_000);
 
 // ─── SPA FALLBACK ───────────────────────────────────────────
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
