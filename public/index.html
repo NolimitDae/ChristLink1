@@ -5892,6 +5892,11 @@ function handleListingFeePaid() {
   document.getElementById('payFeeBtn').style.display     = 'none';
   showToast('✅ Card saved — $19.99 charged when you publish','success');
   spawnConfetti();
+  // If user came from the type selector paywall, auto-proceed into the paid event form
+  if (_pendingPaidEventStart) {
+    _pendingPaidEventStart = false;
+    setTimeout(() => selectEventType(true), 400); // small delay so sheet close animates first
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -6082,8 +6087,19 @@ function hostNext(from) {
 }
 function hostPrev(from) { setHostStep(from-1); }
 
+let _pendingPaidEventStart = false; // set true when paywall opened from type selector
+
 function selectEventType(isPaid) {
-  // Hide type selector, show step form
+  // Auth gate — require login before any hosting
+  if (!currentUser) { openAuth('signup', () => selectEventType(isPaid)); return; }
+  // Paywall gate — open listing fee sheet immediately for paid events
+  if (isPaid && !listingFeePaid) {
+    _pendingPaidEventStart = true;
+    openSheet('listingFeeSheet');
+    return;
+  }
+  // Proceed into the form
+  _pendingPaidEventStart = false;
   document.getElementById('hostTypeSelect').style.display = 'none';
   document.getElementById('hostStepIndicators').style.display = '';
   document.getElementById('hostFormWrap').style.display = '';
