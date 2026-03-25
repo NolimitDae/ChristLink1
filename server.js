@@ -1362,6 +1362,232 @@ app.post('/api/community-replies/:id/amen', requireAuth, async (req, res) => {
   res.json({ amen_count: newCount });
 });
 
+// ── ADMIN MIDDLEWARE ─────────────────────────────────────────
+async function requireAdmin(req, res, next) {
+  const auth = req.headers.authorization || '';
+  if (!auth.startsWith('Bearer '))
+    return res.status(401).json({ error: 'Authentication required.' });
+  const token = auth.replace('Bearer ', '');
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) return res.status(401).json({ error: 'Invalid session.' });
+    req.user   = user;
+    req.userId = user.id;
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    if (profile?.role !== 'admin')
+      return res.status(403).json({ error: 'Admin access required.' });
+    next();
+  } catch {
+    res.status(401).json({ error: 'Authentication failed.' });
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// ADMIN ROUTES (all require admin role)
+// ════════════════════════════════════════════════════════════
+
+// Overview stats
+app.get('/api/admin/overview', requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('admin_overview')
+      .select('*')
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Daily signups chart data
+app.get('/api/admin/signups', requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('admin_daily_signups')
+      .select('*');
+    if (error) throw error;
+    res.json({ data: data || [] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Daily revenue chart data
+app.get('/api/admin/revenue', requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('admin_daily_revenue')
+      .select('*');
+    if (error) throw error;
+    res.json({ data: data || [] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Events by type
+app.get('/api/admin/events-by-type', requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('admin_events_by_type')
+      .select('*');
+    if (error) throw error;
+    res.json({ data: data || [] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Top events by attendance
+app.get('/api/admin/top-events', requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('admin_top_events')
+      .select('*');
+    if (error) throw error;
+    res.json({ events: data || [] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Top hosts
+app.get('/api/admin/top-hosts', requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('admin_top_hosts')
+      .select('*');
+    if (error) throw error;
+    res.json({ hosts: data || [] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Recent activity feed
+app.get('/api/admin/activity', requireAdmin, async (req, res) => {
+  try {
+    const [users, events, tickets] = await Promise.all([
+      supabaseAdmin.from('profiles')
+        .select('id, full_name, email, created_at, role')
+        .order('created_at', { ascending: false })
+        .limit(10),
+      supabaseAdmin.from('events')
+        .select('id, name, status, created_at, host_id, profiles(full_name)')
+        .order('created_at', { ascending: false })
+        .limit(10),
+      supabaseAdmin.from('tickets')
+        .select('id, quantity, total_charged_cents, confirmed_at, events(name), profiles(full_name)')
+        .eq('status', 'confirmed')
+        .order('confirmed_at', { ascending: false })
+        .limit(10),
+    ]);
+    const activity = [
+      ...(users.data || []).map(u => ({
+        type: 'signup', time: u.created_at,
+        text: `${u.full_name || u.email} joined ChristLink`,
+        icon: '👤', color: '#4EC98C',
+      })),
+      ...(events.data || []).map(e => ({
+        type: 'event', time: e.created_at,
+        text: `${e.profiles?.full_name || 'Host'} created "${e.name}"`,
+        icon: '✝', color: '#C9A84C',
+        sub: e.status,
+      })),
+      ...(tickets.data || []).map(t => ({
+        type: 'ticket', time: t.confirmed_at,
+        text: `${t.profiles?.full_name || 'Attendee'} bought ${t.quantity} ticket${t.quantity !== 1 ? 's' : ''} for "${t.events?.name}"`,
+        icon: '🎟️', color: '#A882FF',
+        sub: `$${((t.total_charged_cents || 0) / 100).toFixed(2)}`,
+      })),
+    ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 20);
+    res.json({ activity });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// User search + management
+app.get('/api/admin/users', requireAdmin, async (req, res) => {
+  const { q, role, limit = 30, offset = 0 } = req.query;
+  try {
+    let query = supabaseAdmin
+      .from('profiles')
+      .select('id, full_name, email, role, city, created_at, avatar_url, avatar_color')
+      .order('created_at', { ascending: false })
+      .range(Number(offset), Number(offset) + Number(limit) - 1);
+    if (q)    query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
+    if (role) query = query.eq('role', role);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ users: data || [] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Update user role
+app.patch('/api/admin/users/:id/role', requireAdmin, async (req, res) => {
+  const { role } = req.body;
+  if (!['attendee','host','admin'].includes(role))
+    return res.status(400).json({ error: 'Invalid role.' });
+  if (req.params.id === req.userId && role !== 'admin')
+    return res.status(400).json({ error: 'Cannot change your own admin role.' });
+  try {
+    const { error } = await supabaseAdmin
+      .from('profiles')
+      .update({ role })
+      .eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin cancel event
+app.patch('/api/admin/events/:id/cancel', requireAdmin, async (req, res) => {
+  try {
+    const { error } = await supabaseAdmin
+      .from('events')
+      .update({ status: 'cancelled' })
+      .eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin delete event
+app.delete('/api/admin/events/:id', requireAdmin, async (req, res) => {
+  try {
+    const { error } = await supabaseAdmin
+      .from('events')
+      .delete()
+      .eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Delete community post (admin moderation)
+app.delete('/api/admin/posts/:id', requireAdmin, async (req, res) => {
+  try {
+    await supabaseAdmin.from('community_posts').delete().eq('id', req.params.id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ─── SPA FALLBACK ───────────────────────────────────────────
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 

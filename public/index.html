@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <script src="https://js.stripe.com/v3/"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
@@ -1504,6 +1505,178 @@ select.field {
   #navAvatarBtn::before { animation: none; }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   ADMIN DASHBOARD
+═══════════════════════════════════════════════════════════ */
+.admin-tab {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .18s;
+  touch-action: manipulation;
+}
+.admin-tab.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+.admin-panel { display: none; }
+.admin-panel.active { display: block; animation: pageIn .2s var(--ease) both; }
+.admin-section-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+/* Stat cards grid */
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media(min-width:600px) {
+  .admin-stat-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.admin-stat-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px;
+}
+.admin-stat-card.gold   { border-color: rgba(201,168,76,.25); background: linear-gradient(135deg,rgba(201,168,76,.06),transparent); }
+.admin-stat-card.green  { border-color: rgba(78,201,140,.2); }
+.admin-stat-card.purple { border-color: rgba(168,130,255,.2); }
+.admin-stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 8px;
+}
+.admin-stat-value {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.admin-stat-sub {
+  font-size: 11px;
+  color: var(--muted2);
+}
+.admin-stat-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--r-full);
+  margin-top: 4px;
+}
+.admin-stat-badge.up   { background: rgba(78,201,140,.12); color: #4EC98C; }
+.admin-stat-badge.down { background: rgba(224,80,80,.12);  color: var(--red); }
+/* Chart wrapper */
+.admin-chart-wrap {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  max-height: 220px;
+  position: relative;
+}
+/* Data table */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.admin-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.admin-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  color: var(--text);
+  vertical-align: middle;
+}
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table tr:hover td { background: var(--surface3); }
+.admin-table-wrap {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+/* Role badge */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.role-badge.admin    { background: rgba(201,168,76,.15);  color: var(--gold);   border: 1px solid rgba(201,168,76,.3); }
+.role-badge.host     { background: rgba(168,130,255,.12); color: #A882FF;       border: 1px solid rgba(168,130,255,.3); }
+.role-badge.attendee { background: var(--surface3);       color: var(--muted2); border: 1px solid var(--border); }
+/* Activity feed */
+.admin-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.admin-activity-item:last-child { border-bottom: none; }
+.admin-activity-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  background: var(--surface3);
+}
+.admin-activity-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+.admin-activity-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.admin-activity-sub  { font-size: 11px; color: var(--gold);  font-weight: 600; margin-top: 2px; }
+/* Action buttons in tables */
+.admin-action-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  border: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all .15s;
+}
+.admin-action-btn.promote { background: rgba(78,201,140,.1);  color: #4EC98C;       border: 1px solid rgba(78,201,140,.25); }
+.admin-action-btn.demote  { background: var(--surface3);      color: var(--muted2); border: 1px solid var(--border); }
+.admin-action-btn.danger  { background: rgba(224,80,80,.08);  color: var(--red);    border: 1px solid rgba(224,80,80,.2); }
+.admin-action-btn.view    { background: var(--gold-dim);      color: var(--gold);   border: 1px solid rgba(201,168,76,.3); }
+
 /* ── Native-app tap feel: no 300ms delay, no double-tap zoom ── */
 button, a, [onclick],
 .tab-item, .pill, .filter-chip, .event-card, .card-btn, .btn,
@@ -1549,6 +1722,7 @@ button, a, [onclick],
         </div>
         <div class="dd-item" onclick="goTo('profile');closeDrop()">👤 My Profile</div>
         <div class="dd-item" onclick="goTo('host');closeDrop()"><svg width="11" height="14" viewBox="0 0 18 22" fill="none" style="vertical-align:middle;margin-right:4px"><rect x="7" y="0" width="4" height="22" rx="2" fill="#C9A84C"/><rect x="0" y="6" width="18" height="4" rx="2" fill="#C9A84C"/></svg> Host Event</div>
+        <div class="dd-item" id="dd-admin-link" style="display:none" onclick="goTo('admin');closeDrop()">⚙️ Admin Dashboard</div>
         <div class="dd-item danger" onclick="signOut()">↩ Sign Out</div>
       </div>
     </div>
@@ -2762,6 +2936,96 @@ button, a, [onclick],
           <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
         </svg>
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ADMIN DASHBOARD PAGE
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-admin">
+  <div class="page-head" style="margin-bottom:0">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;border-radius:var(--r-sm);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;font-size:18px">⚙️</div>
+      <div>
+        <div class="page-h1" style="font-size:22px">Admin Dashboard</div>
+        <div class="page-sub">Christ Link Platform Analytics</div>
+      </div>
+    </div>
+  </div>
+  <!-- Tab bar -->
+  <div style="display:flex;overflow-x:auto;gap:0;border-bottom:1px solid var(--border);margin-top:16px;scrollbar-width:none" id="adminTabBar">
+    <button class="admin-tab active" onclick="switchAdminTab('overview',this)">Overview</button>
+    <button class="admin-tab" onclick="switchAdminTab('revenue',this)">Revenue</button>
+    <button class="admin-tab" onclick="switchAdminTab('events',this)">Events</button>
+    <button class="admin-tab" onclick="switchAdminTab('users',this)">Users</button>
+    <button class="admin-tab" onclick="switchAdminTab('activity',this)">Activity</button>
+    <button class="admin-tab" onclick="switchAdminTab('manage',this)">Manage</button>
+  </div>
+  <!-- Panel container -->
+  <div id="adminPanels" style="padding:20px;padding-bottom:80px">
+    <!-- OVERVIEW PANEL -->
+    <div id="admin-panel-overview" class="admin-panel active">
+      <div class="admin-stat-grid" id="adminStatGrid">
+        <div class="admin-stat-card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+          <div class="spinner spinner-gold" style="margin:0 auto 12px"></div>
+          Loading…
+        </div>
+      </div>
+      <div style="margin-top:24px">
+        <div class="admin-section-title">New Members (30 days)</div>
+        <div class="admin-chart-wrap">
+          <canvas id="signupsChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- REVENUE PANEL -->
+    <div id="admin-panel-revenue" class="admin-panel">
+      <div class="admin-stat-grid" id="adminRevenueStats" style="margin-bottom:24px"></div>
+      <div class="admin-section-title">Platform Fees — Last 30 Days</div>
+      <div class="admin-chart-wrap">
+        <canvas id="revenueChart"></canvas>
+      </div>
+      <div style="margin-top:24px">
+        <div class="admin-section-title">Events by Type</div>
+        <div class="admin-chart-wrap" style="max-height:260px">
+          <canvas id="eventTypeChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- EVENTS PANEL -->
+    <div id="admin-panel-events" class="admin-panel">
+      <div class="admin-section-title" style="margin-bottom:12px">Top Events by Attendance</div>
+      <div id="adminTopEventsTable"></div>
+    </div>
+    <!-- USERS PANEL -->
+    <div id="admin-panel-users" class="admin-panel">
+      <div class="admin-section-title" style="margin-bottom:12px">Top Hosts</div>
+      <div id="adminTopHostsTable" style="margin-bottom:28px"></div>
+    </div>
+    <!-- ACTIVITY PANEL -->
+    <div id="admin-panel-activity" class="admin-panel">
+      <div class="admin-section-title" style="margin-bottom:12px">Recent Platform Activity</div>
+      <div id="adminActivityFeed"></div>
+    </div>
+    <!-- MANAGE PANEL -->
+    <div id="admin-panel-manage" class="admin-panel">
+      <div class="admin-section-title" style="margin-bottom:10px">User Management</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <div class="search-wrap" style="flex:1;border-radius:var(--r-md)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="adminUserSearch" type="search" placeholder="Search users…"
+            oninput="debounceAdminUserSearch(this.value)">
+        </div>
+        <select id="adminRoleFilter" class="field" style="width:120px;margin:0;height:48px;font-size:13px"
+          onchange="loadAdminUsers()">
+          <option value="">All roles</option>
+          <option value="attendee">Attendee</option>
+          <option value="host">Host</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div id="adminUserTable"></div>
     </div>
   </div>
 </div>
@@ -4115,6 +4379,8 @@ function renderProfilePage() {
   renderSocialLinks('profSocialLinks', profileData);
   // Stripe Connect section
   renderStripeConnectStatus();
+  // Show admin nav link for admin users
+  syncAdminNav();
 }
 
 function renderStripeConnectStatus() {
@@ -7180,6 +7446,413 @@ function updateReplyToggleBtn(postId, delta) {
     btn.classList.remove('has-replies');
   }
 }
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN DASHBOARD
+// ═══════════════════════════════════════════════════════════
+let _adminLoaded = {};
+let _adminCharts = {};
+let _adminUserDebounce;
+
+function syncAdminNav() {
+  const link = document.getElementById('dd-admin-link');
+  if (link) link.style.display = profileData?.role === 'admin' ? 'flex' : 'none';
+}
+
+function switchAdminTab(tab, btn) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`admin-panel-${tab}`).classList.add('active');
+  loadAdminPanel(tab);
+}
+
+function loadAdminPanel(tab) {
+  if (_adminLoaded[tab]) return;
+  _adminLoaded[tab] = true;
+  switch(tab) {
+    case 'overview':  loadAdminOverview();  break;
+    case 'revenue':   loadAdminRevenue();   break;
+    case 'events':    loadAdminEvents();    break;
+    case 'users':     loadAdminUsers();     break;
+    case 'activity':  loadAdminActivity();  break;
+    case 'manage':    loadAdminUsers();     break;
+  }
+}
+
+function adminHeaders() {
+  return { 'Authorization': `Bearer ${currentSession?.access_token}` };
+}
+
+async function loadAdminOverview() {
+  try {
+    const [ovRes, sigRes] = await Promise.all([
+      fetch(`${API_BASE}/api/admin/overview`, { headers: adminHeaders() }),
+      fetch(`${API_BASE}/api/admin/signups`,  { headers: adminHeaders() }),
+    ]);
+    const ov  = await ovRes.json();
+    const sig = await sigRes.json();
+    const grid = document.getElementById('adminStatGrid');
+    grid.innerHTML = '';
+    const stats = [
+      { label: 'Total Members',    value: fmtNum(ov.total_users),           sub: `+${ov.new_users_week} this week`, color: 'green', badge: ov.new_users_week > 0 ? `+${ov.new_users_week} ↑` : null },
+      { label: 'Total Hosts',      value: fmtNum(ov.total_hosts),           sub: 'Verified hosts',   color: '' },
+      { label: 'Live Events',      value: fmtNum(ov.published_events),      sub: `${ov.draft_events} drafts`, color: 'gold' },
+      { label: 'Tickets Sold',     value: fmtNum(ov.total_tickets_sold),    sub: 'All time',         color: '' },
+      { label: 'Platform Revenue', value: fmtMoney(ov.total_platform_fees), sub: 'Your earnings',    color: 'gold' },
+      { label: 'Gross Revenue',    value: fmtMoney(ov.total_gross_revenue), sub: 'Total processed',  color: '' },
+      { label: 'Listing Fees',     value: fmtMoney(ov.listing_fees_collected), sub: '$19.99 per paid event', color: '' },
+      { label: 'Community Posts',  value: fmtNum(ov.total_posts),           sub: 'All time',         color: 'purple' },
+    ];
+    stats.forEach(s => {
+      const card = document.createElement('div');
+      card.className = `admin-stat-card ${s.color}`;
+      card.innerHTML = `
+        <div class="admin-stat-label">${s.label}</div>
+        <div class="admin-stat-value">${s.value}</div>
+        <div class="admin-stat-sub">${s.sub}</div>
+        ${s.badge ? `<div class="admin-stat-badge up">${s.badge}</div>` : ''}`;
+      grid.appendChild(card);
+    });
+    drawLineChart('signupsChart', sig.data || [], 'day', 'count', '#4EC98C', 'New Members');
+  } catch(e) {
+    console.error('[admin overview]', e);
+    document.getElementById('adminStatGrid').innerHTML =
+      `<div style="grid-column:1/-1;color:var(--red);padding:20px;font-size:13px">Failed to load: ${e.message}</div>`;
+  }
+}
+
+async function loadAdminRevenue() {
+  try {
+    const [revRes, typeRes] = await Promise.all([
+      fetch(`${API_BASE}/api/admin/revenue`,        { headers: adminHeaders() }),
+      fetch(`${API_BASE}/api/admin/events-by-type`, { headers: adminHeaders() }),
+    ]);
+    const rev  = await revRes.json();
+    const type = await typeRes.json();
+    const statsEl  = document.getElementById('adminRevenueStats');
+    const revData  = rev.data || [];
+    const totalFees  = revData.reduce((s, d) => s + Number(d.platform_fees || 0), 0);
+    const totalGross = revData.reduce((s, d) => s + Number(d.gross_revenue  || 0), 0);
+    const totalTix   = revData.reduce((s, d) => s + Number(d.ticket_count   || 0), 0);
+    statsEl.innerHTML = `
+      <div class="admin-stat-card gold">
+        <div class="admin-stat-label">Platform Fees (30d)</div>
+        <div class="admin-stat-value">${fmtMoney(totalFees)}</div>
+        <div class="admin-stat-sub">Your earnings</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Gross Revenue (30d)</div>
+        <div class="admin-stat-value">${fmtMoney(totalGross)}</div>
+        <div class="admin-stat-sub">Total processed</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Tickets Sold (30d)</div>
+        <div class="admin-stat-value">${fmtNum(totalTix)}</div>
+        <div class="admin-stat-sub">Paid tickets</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Avg Fee / Day</div>
+        <div class="admin-stat-value">${fmtMoney(revData.length ? totalFees / revData.length : 0)}</div>
+        <div class="admin-stat-sub">Platform average</div>
+      </div>`;
+    drawLineChart('revenueChart', revData, 'day', 'platform_fees', '#C9A84C', 'Platform Fees ($)', true);
+    drawBarChart('eventTypeChart', type.data || [], 'event_type', 'count', '#A882FF');
+  } catch(e) {
+    console.error('[admin revenue]', e);
+  }
+}
+
+async function loadAdminEvents() {
+  try {
+    const res    = await fetch(`${API_BASE}/api/admin/top-events`, { headers: adminHeaders() });
+    const data   = await res.json();
+    const events = data.events || [];
+    const wrap   = document.getElementById('adminTopEventsTable');
+    if (!events.length) {
+      wrap.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0">No published events yet.</div>';
+      return;
+    }
+    wrap.innerHTML = `
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr>
+            <th>Event</th><th>Host</th><th>Date</th>
+            <th>RSVPs</th><th>Tickets</th><th>Fees</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${events.map(e => `
+              <tr>
+                <td>
+                  <div style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(e.name)}</div>
+                  <div style="font-size:11px;color:var(--muted)">${e.city || ''} · ${e.is_paid ? 'Paid' : 'Free'}</div>
+                </td>
+                <td style="font-size:12px;color:var(--muted2)">${escapeHtml(e.host_name || '—')}</td>
+                <td style="font-size:12px;white-space:nowrap">${e.start_date ? new Date(e.start_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'}</td>
+                <td style="text-align:right;font-weight:600">${e.rsvp_count}</td>
+                <td style="text-align:right;font-weight:600">${e.ticket_count}</td>
+                <td style="text-align:right;color:var(--gold);font-weight:600">${fmtMoney(e.platform_fees)}</td>
+                <td>
+                  <div style="display:flex;gap:6px">
+                    <button class="admin-action-btn view" onclick="adminViewEvent('${e.id}')">View</button>
+                    <button class="admin-action-btn danger" onclick="adminCancelEvent('${e.id}',this)">Cancel</button>
+                  </div>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(e) {
+    console.error('[admin events]', e);
+  }
+}
+
+async function loadAdminUsers() {
+  if (!_adminLoaded['users-hosts']) {
+    _adminLoaded['users-hosts'] = true;
+    try {
+      const res   = await fetch(`${API_BASE}/api/admin/top-hosts`, { headers: adminHeaders() });
+      const data  = await res.json();
+      const hosts = data.hosts || [];
+      const wrap  = document.getElementById('adminTopHostsTable');
+      if (wrap) {
+        wrap.innerHTML = hosts.length ? `
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Host</th><th>City</th><th>Events</th><th>Fees Gen.</th><th>Joined</th></tr></thead>
+              <tbody>
+                ${hosts.map(h => `
+                  <tr>
+                    <td>
+                      <div style="font-weight:600">${escapeHtml(h.full_name || '—')}</div>
+                      <div style="font-size:11px;color:var(--muted)">${escapeHtml(h.email || '')}</div>
+                    </td>
+                    <td style="font-size:12px;color:var(--muted2)">${h.city || '—'}</td>
+                    <td style="text-align:right;font-weight:600">${h.event_count}</td>
+                    <td style="text-align:right;color:var(--gold);font-weight:600">${fmtMoney(h.platform_fees_generated)}</td>
+                    <td style="font-size:11px;color:var(--muted)">${new Date(h.created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>` : '<div style="color:var(--muted);font-size:13px;padding:20px 0">No hosts yet.</div>';
+      }
+    } catch(e) { console.error('[admin users]', e); }
+  }
+  const q    = document.getElementById('adminUserSearch')?.value.trim() || '';
+  const role = document.getElementById('adminRoleFilter')?.value || '';
+  const wrap = document.getElementById('adminUserTable');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px 0">Loading…</div>';
+  try {
+    const params = new URLSearchParams({ limit: '30' });
+    if (q)    params.set('q', q);
+    if (role) params.set('role', role);
+    const res   = await fetch(`${API_BASE}/api/admin/users?${params}`, { headers: adminHeaders() });
+    const data  = await res.json();
+    const users = data.users || [];
+    wrap.innerHTML = users.length ? `
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>User</th><th>Role</th><th>City</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${users.map(u => `
+              <tr>
+                <td>
+                  <div style="font-weight:600">${escapeHtml(u.full_name || '—')}</div>
+                  <div style="font-size:11px;color:var(--muted)">${escapeHtml(u.email || '')}</div>
+                </td>
+                <td><span class="role-badge ${u.role}">${u.role}</span></td>
+                <td style="font-size:12px;color:var(--muted2)">${u.city || '—'}</td>
+                <td style="font-size:11px;color:var(--muted)">${new Date(u.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</td>
+                <td>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    ${u.role === 'attendee' ? `<button class="admin-action-btn promote" onclick="adminSetRole('${u.id}','host',this)">→ Host</button>` : ''}
+                    ${u.role === 'host'     ? `<button class="admin-action-btn demote"  onclick="adminSetRole('${u.id}','attendee',this)">→ Attendee</button>` : ''}
+                    ${u.role !== 'admin'   ? `<button class="admin-action-btn promote" onclick="adminSetRole('${u.id}','admin',this)" style="background:rgba(201,168,76,.1);color:var(--gold);border-color:rgba(201,168,76,.3)">→ Admin</button>` : ''}
+                  </div>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : '<div style="color:var(--muted);font-size:13px;padding:20px 0">No users found.</div>';
+  } catch(e) {
+    wrap.innerHTML = `<div style="color:var(--red);font-size:13px;padding:16px 0">Error: ${e.message}</div>`;
+  }
+}
+
+function debounceAdminUserSearch() {
+  clearTimeout(_adminUserDebounce);
+  _adminUserDebounce = setTimeout(loadAdminUsers, 350);
+}
+
+async function loadAdminActivity() {
+  const wrap = document.getElementById('adminActivityFeed');
+  wrap.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px 0">Loading…</div>';
+  try {
+    const res   = await fetch(`${API_BASE}/api/admin/activity`, { headers: adminHeaders() });
+    const data  = await res.json();
+    const items = data.activity || [];
+    wrap.innerHTML = items.length ? items.map(item => `
+      <div class="admin-activity-item">
+        <div class="admin-activity-icon" style="background:${item.color}22;color:${item.color}">${item.icon}</div>
+        <div>
+          <div class="admin-activity-text">${escapeHtml(item.text)}</div>
+          ${item.sub ? `<div class="admin-activity-sub">${escapeHtml(item.sub)}</div>` : ''}
+          <div class="admin-activity-time">${formatTimeAgo(item.time)}</div>
+        </div>
+      </div>`).join('') : '<div style="color:var(--muted);font-size:13px;padding:20px 0">No activity yet.</div>';
+  } catch(e) {
+    wrap.innerHTML = `<div style="color:var(--red);font-size:13px">Error: ${e.message}</div>`;
+  }
+}
+
+async function adminSetRole(userId, role, btn) {
+  if (!confirm(`Set this user's role to "${role}"?`)) return;
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/users/${userId}/role`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...adminHeaders() },
+      body: JSON.stringify({ role }),
+    });
+    if (res.ok) {
+      showToast(`Role updated to ${role}`, 'success');
+      _adminLoaded['manage'] = false;
+      _adminLoaded['users-hosts'] = false;
+      loadAdminUsers();
+    } else {
+      const d = await res.json();
+      showToast(d.error || 'Failed', 'error');
+      btn.disabled = false; btn.textContent = `→ ${role}`;
+    }
+  } catch { btn.disabled = false; showToast('Failed', 'error'); }
+}
+
+function adminViewEvent(id) {
+  closeSharePopover?.();
+  fetch(`${API_BASE}/api/events/${id}`)
+    .then(r => r.json())
+    .then(ev => { viewDetail(ev); goTo('event-detail'); })
+    .catch(() => showToast('Could not load event', 'error'));
+}
+
+async function adminCancelEvent(id, btn) {
+  if (!confirm('Cancel this event? Attendees will no longer see it as active.')) return;
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/events/${id}/cancel`, {
+      method: 'PATCH', headers: adminHeaders(),
+    });
+    if (res.ok) {
+      showToast('Event cancelled', 'success');
+      btn.textContent = 'Cancelled';
+      btn.style.color = 'var(--muted)';
+      _adminLoaded['events'] = false;
+    } else {
+      btn.disabled = false; btn.textContent = 'Cancel';
+      showToast('Failed to cancel', 'error');
+    }
+  } catch { btn.disabled = false; btn.textContent = 'Cancel'; }
+}
+
+function drawLineChart(canvasId, data, xKey, yKey, color, label, isMoney = false) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (_adminCharts[canvasId]) { _adminCharts[canvasId].destroy(); }
+  const today = new Date();
+  const days = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0,10));
+  }
+  const lookup = Object.fromEntries((data || []).map(d => [d[xKey]?.slice(0,10), d[yKey]]));
+  const values = days.map(d => Number(lookup[d] || 0) / (isMoney ? 100 : 1));
+  const labels = days.map(d => new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric' }));
+  _adminCharts[canvasId] = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label,
+        data: values,
+        borderColor: color,
+        backgroundColor: color + '18',
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        fill: true,
+        tension: 0.4,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => isMoney ? `$${ctx.parsed.y.toFixed(2)}` : ctx.parsed.y } },
+      },
+      scales: {
+        x: { ticks: { color: '#666070', font: { size: 10 }, maxTicksLimit: 7 }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y: {
+          ticks: { color: '#666070', font: { size: 10 }, callback: v => isMoney ? `$${v}` : v },
+          grid: { color: 'rgba(255,255,255,.04)' },
+          beginAtZero: true,
+        },
+      },
+    },
+  });
+}
+
+function drawBarChart(canvasId, data, xKey, yKey, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (_adminCharts[canvasId]) { _adminCharts[canvasId].destroy(); }
+  _adminCharts[canvasId] = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d[xKey]),
+      datasets: [{
+        data: data.map(d => Number(d[yKey])),
+        backgroundColor: color + 'CC',
+        borderColor: color,
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#666070', font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { color: '#666070', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' }, beginAtZero: true },
+      },
+    },
+  });
+}
+
+function fmtNum(n) { return Number(n || 0).toLocaleString(); }
+function fmtMoney(cents) {
+  const dollars = Number(cents || 0) / 100;
+  if (dollars >= 1000) return `$${(dollars/1000).toFixed(1)}k`;
+  return `$${dollars.toFixed(2)}`;
+}
+
+// Hook into goTo for admin page — stacks on existing wrappers safely
+const _goToBeforeAdmin = window.goTo;
+window.goTo = function(page) {
+  _goToBeforeAdmin(page);
+  if (page === 'admin') {
+    if (profileData?.role !== 'admin') {
+      goTo('profile');
+      showToast('Admin access required.', 'error');
+      return;
+    }
+    if (!_adminLoaded['overview']) loadAdminPanel('overview');
+    document.getElementById('tabbar').style.display = 'none';
+  }
+};
 
 // ── FORUM LAYOUT — Safari URL bar + keyboard handler ──────
 (function initForumLayout() {
