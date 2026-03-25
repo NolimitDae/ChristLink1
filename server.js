@@ -169,12 +169,40 @@ app.post('/api/auth/refresh', async (req, res) => {
 // PROFILE
 // ════════════════════════════════════════════════════════════
 app.get('/api/profile', requireAuth, async (req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .select('*, host_stripe_accounts(stripe_account_id, onboarding_complete, payouts_enabled, charges_enabled)')
-    .eq('id', req.userId).single();
-  if (error) return res.status(404).json({ error: 'Profile not found.' });
-  res.json(data);
+  try {
+    // Two separate queries instead of a join — works regardless of
+    // whether Supabase foreign key relationships are configured
+    const [profileResult, stripeResult] = await Promise.all([
+      supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('id', req.userId)
+        .single(),
+      supabaseAdmin
+        .from('host_stripe_accounts')
+        .select('stripe_account_id, onboarding_complete, payouts_enabled, charges_enabled')
+        .eq('user_id', req.userId),
+    ]);
+    if (profileResult.error || !profileResult.data) {
+      // Profile row missing — return a usable fallback instead of 404
+      const fallback = {
+        id:         req.userId,
+        email:      req.user.email,
+        full_name:  req.user.user_metadata?.full_name || req.user.email?.split('@')[0] || '',
+        role:       'attendee',
+        created_at: new Date().toISOString(),
+        host_stripe_accounts: [],
+      };
+      return res.json(fallback);
+    }
+    res.json({
+      ...profileResult.data,
+      host_stripe_accounts: stripeResult.data || [],
+    });
+  } catch (e) {
+    console.error('[profile GET]', e.message);
+    res.status(500).json({ error: 'Could not load profile.' });
+  }
 });
 
 app.get('/api/profiles/:id', async (req, res) => {
