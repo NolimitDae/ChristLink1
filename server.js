@@ -16,6 +16,9 @@ const crypto    = require('crypto');
 
 const app  = express();
 const PORT = process.env.PORT || 4242;
+// Trust Railway's proxy — required for rate limiting and
+// correct IP detection behind Railway's load balancer
+app.set('trust proxy', 1);
 
 // ─── CLIENTS ────────────────────────────────────────────────
 // Validate required env vars — warn but don't crash so /health still responds
