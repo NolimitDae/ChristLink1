@@ -83,7 +83,7 @@ app.use('/api', apiLimiter);
 function calcAmounts(priceCents, qty, absorb) {
   const face        = priceCents * qty;
   const platformFee = Math.round(face * PLATFORM_FEE_PCT); // added to attendee charge
-  const baseCharge  = face + platformFee;                   // attendee pays face + 5%
+  const baseCharge  = face + platformFee;                   // attendee pays face + 7%
   const chargeAmount = absorb
     ? baseCharge
     : Math.ceil((baseCharge + STRIPE_FIXED) / (1 - STRIPE_PCT));

@@ -1965,7 +1965,7 @@ button, a, [onclick],
             <div style="width:48px;height:48px;border-radius:var(--r-md);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🎟️</div>
             <div>
               <div style="font-size:17px;font-weight:700;margin-bottom:3px">Paid Event <span style="font-size:12px;font-weight:600;color:var(--gold);background:var(--gold-dim);padding:2px 8px;border-radius:var(--r-full);margin-left:4px">$19.99 listing fee</span></div>
-              <div style="font-size:13px;color:var(--muted2)">Sell tickets with Stripe. A 5% service fee is added to each ticket — paid by attendees.</div>
+              <div style="font-size:13px;color:var(--muted2)">Sell tickets with Stripe. A 7% service fee is added to each ticket — paid by attendees.</div>
             </div>
           </div>
         </button>
@@ -2105,7 +2105,7 @@ button, a, [onclick],
               <div style="font-weight:700;font-size:15px">Listing Fee</div>
               <div style="font-size:20px;font-weight:800;color:var(--gold)">$19.99</div>
             </div>
-            <p style="font-size:13px;color:var(--muted2);margin-bottom:12px">Required to publish a paid event. A 5% service fee is added to each ticket price — paid by attendees, not you.</p>
+            <p style="font-size:13px;color:var(--muted2);margin-bottom:12px">Required to publish a paid event. A 7% service fee is added to each ticket price — paid by attendees, not you.</p>
             <div id="listingStatus" style="display:none;font-size:13px;color:var(--green);font-weight:600">✅ Listing fee paid — ticketing unlocked</div>
             <button id="payFeeBtn" class="btn btn-gold btn-sm" onclick="openSheet('listingFeeSheet')">Pay $19.99 to Unlock →</button>
           </div>
@@ -2575,7 +2575,7 @@ button, a, [onclick],
     </div>
     <div class="sheet-body">
       <div class="breakdown-row"><span class="breakdown-label">Tickets</span><span id="bdFace">—</span></div>
-      <div class="breakdown-row"><span class="breakdown-label">Service fee (5%)</span><span id="bdPf">—</span></div>
+      <div class="breakdown-row"><span class="breakdown-label">Service fee (7%)</span><span id="bdPf">—</span></div>
       <div class="breakdown-row"><span class="breakdown-label">Stripe fee</span><span id="bdSf">Absorbed by host</span></div>
       <div class="breakdown-row" id="bdTaxRow" style="display:none"><span class="breakdown-label">Tax</span><span id="bdTax">—</span></div>
       <div class="breakdown-row" style="padding-top:14px"><span>Total</span><span id="bdTotal" style="color:var(--gold)">—</span></div>
@@ -2622,7 +2622,7 @@ button, a, [onclick],
           <span style="font-weight:600">Listing fee</span>
           <span style="font-size:20px;font-weight:800;color:var(--gold)">$19.99</span>
         </div>
-        <div style="font-size:12px;color:var(--muted2)">Paid once per event. Gives you full ticket sales + 5% platform fee.</div>
+        <div style="font-size:12px;color:var(--muted2)">Paid once per event. Gives you full ticket sales + 7% platform fee.</div>
       </div>
       <label class="field-label">Name on Card</label>
       <input type="text" id="lfName" class="field" placeholder="David Johnson" autocomplete="cc-name">
@@ -5708,9 +5708,9 @@ function openTicketSheet() {
   if (!selectedEvent) return;
   const tt = selectedEvent.ticket_types?.[selectedTicketTypeIdx] ?? selectedEvent.ticket_types?.[0];
   const face = tt ? tt.price_cents * currentQty : 0;
-  const pf   = Math.round(face * 0.05);
+  const pf   = Math.round(face * 0.07);
   const absorbFee = selectedEvent.absorb_stripe_fee !== false;
-  const initialTotal = face + pf; // face + 5% platform fee (approximate until server responds)
+  const initialTotal = face + pf; // face + 7% platform fee (approximate until server responds)
   document.getElementById('ticketSheetTitle').textContent = selectedEvent.name;
   document.getElementById('ticketSheetSub').textContent   = `${currentQty} ticket${currentQty>1?'s':''} · ${currentUser?.email||''}`;
   document.getElementById('bdFace').textContent = `$${(face/100).toFixed(2)}`;
@@ -6136,7 +6136,7 @@ function removeTicketRow(id) {
 function previewRevenue() {
   const input = document.querySelector('#ticketBuilder input[type=number]');
   const price = parseFloat(input?.value || 25);
-  const pf   = price * 0.05;                      // added to attendee charge, not host's cost
+  const pf   = price * 0.07;                      // added to attendee charge, not host's cost
   const base = price + pf;                         // what attendee pays
   const sf   = base * 0.029 + 0.30;               // Stripe fee on the full charge
   const net  = base - sf - pf;                     // host receives face minus Stripe fee
@@ -6168,7 +6168,7 @@ function buildReview() {
   document.getElementById('reviewMeta').textContent  = document.getElementById('evDesc').value?.substring(0,80) || '—';
   document.getElementById('reviewDate').textContent  = date ? new Date(date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : 'Date TBD';
   document.getElementById('reviewLocation').textContent = city ? `${city}${state?', '+state:''}` : 'Location TBD';
-  document.getElementById('reviewPricing').textContent  = isPaid ? 'Paid · 5% platform fee' : 'Free · Instant RSVPs';
+  document.getElementById('reviewPricing').textContent  = isPaid ? 'Paid · 7% platform fee' : 'Free · Instant RSVPs';
 }
 
 async function publishEvent() {
@@ -6596,7 +6596,7 @@ function goVerse(i) {
 const FOOTER_PAGES = {
   about:{title:'About Christ Link',body:'<p style="color:var(--muted2);line-height:1.8;font-size:15px;margin-bottom:14px">Christ Link was built to solve a simple problem — believers couldn\'t easily find or host faith-based events in their city.</p><p style="color:var(--muted2);line-height:1.8;font-size:15px">We connect ministries, churches, and community leaders with the people they serve. Built with faith. Powered by community.</p>'},
   privacy:{title:'Privacy Policy',body:'<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px"><strong style="color:var(--text)">Data we collect:</strong> Email, name, and event activity. Payment info is handled entirely by Stripe — we never store card details.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px"><strong style="color:var(--text)">How we use it:</strong> To verify your account and send event confirmations. We never sell your data.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px"><strong style="color:var(--text)">Your rights:</strong> Delete your account at any time by contacting us.</p>'},
-  terms:{title:'Terms of Service',body:'<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px">Use Christ Link only for legitimate faith-based events. Misuse results in account removal.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px">The $19.99 listing fee for paid events is non-refundable once an event is live.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px">Christ Link takes 5% of each ticket sale. Payouts go to hosts via Stripe Connect.</p>'},
+  terms:{title:'Terms of Service',body:'<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px">Use Christ Link only for legitimate faith-based events. Misuse results in account removal.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px">The $19.99 listing fee for paid events is non-refundable once an event is live.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px">Christ Link takes 7% of each ticket sale. Payouts go to hosts via Stripe Connect.</p>'},
   contact:{title:'Contact Us',body:'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;margin-bottom:12px"><div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">General</div><div>hello@christlink.com</div></div><div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;margin-bottom:12px"><div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Host Support</div><div>hosts@christlink.com</div></div>'},
 };
 function showFooterPage(key) {
