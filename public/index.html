@@ -515,23 +515,29 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   width: 100%;
-  z-index: 500; /* above topnav (z-index:400) so forum header is never blocked */
+  z-index: 500; /* above topnav so forum header is never blocked */
+}
+/* iOS Safari — use fill-available which respects the browser chrome height */
+@supports (-webkit-touch-callout: none) {
+  #page-event-forum.active { height: -webkit-fill-available; }
 }
 /* ── Forum page layout ───────────────────────────────────── */
 #forumScrollArea {
   flex: 1;
+  min-height: 0; /* critical — lets flex child shrink below content size */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  min-height: 0;
   overscroll-behavior-y: contain;
 }
 #forumInput {
   flex-shrink: 0;
   border-top: 1px solid var(--border);
   padding: 12px 16px;
-  background: var(--surface2);
   padding-bottom: max(12px, env(safe-area-inset-bottom));
-  transition: padding-bottom 0.12s ease;
+  background: var(--surface2);
+  width: 100%;
+  position: relative;
+  z-index: 10;
 }
 #forumInput textarea { font-size: 16px !important; line-height: 1.5; }
 /* ── Select dropdown — prevent iOS zoom + custom arrow ──── */
@@ -755,13 +761,28 @@ select.field {
   display:flex;align-items:center;justify-content:center;
   font-size:15px;color:var(--muted);
 }
-.post-field{
-  flex:1;background:var(--surface2);border:1px solid var(--border);
-  border-radius:var(--r-lg);padding:10px 14px;min-height:42px;
-  font-size:14px;color:var(--text);resize:none;line-height:1.5;
-  transition:border-color .18s;
+.post-field {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 10px 14px;
+  min-height: 42px;
+  max-height: 42px;
+  font-size: 16px;
+  color: var(--text);
+  resize: none;
+  line-height: 1.4;
+  overflow: hidden;
+  transition: border-color .18s, max-height .2s ease, min-height .2s ease;
+  -webkit-appearance: none;
 }
-.post-field:focus{border-color:rgba(201,168,76,.3);min-height:90px}
+.post-field:focus {
+  border-color: rgba(201,168,76,.3);
+  min-height: 90px;
+  max-height: 200px;
+  overflow-y: auto;
+}
 .post-submit{
   display:flex;justify-content:flex-end;margin-top:10px;
 }
@@ -1836,7 +1857,7 @@ button, a, [onclick],
     <div id="community-form">
       <div class="post-input-row">
         <div class="post-av" id="commAv">🙏</div>
-        <textarea class="post-field" id="postInput" placeholder="Share a prayer, testimony or encouragement…" rows="1" enterkeyhint="send" inputmode="text" autocorrect="on" autocapitalize="sentences" style="-webkit-appearance:none"></textarea>
+        <textarea class="post-field" id="postInput" placeholder="Share a prayer…" rows="1" enterkeyhint="send" autocorrect="on" autocapitalize="sentences" style="-webkit-appearance:none"></textarea>
       </div>
       <div class="post-submit" id="postSubmitRow" style="display:none">
         <button class="btn btn-gold btn-sm" onclick="postToFeed()">Post</button>
@@ -2579,15 +2600,14 @@ button, a, [onclick],
   <!-- Sticky input bar -->
   <div id="forumInput" style="display:none">
     <div style="display:flex;align-items:flex-end;gap:10px">
-      <textarea id="forumPostBody" class="field"
-        placeholder="Share a thought or question…"
+      <textarea id="forumPostBody"
+        placeholder="Write something…"
         rows="1"
         enterkeyhint="send"
-        inputmode="text"
         autocorrect="on"
         autocapitalize="sentences"
         spellcheck="true"
-        style="margin:0;flex:1;resize:none;font-size:16px;min-height:44px;max-height:120px;overflow-y:auto;line-height:1.5;padding:10px 14px;box-sizing:border-box;-webkit-appearance:none;border-radius:var(--r-full)"
+        style="margin:0;flex:1;resize:none;font-size:16px;min-height:44px;max-height:120px;overflow-y:auto;line-height:1.5;padding:10px 14px;box-sizing:border-box;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-full);color:var(--text);font-family:var(--font-body);-webkit-appearance:none;outline:none;"
         oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
       ></textarea>
       <button class="btn btn-gold btn-sm"
@@ -2974,7 +2994,7 @@ function goTo(page) {
     // If events tab is already active, refresh it
     if (document.getElementById('ptab-events')?.classList.contains('active')) fetchMyEvents();
   }
-  if (page === 'community') initCommunityFeed();
+  if (page === 'community') initCommunityFeed(false); // first load — show spinner
 }
 
 // Restore page from URL hash on load / back-forward navigation
@@ -3218,7 +3238,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initVerses();
 
   // Init community feed placeholder
-  initCommunityFeed();
+  initCommunityFeed(false);
 
   // Add first ticket row
   addTicketRow(true);
@@ -4141,13 +4161,18 @@ function startCommunityLive() {
   try {
     _commChannel = sb.channel('community-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, () => {
-        if (document.getElementById('page-community')?.classList.contains('active')) initCommunityFeed();
+        if (document.getElementById('page-community')?.classList.contains('active')) {
+          initCommunityFeed(true); // silent — never blank the feed on realtime update
+        }
       })
       .subscribe();
   } catch(e) {}
+  // 30s interval, always silent — feed never blanks on background poll
   _commPollTimer = setInterval(() => {
-    if (document.getElementById('page-community')?.classList.contains('active')) initCommunityFeed();
-  }, 15000);
+    if (document.getElementById('page-community')?.classList.contains('active')) {
+      initCommunityFeed(true);
+    }
+  }, 30000);
 }
 
 function stopCommunityLive() {
@@ -5812,28 +5837,38 @@ function formatTimeAgo(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-async function initCommunityFeed() {
+async function initCommunityFeed(silent = false) {
   const feed = document.getElementById('communityFeed');
   if (!feed) return;
-  feed.innerHTML = [1,2].map(() => `
-    <div class="feed-card" style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="skeleton" style="width:38px;height:38px;border-radius:50%;flex-shrink:0"></div>
-        <div style="flex:1;display:flex;flex-direction:column;gap:6px">
-          <div class="skeleton skeleton-line" style="width:40%"></div>
-          <div class="skeleton skeleton-line" style="width:25%"></div>
+  // Only show skeleton on first visit — never blank the feed on background refresh
+  if (!silent && feed.querySelectorAll('.feed-card').length === 0) {
+    feed.innerHTML = [1,2].map(() => `
+      <div class="feed-card" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="skeleton" style="width:38px;height:38px;border-radius:50%;flex-shrink:0"></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+            <div class="skeleton skeleton-line" style="width:40%"></div>
+            <div class="skeleton skeleton-line" style="width:25%"></div>
+          </div>
         </div>
-      </div>
-      <div class="skeleton skeleton-line" style="width:90%"></div>
-      <div class="skeleton skeleton-line" style="width:70%"></div>
-    </div>`).join('');
+        <div class="skeleton skeleton-line" style="width:90%"></div>
+        <div class="skeleton skeleton-line" style="width:70%"></div>
+      </div>`).join('');
+  }
   try {
     const res = await fetch(`${API_BASE}/api/community-posts`);
     const { posts, error } = await res.json();
     if (error) throw new Error(error);
-    renderCommunityFeed(posts || []);
+    const currentCount = feed.querySelectorAll('.feed-card').length;
+    // Only re-render if post count changed — prevents blank flash on no-op refreshes
+    if (!silent || (posts || []).length !== currentCount) {
+      renderCommunityFeed(posts || []);
+    }
   } catch(e) {
-    feed.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--muted2);font-size:14px">Could not load posts.</div>';
+    // On background refresh failure keep existing posts — don't blank the feed
+    if (!silent) {
+      feed.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--muted2);font-size:14px">Could not load posts.</div>';
+    }
   }
 }
 
@@ -6706,50 +6741,52 @@ function updateReplyToggleBtn(postId, delta) {
   }
 }
 
-// ── FORUM KEYBOARD HANDLER ────────────────────────────────
-// Uses visualViewport API to keep forum input above keyboard on iOS + Android
-(function initForumKeyboard() {
-  if (!window.visualViewport) return;
-  let _rafPending = false;
-  function adjustForumLayout() {
-    if (_rafPending) return;
-    _rafPending = true;
+// ── FORUM LAYOUT — Safari URL bar + keyboard handler ──────
+(function initForumLayout() {
+  const getPage   = () => document.getElementById('page-event-forum');
+  const getScroll = () => document.getElementById('forumScrollArea');
+
+  function applyHeight() {
+    const p = getPage();
+    if (!p || !p.classList.contains('active')) return;
+    // visualViewport correctly reports visible height accounting for
+    // both the on-screen keyboard AND Safari's floating URL bar
+    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const t = window.visualViewport ? (window.visualViewport.offsetTop || 0) : 0;
+    p.style.height = h + 'px';
+    p.style.top    = t + 'px';
+  }
+
+  function onViewportChange() {
     requestAnimationFrame(() => {
-      _rafPending = false;
-      const page = document.getElementById('page-event-forum');
-      if (!page || !page.classList.contains('active')) return;
-      const vv        = window.visualViewport;
-      const fullH     = window.innerHeight;
-      const visibleH  = vv.height;
-      const offsetTop = vv.offsetTop || 0;
-      const keyboardH = Math.max(0, fullH - visibleH - offsetTop);
-      page.style.height = visibleH + 'px';
-      page.style.top    = offsetTop + 'px';
-      const inputBar = document.getElementById('forumInput');
-      if (inputBar) inputBar.style.paddingBottom = '12px';
-      // Scroll to bottom when keyboard opens so newest message stays visible
-      if (keyboardH > 100) {
-        const scrollArea = document.getElementById('forumScrollArea');
-        if (scrollArea) setTimeout(() => { scrollArea.scrollTop = scrollArea.scrollHeight; }, 50);
-      }
+      applyHeight();
+      const s = getScroll();
+      if (s) s.scrollTop = s.scrollHeight;
     });
   }
-  function resetForumLayout() {
-    const page = document.getElementById('page-event-forum');
-    if (!page) return;
-    page.style.height = '';
-    page.style.top    = '';
-    const inputBar = document.getElementById('forumInput');
-    if (inputBar) inputBar.style.paddingBottom = '';
+
+  function resetLayout() {
+    const p = getPage();
+    if (p) { p.style.height = ''; p.style.top = ''; }
   }
-  window.visualViewport.addEventListener('resize', adjustForumLayout);
-  window.visualViewport.addEventListener('scroll', adjustForumLayout);
-  // Hook into goTo to reset layout when leaving forum
-  const _goTo = window.goTo;
-  window.goTo = function(p) {
-    if (p !== 'event-forum') resetForumLayout();
-    _goTo(p);
-    if (p === 'event-forum') setTimeout(adjustForumLayout, 100);
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onViewportChange);
+    window.visualViewport.addEventListener('scroll', onViewportChange);
+  }
+  window.addEventListener('resize', onViewportChange);
+
+  // Hook into goTo — apply height when entering forum, reset when leaving
+  const _origGoTo = window.goTo;
+  window.goTo = function(pg) {
+    if (pg !== 'event-forum') resetLayout();
+    _origGoTo(pg);
+    if (pg === 'event-forum') {
+      // Three timed calls — iOS renders the page in stages
+      requestAnimationFrame(applyHeight);
+      setTimeout(applyHeight, 150);
+      setTimeout(applyHeight, 400);
+    }
   };
 })();
 </script>
