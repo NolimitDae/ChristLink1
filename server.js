@@ -171,7 +171,7 @@ app.post('/api/auth/refresh', async (req, res) => {
 app.get('/api/profile', requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('profiles')
-    .select('*, host_stripe_accounts(stripe_account_id, onboarding_complete, payouts_enabled)')
+    .select('*, host_stripe_accounts(stripe_account_id, onboarding_complete, payouts_enabled, charges_enabled)')
     .eq('id', req.userId).single();
   if (error) return res.status(404).json({ error: 'Profile not found.' });
   res.json(data);
@@ -735,84 +735,245 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
       return_url: `${process.env.APP_URL}/?listing_success=1`,
     }, { idempotencyKey: `listing-fee-${eventId}` });
     if (intent.status === 'succeeded') {
-      await supabaseAdmin.from('events').update({ listing_fee_paid: true, listing_payment_id: intent.id }).eq('id', eventId);
+      await supabaseAdmin
+        .from('events')
+        .update({ listing_fee_paid: true, listing_payment_id: intent.id })
+        .eq('id', eventId);
+      // Small delay to ensure DB commit propagates before frontend calls /publish
+      await new Promise(r => setTimeout(r, 300));
       return res.json({ success: true, intentId: intent.id });
     }
-    res.json({ success: false, status: intent.status, clientSecret: intent.client_secret });
+    res.status(400).json({
+      success: false,
+      status: intent.status,
+      error: `Payment status: ${intent.status}. Please try again.`,
+    });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res) => {
   const { eventId, ticketTypeId, qty = 1, buyerEmail } = req.body;
-  if (!eventId || !ticketTypeId) return res.status(400).json({ error: 'Event ID and ticket type required.' });
-  // First: find the event (separate from Stripe account lookup so we can give precise errors)
-  const { data: ev } = await supabaseAdmin
-    .from('events').select('*')
-    .eq('id', eventId).single();
-  if (!ev) return res.status(404).json({ error: 'Event not found.' });
-  if (ev.status !== 'published') return res.status(400).json({ error: 'This event is not published yet.' });
-  if (!ev.is_paid) return res.status(400).json({ error: 'This event is free — use RSVP.' });
-  // Second: look up host Stripe account via host_id
-  const { data: stripeAcct } = await supabaseAdmin
-    .from('host_stripe_accounts').select('stripe_account_id, payouts_enabled')
-    .eq('user_id', ev.host_id).single();
-  if (!stripeAcct?.payouts_enabled) return res.status(400).json({ error: 'Host payment account not set up. Please ask the host to complete their Stripe setup.' });
-  // Alias for rest of handler
-  ev.host_stripe_accounts = stripeAcct;
-  const { data: tt } = await supabaseAdmin.from('ticket_types').select('*').eq('id', ticketTypeId).eq('event_id', eventId).single();
-  if (!tt) return res.status(404).json({ error: 'Ticket type not found.' });
-  if (tt.quantity !== null && qty > (tt.quantity - tt.sold)) return res.status(400).json({ error: `Only ${tt.quantity - tt.sold} tickets remaining.` });
-  const amounts = calcAmounts(tt.price_cents, qty, ev.absorb_stripe_fee);
-  const idempotencyKey = `pi-${req.userId}-${eventId}-${ticketTypeId}-${qty}-${Date.now()}`;
+  if (!eventId || !ticketTypeId)
+    return res.status(400).json({ error: 'Event ID and ticket type required.' });
+
   try {
+    // ── 1. Fetch event using admin client (bypasses RLS) ──────────
+    const { data: ev, error: evErr } = await supabaseAdmin
+      .from('events')
+      .select('id, name, status, is_paid, absorb_stripe_fee, host_id, max_capacity')
+      .eq('id', eventId)
+      .single();
+
+    if (evErr || !ev) {
+      console.error('[payment-intent] event fetch error:', evErr?.message, 'eventId:', eventId);
+      return res.status(404).json({ error: 'Event not found. It may have been removed or unpublished.' });
+    }
+
+    if (ev.status !== 'published')
+      return res.status(400).json({ error: 'This event is not currently available for ticket purchases.' });
+
+    if (!ev.is_paid)
+      return res.status(400).json({ error: 'This is a free event — use RSVP instead.' });
+
+    // ── 2. Fetch host Stripe account ──────────────────────────────
+    const { data: stripeAcct, error: acctErr } = await supabaseAdmin
+      .from('host_stripe_accounts')
+      .select('stripe_account_id, payouts_enabled, charges_enabled')
+      .eq('user_id', ev.host_id)
+      .single();
+
+    if (acctErr || !stripeAcct?.stripe_account_id) {
+      console.error('[payment-intent] no stripe account for host:', ev.host_id);
+      return res.status(400).json({
+        error: 'The host has not set up payments yet. Please contact the event organiser.',
+      });
+    }
+
+    if (!stripeAcct.payouts_enabled) {
+      return res.status(400).json({
+        error: "The host's payment account is still being verified by Stripe. Please try again later or contact the event organiser.",
+      });
+    }
+
+    // ── 3. Fetch ticket type ──────────────────────────────────────
+    const { data: tt, error: ttErr } = await supabaseAdmin
+      .from('ticket_types')
+      .select('id, name, price_cents, quantity, sold')
+      .eq('id', ticketTypeId)
+      .eq('event_id', eventId)
+      .single();
+
+    if (ttErr || !tt)
+      return res.status(404).json({ error: 'Ticket type not found for this event.' });
+
+    const remaining = tt.quantity != null ? tt.quantity - (tt.sold || 0) : Infinity;
+    if (qty > remaining)
+      return res.status(400).json({ error: `Only ${remaining} ticket${remaining !== 1 ? 's' : ''} remaining.` });
+
+    // ── 4. Calculate amounts ──────────────────────────────────────
+    const amounts        = calcAmounts(tt.price_cents, Number(qty), ev.absorb_stripe_fee !== false);
+    const idempotencyKey = `pi-${req.userId}-${eventId}-${ticketTypeId}-${qty}-${Date.now()}`;
+
+    // ── 5. Create PaymentIntent ───────────────────────────────────
     const intent = await stripe.paymentIntents.create({
-      amount: amounts.chargeAmount, currency: 'usd',
+      amount:        amounts.chargeAmount,
+      currency:      'usd',
       receipt_email: buyerEmail || req.user.email,
-      description: `${qty}x ${tt.name} — ${ev.name}`,
-      metadata: { event_id: eventId, ticket_type_id: ticketTypeId, buyer_id: req.userId, qty, platform_fee: amounts.platformFee },
-      transfer_data: { destination: ev.host_stripe_accounts.stripe_account_id },
+      description:   `${qty}x ${tt.name} — ${ev.name}`,
+      metadata: {
+        event_id:       eventId,
+        ticket_type_id: ticketTypeId,
+        buyer_id:       req.userId,
+        qty:            String(qty),
+        platform_fee:   String(amounts.platformFee),
+      },
+      transfer_data:          { destination: stripeAcct.stripe_account_id },
       application_fee_amount: amounts.platformFee,
     }, { idempotencyKey });
-    const taxAmount = intent.amount_details?.tax?.amount || 0;
-    // Generate a short human-readable ticket code (8 alphanumeric chars, uppercase)
-    const ticketCode = Math.random().toString(36).slice(2,6).toUpperCase() +
-                       Math.random().toString(36).slice(2,6).toUpperCase();
-    const { data: insertedTicket } = await supabaseAdmin.from('tickets').insert({
-      event_id: eventId, ticket_type_id: ticketTypeId, user_id: req.userId, quantity: qty,
-      unit_price_cents: tt.price_cents, total_charged_cents: amounts.chargeAmount + taxAmount,
-      platform_fee_cents: amounts.platformFee, stripe_fee_cents: amounts.stripeFee,
-      host_receives_cents: amounts.hostReceives, stripe_payment_intent: intent.id,
-      stripe_idempotency_key: idempotencyKey, status: 'pending',
-      buyer_email: buyerEmail || req.user.email,
-      code: ticketCode,
-    }).select('id, code').single();
-    res.json({ clientSecret: intent.client_secret, breakdown: { ...amounts, taxAmount }, intentId: intent.id, ticketCode: insertedTicket?.code || ticketCode });
-  } catch (e) { res.status(400).json({ error: e.message }); }
+
+    // ── 6. Generate short ticket code ────────────────────────────
+    const ticketCode = (
+      Math.random().toString(36).slice(2, 6) +
+      Math.random().toString(36).slice(2, 6)
+    ).toUpperCase();
+
+    // ── 7. Create pending ticket record ──────────────────────────
+    const { data: insertedTicket } = await supabaseAdmin
+      .from('tickets')
+      .insert({
+        event_id:               eventId,
+        ticket_type_id:         ticketTypeId,
+        user_id:                req.userId,
+        quantity:               Number(qty),
+        unit_price_cents:       tt.price_cents,
+        total_charged_cents:    amounts.chargeAmount,
+        platform_fee_cents:     amounts.platformFee,
+        stripe_fee_cents:       amounts.stripeFee,
+        host_receives_cents:    amounts.hostReceives,
+        stripe_payment_intent:  intent.id,
+        stripe_idempotency_key: idempotencyKey,
+        status:                 'pending',
+        buyer_email:            buyerEmail || req.user.email,
+        code:                   ticketCode,
+      })
+      .select('id, code')
+      .single();
+
+    res.json({
+      clientSecret: intent.client_secret,
+      breakdown:    amounts,
+      intentId:     intent.id,
+      ticketCode:   insertedTicket?.code || ticketCode,
+    });
+
+  } catch (e) {
+    console.error('[payment-intent] error:', e.message);
+    res.status(400).json({
+      error: e.type === 'StripeInvalidRequestError'
+        ? 'Payment setup failed — please try again or contact support.'
+        : e.message,
+    });
+  }
 });
 
 app.post('/api/connect-onboard', requireAuth, async (req, res) => {
   try {
-    const { data: existing } = await supabaseAdmin.from('host_stripe_accounts')
-      .select('stripe_account_id, onboarding_complete').eq('user_id', req.userId).single();
+    const { data: existing } = await supabaseAdmin
+      .from('host_stripe_accounts')
+      .select('stripe_account_id, onboarding_complete, payouts_enabled')
+      .eq('user_id', req.userId)
+      .single();
+
     let accountId = existing?.stripe_account_id;
+
     if (!accountId) {
       const account = await stripe.accounts.create({
-        type: 'express', email: req.user.email,
-        capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
+        type: 'express',
+        email: req.user.email,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers:     { requested: true },
+        },
         metadata: { christlink_user_id: req.userId },
       });
       accountId = account.id;
-      await supabaseAdmin.from('host_stripe_accounts').insert({ user_id: req.userId, stripe_account_id: accountId });
+      await supabaseAdmin.from('host_stripe_accounts').insert({
+        user_id:             req.userId,
+        stripe_account_id:   accountId,
+        onboarding_complete: false,
+        payouts_enabled:     false,
+        charges_enabled:     false,
+      });
+    } else if (existing?.payouts_enabled) {
+      // Already fully onboarded — return a Stripe dashboard login link
+      try {
+        const loginLink = await stripe.accounts.createLoginLink(accountId);
+        return res.json({ url: loginLink.url, accountId, alreadyOnboarded: true });
+      } catch (e) {
+        // Fall through to re-onboard if login link fails
+      }
     }
+
     const appUrl = (process.env.APP_URL || `https://${req.headers.host}`).replace(/\/$/, '');
     const link = await stripe.accountLinks.create({
-      account: accountId,
+      account:     accountId,
       refresh_url: `${appUrl}/?reauth=1`,
       return_url:  `${appUrl}/?connected=1`,
-      type: 'account_onboarding',
+      type:        'account_onboarding',
     });
+
     res.json({ url: link.url, accountId });
-  } catch (e) { res.status(400).json({ error: e.message }); }
+  } catch (e) {
+    console.error('[connect-onboard]', e.message);
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// Sync Stripe account status after onboarding redirect
+app.post('/api/connect-sync', requireAuth, async (req, res) => {
+  try {
+    const { data: row } = await supabaseAdmin
+      .from('host_stripe_accounts')
+      .select('stripe_account_id')
+      .eq('user_id', req.userId)
+      .single();
+
+    if (!row?.stripe_account_id) {
+      return res.status(404).json({ error: 'No connected account found.' });
+    }
+
+    const account = await stripe.accounts.retrieve(row.stripe_account_id);
+
+    const updates = {
+      onboarding_complete: account.details_submitted,
+      payouts_enabled:     account.payouts_enabled,
+      charges_enabled:     account.charges_enabled,
+      updated_at:          new Date().toISOString(),
+    };
+
+    await supabaseAdmin
+      .from('host_stripe_accounts')
+      .update(updates)
+      .eq('stripe_account_id', row.stripe_account_id);
+
+    if (account.payouts_enabled) {
+      await supabaseAdmin
+        .from('profiles')
+        .update({ role: 'host' })
+        .eq('id', req.userId);
+    }
+
+    res.json({
+      accountId:          row.stripe_account_id,
+      onboardingComplete: account.details_submitted,
+      payoutsEnabled:     account.payouts_enabled,
+      chargesEnabled:     account.charges_enabled,
+      requirements:       account.requirements,
+    });
+  } catch (e) {
+    console.error('[connect-sync]', e.message);
+    res.status(400).json({ error: e.message });
+  }
 });
 
 // ════════════════════════════════════════════════════════════
@@ -857,11 +1018,40 @@ async function handleWebhook(req, res) {
         break;
       case 'account.updated': {
         const acct = event.data.object;
-        await supabaseAdmin.from('host_stripe_accounts').update({
-          onboarding_complete: acct.details_submitted,
-          payouts_enabled: acct.payouts_enabled,
-          charges_enabled: acct.charges_enabled,
-        }).eq('stripe_account_id', acct.id);
+        console.log('[webhook] account.updated:', acct.id,
+          'payouts:', acct.payouts_enabled,
+          'charges:', acct.charges_enabled,
+          'submitted:', acct.details_submitted);
+
+        const { data: existing } = await supabaseAdmin
+          .from('host_stripe_accounts')
+          .select('id, user_id')
+          .eq('stripe_account_id', acct.id)
+          .single();
+
+        if (!existing) {
+          console.warn('[webhook] account.updated: no DB row for', acct.id);
+          break;
+        }
+
+        await supabaseAdmin
+          .from('host_stripe_accounts')
+          .update({
+            onboarding_complete: acct.details_submitted,
+            payouts_enabled:     acct.payouts_enabled,
+            charges_enabled:     acct.charges_enabled,
+            updated_at:          new Date().toISOString(),
+          })
+          .eq('stripe_account_id', acct.id);
+
+        if (acct.payouts_enabled && existing.user_id) {
+          await supabaseAdmin
+            .from('profiles')
+            .update({ role: 'host' })
+            .eq('id', existing.user_id);
+        }
+
+        console.log('[webhook] account.updated: DB synced for', acct.id);
         break;
       }
       case 'charge.refunded':

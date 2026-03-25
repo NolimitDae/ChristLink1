@@ -3970,51 +3970,89 @@ function renderProfilePage() {
 function renderStripeConnectStatus() {
   const section = document.getElementById('stripeConnectSection');
   if (!section) return;
-  // Always show — lets any user set up payouts to host paid events
   section.style.display = 'block';
+
   const stripe = profileData?.host_stripe_accounts?.[0];
   const dot    = document.getElementById('stripeStatusDot');
   const label  = document.getElementById('stripeStatusLabel');
   const sub    = document.getElementById('stripeStatusSub');
   const btn    = document.getElementById('stripeConnectBtn');
-  if (!stripe || !stripe.stripe_account_id) {
-    dot.style.background   = '#888';
-    label.textContent      = 'Not connected';
-    sub.textContent        = 'Connect Stripe to receive payouts from paid events';
-    btn.textContent        = 'Set Up Payouts →';
-    btn.style.display      = 'block';
-  } else if (!stripe.payouts_enabled) {
-    dot.style.background   = '#C9A84C';
-    label.textContent      = 'Onboarding incomplete';
-    sub.textContent        = 'Finish your Stripe setup to enable payouts';
-    btn.textContent        = 'Continue Stripe Setup →';
-    btn.style.display      = 'block';
+  if (!dot || !label || !sub || !btn) return;
+
+  if (!stripe?.stripe_account_id) {
+    // Not started
+    dot.style.background = '#888';
+    label.textContent    = 'Not connected';
+    sub.textContent      = 'Connect Stripe to receive payouts from paid events';
+    btn.textContent      = 'Set Up Payouts →';
+    btn.onclick          = startStripeConnect;
+    btn.style.display    = 'block';
+
+  } else if (!stripe.payouts_enabled && !stripe.onboarding_complete) {
+    // Started but not finished
+    dot.style.background = '#C9A84C';
+    label.textContent    = 'Setup incomplete';
+    sub.textContent      = 'Continue Stripe setup to enable payouts';
+    btn.textContent      = 'Continue Setup →';
+    btn.onclick          = startStripeConnect;
+    btn.style.display    = 'block';
+
+  } else if (stripe.onboarding_complete && !stripe.payouts_enabled) {
+    // Submitted, Stripe verifying
+    dot.style.background = '#C9A84C';
+    label.textContent    = 'Verification pending';
+    sub.textContent      = 'Stripe is verifying your account — usually takes a few minutes';
+    btn.textContent      = 'Check Status';
+    btn.onclick          = async () => {
+      btn.textContent = 'Checking…';
+      btn.disabled    = true;
+      try {
+        const res = await fetch(`${API_BASE}/api/connect-sync`, {
+          method:  'POST',
+          headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+        });
+        if (res.ok) { await fetchProfile(); renderStripeConnectStatus(); showToast('Status refreshed'); }
+      } catch {}
+      btn.disabled = false;
+    };
+    btn.style.display = 'block';
+
   } else {
-    dot.style.background   = '#4EC98C';
-    label.textContent      = 'Payouts active';
-    sub.textContent        = 'You can receive payments from paid events';
-    btn.textContent        = 'Manage Payouts ↗';
-    btn.style.display      = 'block';
+    // Fully active
+    dot.style.background = '#4EC98C';
+    label.textContent    = 'Payouts active ✓';
+    sub.textContent      = 'Your Stripe account is connected and receiving payments';
+    btn.textContent      = 'Manage in Stripe ↗';
+    btn.onclick          = startStripeConnect;
+    btn.style.display    = 'block';
   }
 }
 
 async function startStripeConnect() {
+  if (!currentUser) { openAuth('signup'); return; }
+
   const btn = document.getElementById('stripeConnectBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px"></div>&nbsp;Connecting…';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px"></div>&nbsp;Opening Stripe…';
+  }
+
   try {
     const res = await fetch(`${API_BASE}/api/connect-onboard`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${currentSession?.access_token}`,
+      },
     });
     const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    // Redirect to Stripe Connect onboarding
+    if (!res.ok || data.error) throw new Error(data.error || 'Failed to start setup.');
+
     window.location.href = data.url;
   } catch(e) {
-    showToast(e.message || 'Failed to start Stripe setup. Try again.', 'error');
-    btn.disabled = false;
-    renderStripeConnectStatus();
+    console.error('[startStripeConnect]', e.message);
+    showToast(e.message || 'Could not open Stripe. Please try again.', 'error');
+    if (btn) { btn.disabled = false; renderStripeConnectStatus(); }
   }
 }
 
@@ -5294,13 +5332,28 @@ async function processPayment() {
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>&nbsp;Processing…';
   const err = document.getElementById('cardErr');
   try {
-    const res = await fetch(`${API_BASE}/api/create-payment-intent`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}`},
-      body: JSON.stringify({eventId:selectedEvent.id,ticketTypeId:(selectedEvent.ticket_types?.[selectedTicketTypeIdx]??selectedEvent.ticket_types?.[0])?.id,qty:currentQty,buyerEmail:currentUser?.email}),
+    const res = await fetch(`${API_BASE}/api/create-payment-intent`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${currentSession?.access_token}`,
+      },
+      body: JSON.stringify({
+        eventId:      selectedEvent.id,
+        ticketTypeId: (selectedEvent.ticket_types?.[selectedTicketTypeIdx] ?? selectedEvent.ticket_types?.[0])?.id,
+        qty:          currentQty,
+        buyerEmail:   currentUser?.email,
+      }),
     });
-    const {clientSecret, error:be, ticketCode} = await res.json();
-    if (be) throw new Error(be);
+
+    const piData = await res.json();
+    // Surface server error message directly to user
+    if (!res.ok || piData.error) {
+      throw new Error(piData.error || `Server error ${res.status}. Please try again.`);
+    }
+
+    const { clientSecret, ticketCode } = piData;
+    if (!clientSecret) throw new Error('Payment setup failed — no client secret returned.');
     const {error, paymentIntent} = await stripeClient.confirmCardPayment(clientSecret,{
       payment_method:{card:cardEl,billing_details:{email:currentUser?.email}}
     });
@@ -6420,40 +6473,60 @@ function spawnConfetti() {
 
   if (params.get('connected') === '1') {
     window.history.replaceState({}, '', window.location.pathname);
-    const tryRedirect = setInterval(() => {
-      if (currentUser !== null || document.readyState === 'complete') {
-        clearInterval(tryRedirect);
-        goTo('profile');
-        setTimeout(() => {
-          showToast('✅ Stripe account connected! You can now accept payments.', 'success');
-          fetchProfile();
-        }, 400);
-      }
-    }, 100);
-    setTimeout(() => {
-      clearInterval(tryRedirect);
+
+    // Wait for auth session to be ready before syncing
+    let attempts = 0;
+    const waitForAuth = setInterval(async () => {
+      attempts++;
+      const sessionReady = currentSession?.access_token || attempts > 30;
+      if (!sessionReady) return;
+      clearInterval(waitForAuth);
+
       goTo('profile');
-      showToast('✅ Stripe account connected!', 'success');
-    }, 3000);
+
+      // Call server to sync Stripe account status from Stripe API
+      try {
+        const res = await fetch(`${API_BASE}/api/connect-sync`, {
+          method:  'POST',
+          headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+        });
+        const data = await res.json();
+
+        if (res.ok && data.payoutsEnabled) {
+          showToast('✅ Stripe connected! You can now accept payments.', 'success');
+        } else if (res.ok && data.onboardingComplete) {
+          showToast('✅ Setup submitted — Stripe is verifying your account (usually minutes).', 'success');
+        } else {
+          showToast('⚠️ Onboarding saved. Finish setup to enable payouts.', 'error');
+        }
+      } catch (e) {
+        showToast('✅ Connected! Refreshing your profile…', 'success');
+      }
+
+      await fetchProfile();
+      renderStripeConnectStatus();
+    }, 100);
+
+    // Fallback after 5s
+    setTimeout(() => {
+      clearInterval(waitForAuth);
+      if (!document.getElementById('page-profile')?.classList.contains('active')) goTo('profile');
+      fetchProfile();
+    }, 5000);
   }
 
   if (params.get('reauth') === '1') {
     window.history.replaceState({}, '', window.location.pathname);
-    const tryReauth = setInterval(() => {
-      if (currentUser !== null || document.readyState === 'complete') {
-        clearInterval(tryReauth);
+    let _count = 0;
+    const waitForReauth = setInterval(() => {
+      _count++;
+      if (currentSession?.access_token || _count > 30) {
+        clearInterval(waitForReauth);
         goTo('profile');
-        setTimeout(() => {
-          showToast('⚠️ Please reconnect your Stripe account to receive payouts.', 'error');
-          fetchProfile();
-        }, 400);
+        showToast('⚠️ Please reconnect your Stripe account to receive payouts.', 'error');
+        fetchProfile();
       }
     }, 100);
-    setTimeout(() => {
-      clearInterval(tryReauth);
-      goTo('profile');
-      showToast('⚠️ Please reconnect your Stripe account.', 'error');
-    }, 3000);
   }
 
   if (params.get('listing_success') === '1') {
