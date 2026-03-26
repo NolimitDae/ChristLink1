@@ -4312,41 +4312,47 @@ async function fetchMyTickets(countOnly = false) {
 
 function makeHostedEventCard(ev) {
   const el = document.createElement('div');
-  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;cursor:pointer';
+  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;cursor:pointer';
   const fmtDate = ev.start_date
-    ? new Date(ev.start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
+    ? new Date(ev.start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})
     : 'Date TBD';
   const bg = ['linear-gradient(135deg,#1A0E38,#0F0F1A)','linear-gradient(135deg,#0E2438,#0F1A1A)','linear-gradient(135deg,#0E3820,#0F1A15)'][Math.abs((ev.name||'').charCodeAt(0))%3];
-  const statusColor = ev.status === 'published' ? 'var(--green)' : ev.status === 'draft' ? 'var(--gold)' : 'var(--muted)';
+  const statusColor = ev.status === 'published' ? '#4EC98C' : ev.status === 'draft' ? '#C9A84C' : '#666070';
+  const statusBg    = ev.status === 'published' ? 'rgba(78,201,140,.15)' : ev.status === 'draft' ? 'rgba(201,168,76,.12)' : 'rgba(102,96,112,.12)';
+  const evJson = JSON.stringify(ev).replace(/"/g,'&quot;');
   el.innerHTML = `
-    <div style="display:flex;gap:12px;padding:14px 16px;align-items:center">
-      <div style="width:56px;height:56px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:${bg};display:flex;align-items:center;justify-content:center;font-size:24px">
-        ${ev.cover_url ? `<img src="${ev.cover_url}" style="width:100%;height:100%;object-fit:cover">` : (ev.emoji || '✝')}
+    <!-- Cover image — full width banner -->
+    <div style="position:relative;width:100%;height:160px;background:${bg};overflow:hidden;flex-shrink:0">
+      ${ev.cover_url
+        ? `<img src="${ev.cover_url}" style="width:100%;height:100%;object-fit:cover;display:block">`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:52px;opacity:.6">${ev.emoji || '✝'}</div>`}
+      <!-- Status badge overlaid on image -->
+      <div style="position:absolute;top:10px;left:10px;font-size:11px;font-weight:700;color:${statusColor};background:${statusBg};border:1px solid ${statusColor}44;border-radius:var(--r-full);padding:3px 10px;text-transform:uppercase;letter-spacing:.06em;backdrop-filter:blur(6px)">${ev.status}</div>
+      <!-- Paid/Free badge -->
+      <div style="position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;color:${ev.is_paid?'var(--gold)':'#4EC98C'};background:${ev.is_paid?'rgba(201,168,76,.18)':'rgba(78,201,140,.15)'};border:1px solid ${ev.is_paid?'rgba(201,168,76,.4)':'rgba(78,201,140,.35)'};border-radius:var(--r-full);padding:3px 10px;backdrop-filter:blur(6px)">${ev.is_paid?'Paid':'Free'}</div>
+    </div>
+    <!-- Info section -->
+    <div style="padding:14px 14px 10px">
+      <div style="font-family:var(--font-display);font-size:17px;font-weight:700;margin-bottom:5px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${ev.name}</div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span style="font-size:12px;color:var(--muted2)">${fmtDate}</span>
+        ${ev.city ? `<span style="font-size:12px;color:var(--muted)">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted);flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span style="font-size:12px;color:var(--muted2)">${ev.city}${ev.state?', '+ev.state:''}</span>` : ''}
       </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:15px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.name}</div>
-        <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">${fmtDate}</div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:11px;font-weight:700;color:${statusColor};text-transform:uppercase;letter-spacing:.05em">${ev.status}</span>
-          ${ev.is_paid ? `<span style="font-size:11px;color:var(--gold)">Paid</span>` : `<span style="font-size:11px;color:var(--muted)">Free</span>`}
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-        ${ev.status === 'published' ? '<button onclick="event.stopPropagation();openScannerSheet(\''+ev.id+'\',\''+encodeURIComponent(ev.name||'')+'\')" style="font-size:11px;font-weight:600;color:#4EC98C;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);padding:5px 10px;border-radius:var(--r-full)">Scan</button>' : ''}
-        ${ev.status === 'published' ? `
-          <button onclick="event.stopPropagation();openEventSales('${ev.id}')"
-            style="font-size:11px;font-weight:600;color:#A882FF;background:rgba(168,130,255,.1);border:1px solid rgba(168,130,255,.25);padding:5px 10px;border-radius:var(--r-full)">
-            Sales
-          </button>` : ''}
-        <button onclick="event.stopPropagation();toggleEventVisibility('${ev.id}','${ev.status}',this)" style="font-size:11px;font-weight:600;color:${ev.status==='published'?'var(--gold)':'var(--green)'};background:${ev.status==='published'?'rgba(201,168,76,.1)':'rgba(78,201,140,.1)'};border:1px solid ${ev.status==='published'?'rgba(201,168,76,.3)':'rgba(78,201,140,.3)'};padding:5px 10px;border-radius:var(--r-full)">${ev.status==='published'?'Unpublish':'Publish'}</button>
-        <button onclick="event.stopPropagation();duplicateEvent('${ev.id}',this)" style="font-size:11px;font-weight:600;color:var(--muted2);background:var(--surface3);border:1px solid var(--border);padding:5px 10px;border-radius:var(--r-full)">Duplicate</button>
-        <button onclick="event.stopPropagation();openEditEventSheet(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:#7EB8F7;background:rgba(126,184,247,.1);border:1px solid rgba(126,184,247,.25);padding:5px 10px;border-radius:var(--r-full)">Edit</button>
-        <button onclick="event.stopPropagation();viewDetail(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:5px 10px;border-radius:var(--r-full)">View</button>
-        <button onclick="event.stopPropagation();shareEventById('${ev.id}','${escapeAttr(ev.name)}','${escapeAttr(ev.description||'')}',this)" style="font-size:11px;font-weight:600;color:var(--muted2);background:var(--surface3);border:1px solid var(--border);padding:5px 10px;border-radius:var(--r-full)">Share</button>
-        <button onclick="event.stopPropagation();confirmDeleteEvent('${ev.id}')" style="font-size:11px;font-weight:600;color:var(--red);background:rgba(224,80,80,.08);border:1px solid rgba(224,80,80,.2);padding:5px 10px;border-radius:var(--r-full)">Delete</button>
-      </div>
+      ${ev.description ? `<div style="font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin-bottom:2px">${ev.description}</div>` : ''}
+    </div>
+    <!-- Action buttons — wrapping pill row -->
+    <div style="display:flex;flex-wrap:wrap;gap:7px;padding:8px 14px 14px;border-top:1px solid var(--border)">
+      <button onclick="event.stopPropagation();viewDetail(${evJson});goTo('event-detail')" style="font-size:12px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">View</button>
+      <button onclick="event.stopPropagation();openEditEventSheet(${evJson})" style="font-size:12px;font-weight:600;color:#7EB8F7;background:rgba(126,184,247,.1);border:1px solid rgba(126,184,247,.25);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">Edit</button>
+      ${ev.status === 'published' ? `<button onclick="event.stopPropagation();openScannerSheet('${ev.id}','${encodeURIComponent(ev.name||'')}')" style="font-size:12px;font-weight:600;color:#4EC98C;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">Scan</button>` : ''}
+      ${ev.status === 'published' ? `<button onclick="event.stopPropagation();openEventSales('${ev.id}')" style="font-size:12px;font-weight:600;color:#A882FF;background:rgba(168,130,255,.1);border:1px solid rgba(168,130,255,.25);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">Sales</button>` : ''}
+      <button onclick="event.stopPropagation();toggleEventVisibility('${ev.id}','${ev.status}',this)" style="font-size:12px;font-weight:600;color:${ev.status==='published'?'var(--gold)':'#4EC98C'};background:${ev.status==='published'?'rgba(201,168,76,.1)':'rgba(78,201,140,.1)'};border:1px solid ${ev.status==='published'?'rgba(201,168,76,.3)':'rgba(78,201,140,.3)'};padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">${ev.status==='published'?'Unpublish':'Publish'}</button>
+      <button onclick="event.stopPropagation();shareEventById('${ev.id}','${escapeAttr(ev.name)}','${escapeAttr(ev.description||'')}',this)" style="font-size:12px;font-weight:600;color:var(--muted2);background:var(--surface3);border:1px solid var(--border);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">Share</button>
+      <button onclick="event.stopPropagation();duplicateEvent('${ev.id}',this)" style="font-size:12px;font-weight:600;color:var(--muted2);background:var(--surface3);border:1px solid var(--border);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">Duplicate</button>
+      <button onclick="event.stopPropagation();confirmDeleteEvent('${ev.id}')" style="font-size:12px;font-weight:600;color:var(--red);background:rgba(224,80,80,.08);border:1px solid rgba(224,80,80,.2);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">Delete</button>
     </div>`;
-  el.onclick = () => viewDetail(ev);
+  el.onclick = () => { viewDetail(ev); goTo('event-detail'); };
   return el;
 }
 
