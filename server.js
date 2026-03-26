@@ -502,6 +502,62 @@ app.delete('/api/events/:id', requireAuth, async (req, res) => {
   res.json({ success: true, action: 'deleted' });
 });
 
+// Toggle event status between published and draft (host only)
+app.patch('/api/events/:id/toggle-visibility', requireAuth, async (req, res) => {
+  try {
+    const { data: ev } = await supabaseAdmin
+      .from('events').select('id, status, host_id').eq('id', req.params.id).single();
+    if (!ev) return res.status(404).json({ error: 'Event not found.' });
+    if (ev.host_id !== req.userId) return res.status(403).json({ error: 'Not your event.' });
+    const newStatus = ev.status === 'published' ? 'draft' : 'published';
+    const { error } = await supabaseAdmin
+      .from('events').update({ status: newStatus }).eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true, status: newStatus });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Duplicate an event as a new draft (host only)
+app.post('/api/events/:id/duplicate', requireAuth, async (req, res) => {
+  try {
+    const { data: ev } = await supabaseAdmin
+      .from('events')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    if (!ev) return res.status(404).json({ error: 'Event not found.' });
+    if (ev.host_id !== req.userId) return res.status(403).json({ error: 'Not your event.' });
+
+    // Create new event as draft, strip IDs and timestamps
+    const { id, created_at, updated_at, listing_fee_paid, listing_payment_id, ...rest } = ev;
+    const { data: newEv, error } = await supabaseAdmin.from('events').insert({
+      ...rest,
+      name:   `${ev.name} (Copy)`,
+      status: 'draft',
+      listing_fee_paid:    false,
+      listing_payment_id:  null,
+    }).select().single();
+    if (error) throw error;
+
+    // Duplicate ticket types if any
+    const { data: tts } = await supabaseAdmin
+      .from('ticket_types').select('*').eq('event_id', id);
+    if (tts?.length) {
+      const newTts = tts.map(tt => {
+        const { id: ttId, created_at: ttCa, tickets_sold, ...ttRest } = tt;
+        return { ...ttRest, event_id: newEv.id, tickets_sold: 0 };
+      });
+      await supabaseAdmin.from('ticket_types').insert(newTts);
+    }
+
+    res.json({ event: newEv });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ════════════════════════════════════════════════════════════
 // EVENT FORUM
 // ════════════════════════════════════════════════════════════
