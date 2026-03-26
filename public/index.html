@@ -4139,7 +4139,7 @@ function makeHostedEventCard(ev) {
 
 function makeTicketCard(t) {
   const el = document.createElement('div');
-  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;cursor:pointer;active:opacity:.85';
+  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;cursor:pointer';
   const fmtDate = t.event_start_date
     ? new Date(t.event_start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
     : 'Date TBD';
@@ -4148,6 +4148,7 @@ function makeTicketCard(t) {
   const shortCode = t.code || (t.stripe_payment_intent
     ? t.stripe_payment_intent.replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase()
     : t.id?.replace(/-/g,'').slice(0,8).toUpperCase() || '—');
+  const ticketJson = JSON.stringify(t).replace(/"/g, '&quot;');
   el.innerHTML = `
     <div style="display:flex;gap:12px;padding:14px 16px;align-items:center">
       <div style="width:56px;height:56px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#1A0E38,#0F0F1A);display:flex;align-items:center;justify-content:center;font-size:24px">
@@ -4163,19 +4164,21 @@ function makeTicketCard(t) {
         </div>
         ${t.status === 'confirmed' ? `<div style="font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.12em;margin-top:4px;font-family:monospace">CODE: ${shortCode}</div>` : ''}
       </div>
-      <div style="flex-shrink:0;color:var(--muted)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-    </div>`;
-  // Tapping the card goes to the event page
+    </div>
+    ${isPaid && t.status === 'confirmed' ? `
+    <div style="padding:0 14px 14px">
+      <button onclick="event.stopPropagation();openTicketViewer(${ticketJson})"
+        style="width:100%;height:38px;border-radius:var(--r-full);background:var(--gold);color:#000;font-size:13px;font-weight:700;border:none;cursor:pointer;touch-action:manipulation">
+        🎟 View Ticket
+      </button>
+    </div>` : ''}`;
+  // Tapping the card body navigates to the event detail page
   el.onclick = () => {
     if (t.event_id) {
       fetch(`${API_BASE}/api/events/${t.event_id}`)
         .then(r => r.json())
         .then(ev => { viewDetail(ev); goTo('event-detail'); })
-        .catch(() => openTicketViewer(t));
-    } else {
-      openTicketViewer(t);
+        .catch(() => showToast('Could not load event', 'error'));
     }
   };
   return el;
