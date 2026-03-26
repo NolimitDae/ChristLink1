@@ -288,8 +288,8 @@ img{display:block;max-width:100%}
 .event-card:hover{border-color:rgba(201,168,76,.25)}
 
 .card-img{
-  height:130px;display:flex;align-items:center;justify-content:center;
-  font-size:52px;position:relative;
+  height:200px;display:flex;align-items:center;justify-content:center;
+  font-size:64px;position:relative;
   background:linear-gradient(135deg,#1E1E2A,#252533);
 }
 .card-badges{
@@ -306,7 +306,7 @@ img{display:block;max-width:100%}
 
 .card-body{padding:14px 16px 16px}
 .card-date{font-size:11px;color:var(--gold);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
-.card-name{font-family:var(--font-display);font-size:16px;font-weight:700;line-height:1.3;margin-bottom:5px;color:var(--text)}
+.card-name{font-family:var(--font-display);font-size:18px;font-weight:700;line-height:1.3;margin-bottom:6px;color:var(--text)}
 .card-loc{font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:4px;margin-bottom:12px}
 .card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .card-btn{
@@ -519,21 +519,16 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 #page-event-forum.active {
   display: flex;
   flex-direction: column;
-  /* JS will override height via visualViewport — these are initial values */
-  height: 100vh;
-  height: 100dvh;
+  height: 100svh;
   overflow: hidden;
   position: fixed;
-  top: 0; left: 0;
-  /* NO bottom:0 — it fights with JS-set height in Safari */
+  top: 0; left: 0; right: 0;
   width: 100%;
-  right: 0;
   z-index: 500;
-  /* GPU layer — prevents Safari from flickering during keyboard animation */
   will-change: transform, height;
   transform: translateY(0);
+  transition: height 0ms, transform 0ms;
 }
-/* iOS Safari — fill-available correctly excludes the browser chrome bar */
 @supports (-webkit-touch-callout: none) {
   #page-event-forum.active {
     height: -webkit-fill-available;
@@ -554,22 +549,19 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   width: 100%;
   box-sizing: border-box;
   border-top: 1px solid var(--border);
-  /* safe-area-inset-bottom covers the iPhone home indicator */
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
   background: var(--surface2);
   position: relative;
   z-index: 10;
 }
-#forumInput > div {
-  width: 100%;
-  box-sizing: border-box;
-  position: relative;
-}
+#forumInput > div { width: 100%; box-sizing: border-box; position: relative; }
 #forumInput textarea {
-  font-size: 16px !important; /* prevent iOS zoom */
+  font-size: 16px !important;
   line-height: 1.5;
   width: 100% !important;
   box-sizing: border-box !important;
+  -webkit-text-size-adjust: 100%;
 }
 /* ── Select dropdown — prevent iOS zoom + custom arrow ──── */
 select.field {
@@ -1348,7 +1340,7 @@ input[type="datetime-local"] {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; width: 260px;
 }
-.skeleton-card-img  { height: 130px; }
+.skeleton-card-img  { height: 200px; }
 .skeleton-card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
 .skeleton-line       { height: 12px; }
 .skeleton-line-short { height: 12px; width: 60%; }
@@ -2409,8 +2401,8 @@ button, a, [onclick],
         </button>
       </div>
       <div class="profile-bio" id="profBio">—</div>
-      <div id="profSocialLinks" style="display:flex;gap:14px;margin:10px 0 4px;flex-wrap:wrap"></div>
-      <div class="profile-stats" id="profStats">
+      <div id="profSocialLinks" style="display:flex;gap:14px;margin:10px 0 0;flex-wrap:wrap"></div>
+      <div class="profile-stats" id="profStats" style="margin-top:20px">
         <div class="stat-cell"><div class="stat-num" id="statEvents">0</div><div class="stat-label">Events</div></div>
         <div class="stat-cell"><div class="stat-num" id="statTickets">0</div><div class="stat-label">Tickets</div></div>
         <div class="stat-cell"><div class="stat-num" id="statCity">—</div><div class="stat-label">City</div></div>
@@ -3357,6 +3349,16 @@ button, a, [onclick],
         <p style="font-size:11px;color:var(--muted);margin-top:6px">Existing types: update quantity only. New types will be added on save.</p>
       </div>
 
+      <!-- COUPON CODES (edit) -->
+      <div id="eeeCouponSection" style="margin-bottom:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <label class="field-label" style="margin-bottom:0">Discount Codes</label>
+          <button type="button" onclick="addEeeCouponRow()" style="font-size:13px;color:var(--gold);font-weight:600;background:transparent;border:none;cursor:pointer">+ Add Code</button>
+        </div>
+        <div id="eeeCouponList"></div>
+        <div id="eeeCouponBuilder"></div>
+      </div>
+
       <!-- FORUM TOGGLE -->
       <div class="toggle-row" id="eeeForumRow" style="margin-bottom:18px;border-color:rgba(201,168,76,.2)">
         <div class="toggle-label" style="display:flex;align-items:center;gap:10px">
@@ -4123,6 +4125,8 @@ function makeHostedEventCard(ev) {
             style="font-size:11px;font-weight:600;color:#A882FF;background:rgba(168,130,255,.1);border:1px solid rgba(168,130,255,.25);padding:5px 10px;border-radius:var(--r-full)">
             Sales
           </button>` : ''}
+        <button onclick="event.stopPropagation();toggleEventVisibility('${ev.id}','${ev.status}',this)" style="font-size:11px;font-weight:600;color:${ev.status==='published'?'var(--gold)':'var(--green)'};background:${ev.status==='published'?'rgba(201,168,76,.1)':'rgba(78,201,140,.1)'};border:1px solid ${ev.status==='published'?'rgba(201,168,76,.3)':'rgba(78,201,140,.3)'};padding:5px 10px;border-radius:var(--r-full)">${ev.status==='published'?'Unpublish':'Publish'}</button>
+        <button onclick="event.stopPropagation();duplicateEvent('${ev.id}',this)" style="font-size:11px;font-weight:600;color:var(--muted2);background:var(--surface3);border:1px solid var(--border);padding:5px 10px;border-radius:var(--r-full)">Duplicate</button>
         <button onclick="event.stopPropagation();openEditEventSheet(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:#7EB8F7;background:rgba(126,184,247,.1);border:1px solid rgba(126,184,247,.25);padding:5px 10px;border-radius:var(--r-full)">Edit</button>
         <button onclick="event.stopPropagation();viewDetail(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:5px 10px;border-radius:var(--r-full)">View</button>
         <button onclick="event.stopPropagation();shareEventById('${ev.id}','${escapeAttr(ev.name)}','${escapeAttr(ev.description||'')}',this)" style="font-size:11px;font-weight:600;color:var(--muted2);background:var(--surface3);border:1px solid var(--border);padding:5px 10px;border-radius:var(--r-full)">Share</button>
@@ -4135,24 +4139,23 @@ function makeHostedEventCard(ev) {
 
 function makeTicketCard(t) {
   const el = document.createElement('div');
-  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;cursor:pointer';
+  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;cursor:pointer;active:opacity:.85';
   const fmtDate = t.event_start_date
     ? new Date(t.event_start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
     : 'Date TBD';
   const statusColor = t.status === 'confirmed' ? 'var(--green)' : t.status === 'pending' ? 'var(--gold)' : 'var(--muted)';
   const isPaid = t.total_charged_cents > 0;
-  // Derive short code: prefer stored code, fall back to payment intent suffix
   const shortCode = t.code || (t.stripe_payment_intent
     ? t.stripe_payment_intent.replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase()
     : t.id?.replace(/-/g,'').slice(0,8).toUpperCase() || '—');
   el.innerHTML = `
     <div style="display:flex;gap:12px;padding:14px 16px;align-items:center">
-      <div style="width:48px;height:48px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#1A0E38,#0F0F1A);display:flex;align-items:center;justify-content:center;font-size:22px">
+      <div style="width:56px;height:56px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#1A0E38,#0F0F1A);display:flex;align-items:center;justify-content:center;font-size:24px">
         ${t.event_cover_url ? `<img src="${t.event_cover_url}" style="width:100%;height:100%;object-fit:cover">` : '🎟️'}
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${t.event_name || 'Event'}</div>
-        <div style="font-size:12px;color:var(--muted2);margin-bottom:2px">${fmtDate}</div>
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">${fmtDate}</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span style="font-size:11px;font-weight:700;color:${statusColor};text-transform:uppercase;letter-spacing:.05em">${t.status}</span>
           <span style="font-size:11px;color:var(--muted)">${t.quantity} ticket${t.quantity!==1?'s':''}</span>
@@ -4160,24 +4163,21 @@ function makeTicketCard(t) {
         </div>
         ${t.status === 'confirmed' ? `<div style="font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.12em;margin-top:4px;font-family:monospace">CODE: ${shortCode}</div>` : ''}
       </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button onclick="openTicketViewer(${JSON.stringify(t).replace(/"/g,'&quot;')})"
-        style="flex:1;height:38px;border-radius:var(--r-full);background:var(--gold);color:#000;font-size:13px;font-weight:700;border:none;cursor:pointer;touch-action:manipulation">
-        View Ticket
-      </button>
-      <button onclick="event.stopPropagation();shareEventById('${t.event_id}')"
-        style="width:38px;height:38px;border-radius:var(--r-full);background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;flex-shrink:0"
-        title="Share event">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-        </svg>
-      </button>
-    </div>
-  </div>`;
-  el.onclick = () => openTicketViewer(t);
+      <div style="flex-shrink:0;color:var(--muted)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>`;
+  // Tapping the card goes to the event page
+  el.onclick = () => {
+    if (t.event_id) {
+      fetch(`${API_BASE}/api/events/${t.event_id}`)
+        .then(r => r.json())
+        .then(ev => { viewDetail(ev); goTo('event-detail'); })
+        .catch(() => openTicketViewer(t));
+    } else {
+      openTicketViewer(t);
+    }
+  };
   return el;
 }
 
@@ -4312,6 +4312,13 @@ function openEditEventSheet(ev) {
   }
 
   openSheet('editEventSheet');
+  // Load existing coupons for this event
+  if (ev.is_paid) {
+    document.getElementById('eeeCouponSection').style.display = 'block';
+    loadEeeCoupons(ev.id);
+  } else {
+    document.getElementById('eeeCouponSection').style.display = 'none';
+  }
 }
 
 function handleEditCoverPhoto(input) {
@@ -4553,6 +4560,9 @@ async function saveEditEvent() {
         }
       }
     }
+
+    // Save any new coupon codes added in edit sheet
+    await saveEeeCoupons();
 
     closeSheet('editEventSheet');
     showToast('Event updated! ✓', 'success');
@@ -5346,7 +5356,7 @@ async function runBrowse() {
   if (!grid) return;
   grid.innerHTML = [1,2,3].map(() => `
     <div class="skeleton-card events-grid">
-      <div class="skeleton skeleton-card-img" style="height:160px"></div>
+      <div class="skeleton skeleton-card-img" style="height:200px"></div>
       <div class="skeleton-card-body">
         <div class="skeleton skeleton-line skeleton-line-xshort"></div>
         <div class="skeleton skeleton-line"></div>
@@ -8216,27 +8226,24 @@ window.goTo = function(page) {
   const getPage   = () => document.getElementById('page-event-forum');
   const getScroll = () => document.getElementById('forumScrollArea');
 
+  let _rafId = null;
   function applyHeight() {
-    const p = getPage();
-    if (!p || !p.classList.contains('active')) return;
-    if (window.visualViewport) {
+    if (_rafId) cancelAnimationFrame(_rafId);
+    _rafId = requestAnimationFrame(() => {
+      const p = getPage();
+      if (!p || !p.classList.contains('active')) return;
       const vv = window.visualViewport;
-      // transform:translateY is more reliable than setting top in Safari —
-      // avoids layout thrash and correctly tracks the floating URL bar
-      p.style.height    = vv.height + 'px';
-      p.style.transform = `translateY(${vv.offsetTop}px)`;
-    } else {
-      p.style.height    = window.innerHeight + 'px';
-      p.style.transform = 'translateY(0)';
-    }
-    requestAnimationFrame(() => {
+      if (vv) {
+        p.style.height    = vv.height + 'px';
+        p.style.transform = `translateY(${vv.offsetTop}px)`;
+      } else {
+        p.style.height    = window.innerHeight + 'px';
+        p.style.transform = 'translateY(0)';
+      }
+      // Scroll to bottom so input stays visible
       const s = getScroll();
       if (s) s.scrollTop = s.scrollHeight;
     });
-  }
-
-  function onViewportChange() {
-    requestAnimationFrame(applyHeight);
   }
 
   function resetLayout() {
@@ -8245,35 +8252,40 @@ window.goTo = function(page) {
   }
 
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', onViewportChange);
-    window.visualViewport.addEventListener('scroll', onViewportChange);
+    window.visualViewport.addEventListener('resize', applyHeight);
+    window.visualViewport.addEventListener('scroll', applyHeight);
   }
-  window.addEventListener('resize', onViewportChange);
+  window.addEventListener('resize', applyHeight);
 
-  // focusin fires immediately when textarea is tapped — before visualViewport
-  // resize fires (~100-200ms later). Staggered calls catch Safari's multi-stage
-  // keyboard animation.
+  // focusin fires immediately on tap — before visualViewport resize (100–300ms later)
+  // Staggered timeouts catch Safari's multi-stage keyboard animation
   document.addEventListener('focusin', (e) => {
-    if (e.target && e.target.id === 'forumPostBody') {
-      setTimeout(applyHeight, 50);
-      setTimeout(applyHeight, 200);
-      setTimeout(applyHeight, 400);
-    }
-  });
-  document.addEventListener('focusout', (e) => {
-    if (e.target && e.target.id === 'forumPostBody') {
-      setTimeout(applyHeight, 100);
-      setTimeout(applyHeight, 350);
-    }
+    if (e.target?.id !== 'forumPostBody') return;
+    applyHeight();
+    setTimeout(applyHeight, 100);
+    setTimeout(applyHeight, 300);
+    setTimeout(applyHeight, 600);
+    // Scroll the textarea into view
+    setTimeout(() => {
+      e.target.scrollIntoView({ block: 'end', behavior: 'smooth' });
+      const s = getScroll();
+      if (s) s.scrollTop = s.scrollHeight;
+    }, 350);
   });
 
-  // Hook into goTo — apply height when entering forum, reset when leaving
-  const _origGoTo = window.goTo;
+  document.addEventListener('focusout', (e) => {
+    if (e.target?.id !== 'forumPostBody') return;
+    setTimeout(applyHeight, 50);
+    setTimeout(applyHeight, 200);
+    setTimeout(resetLayout, 400);
+    setTimeout(applyHeight, 420);
+  });
+
+  const _prevGoTo = window.goTo;
   window.goTo = function(pg) {
     if (pg !== 'event-forum') resetLayout();
-    _origGoTo(pg);
+    _prevGoTo(pg);
     if (pg === 'event-forum') {
-      // Three timed calls — iOS renders the page in stages
       requestAnimationFrame(applyHeight);
       setTimeout(applyHeight, 150);
       setTimeout(applyHeight, 500);
@@ -8528,6 +8540,150 @@ async function manualScanLookup() {
   if (!code) return;
   await handleScannedCode(JSON.stringify({ code, eventId: scannerEventId }));
   document.getElementById('manualCodeInput').value = '';
+}
+
+// ── DUPLICATE EVENT ──────────────────────────────────────────
+async function duplicateEvent(eventId, btn) {
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const res  = await fetch(`${API_BASE}/api/events/${eventId}/duplicate`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Duplicate failed');
+    showToast('Event duplicated as draft ✓', 'success');
+    btn.disabled = false; btn.textContent = 'Duplicate';
+    // Refresh My Events list
+    if (typeof loadHostedEvents === 'function') loadHostedEvents(true);
+  } catch(e) {
+    showToast(e.message, 'error');
+    btn.disabled = false; btn.textContent = 'Duplicate';
+  }
+}
+
+// ── TOGGLE EVENT VISIBILITY ───────────────────────────────────
+async function toggleEventVisibility(eventId, currentStatus, btn) {
+  const willPublish = currentStatus !== 'published';
+  if (!willPublish && !confirm('Unpublish this event? It will no longer appear in search.')) return;
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const res  = await fetch(`${API_BASE}/api/events/${eventId}/toggle-visibility`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    showToast(data.status === 'published' ? 'Event published ✓' : 'Event set to draft', 'success');
+    if (typeof loadHostedEvents === 'function') loadHostedEvents(true);
+  } catch(e) {
+    showToast(e.message, 'error');
+    btn.disabled = false; btn.textContent = willPublish ? 'Publish' : 'Unpublish';
+  }
+}
+
+// ── EDIT EVENT COUPON MANAGEMENT ─────────────────────────────
+let _eeeCouponRows = []; // new coupon rows being added
+let _eeeCouponEventId = null;
+
+async function loadEeeCoupons(eventId) {
+  _eeeCouponEventId = eventId;
+  _eeeCouponRows    = [];
+  const list    = document.getElementById('eeeCouponList');
+  const builder = document.getElementById('eeeCouponBuilder');
+  if (!list || !builder) return;
+  list.innerHTML    = '<div style="font-size:12px;color:var(--muted);padding:4px 0">Loading…</div>';
+  builder.innerHTML = '';
+  try {
+    const res  = await fetch(`${API_BASE}/api/events/${eventId}/coupons`, {
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    const coupons = data.coupons || [];
+    if (!coupons.length) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0">No discount codes yet.</div>';
+    } else {
+      list.innerHTML = coupons.map(c => `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px">
+          <div>
+            <div style="font-size:13px;font-weight:700;font-family:monospace;color:var(--gold)">${c.code}</div>
+            <div style="font-size:11px;color:var(--muted2);">${c.discount_type === 'percent' ? c.discount_value + '% off' : '$' + c.discount_value + ' off'} · ${c.uses}/${c.max_uses || '∞'} uses${c.active ? '' : ' · <span style="color:var(--red)">Inactive</span>'}</div>
+          </div>
+          ${c.active ? `<button onclick="deactivateEeeCoupon('${c.id}',this)" style="font-size:11px;color:var(--red);background:rgba(224,80,80,.08);border:1px solid rgba(224,80,80,.2);padding:4px 10px;border-radius:var(--r-full);cursor:pointer;font-weight:600">Remove</button>` : ''}
+        </div>`).join('');
+    }
+  } catch(e) {
+    list.innerHTML = `<div style="font-size:12px;color:var(--red);padding:4px 0">${e.message}</div>`;
+  }
+}
+
+async function deactivateEeeCoupon(couponId, btn) {
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    await fetch(`${API_BASE}/api/events/${_eeeCouponEventId}/coupons/${couponId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    loadEeeCoupons(_eeeCouponEventId);
+  } catch(e) { btn.disabled = false; btn.textContent = 'Remove'; }
+}
+
+function addEeeCouponRow() {
+  const id      = Date.now();
+  _eeeCouponRows.push(id);
+  const builder = document.getElementById('eeeCouponBuilder');
+  if (!builder) return;
+  const row = document.createElement('div');
+  row.id = `eee-coupon-row-${id}`;
+  row.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:8px';
+  row.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 80px 70px 28px;gap:6px;align-items:end">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Code</div>
+        <input type="text" placeholder="SAVE20" maxlength="20" autocapitalize="characters"
+          style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:monospace;text-transform:uppercase"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Type</div>
+        <select style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 6px;font-size:12px;color:var(--text)">
+          <option value="percent">% Off</option>
+          <option value="fixed">$ Off</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Amount</div>
+        <input type="number" placeholder="20" min="1" max="100"
+          style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;color:var(--text)">
+      </div>
+      <button type="button" onclick="removeEeeCouponRow(${id})"
+        style="width:28px;height:28px;border-radius:var(--r-sm);background:transparent;border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer">×</button>
+    </div>`;
+  builder.appendChild(row);
+}
+
+function removeEeeCouponRow(id) {
+  document.getElementById(`eee-coupon-row-${id}`)?.remove();
+  _eeeCouponRows = _eeeCouponRows.filter(r => r !== id);
+}
+
+async function saveEeeCoupons() {
+  if (!_eeeCouponEventId || !_eeeCouponRows.length) return;
+  for (const id of _eeeCouponRows) {
+    const row     = document.getElementById(`eee-coupon-row-${id}`);
+    if (!row) continue;
+    const inputs  = row.querySelectorAll('input');
+    const selects = row.querySelectorAll('select');
+    const code    = inputs[0]?.value.trim().toUpperCase();
+    const type    = selects[0]?.value;
+    const amount  = parseFloat(inputs[1]?.value);
+    if (!code || !amount) continue;
+    await fetch(`${API_BASE}/api/events/${_eeeCouponEventId}/coupons`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+      body: JSON.stringify({ code, discount_type: type, discount_value: amount }),
+    });
+  }
 }
 </script>
 
