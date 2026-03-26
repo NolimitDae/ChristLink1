@@ -566,83 +566,47 @@ function forumExpired(ev) {
   return Date.now() > new Date(ev.end_date).getTime() + 30 * 24 * 60 * 60 * 1000;
 }
 
-app.get('/api/events/:id/forum', async (req, res) => {
-  // Get event to check forum_enabled and expiry
-  const { data: ev } = await supabaseAdmin
-    .from('events')
-    .select('id, forum_enabled, end_date, status')
-    .eq('id', req.params.id)
-    .single();
-
-  if (!ev) return res.status(404).json({ error: 'Event not found.' });
-
-  // Check if forum has expired (30 days after event end)
-  let expired = false;
-  if (ev.end_date) {
-    const expiry = new Date(ev.end_date).getTime() + 30 * 24 * 60 * 60 * 1000;
-    expired = Date.now() > expiry;
-  }
-
-  // Trust the DB value directly. The startup backfill ensures all published
-  // events have forum_enabled = true unless the host explicitly disabled it.
-  if (!ev.forum_enabled) {
-    return res.json({ enabled: false, expired: false, posts: [] });
-  }
-
-  if (expired) {
-    return res.json({ enabled: true, expired: true, posts: [] });
-  }
-
+// GET forum posts
+app.get('/api/events/:id/forum', requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('event_forum_posts')
-    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .select('id, content, created_at, user_id, profiles(full_name, avatar_url, avatar_color)')
     .eq('event_id', req.params.id)
-    .order('created_at', { ascending: true });
-
+    .order('created_at', { ascending: true })
+    .limit(200);
   if (error) return res.status(500).json({ error: error.message });
-
-  const posts = (data || []).map(p => ({
-    ...p,
-    author_name:         p.profiles?.full_name || 'Member',
-    author_avatar_url:   p.profiles?.avatar_url,
-    author_avatar_color: p.profiles?.avatar_color,
-  }));
-
-  res.json({ enabled: true, expired: false, posts });
+  res.json({ posts: data || [] });
 });
 
+// POST a message
 app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
-  const { body } = req.body;
-  if (!body?.trim()) return res.status(400).json({ error: 'Message body required.' });
-  const { data: ev } = await supabaseAdmin
-    .from('events').select('id, status, forum_enabled, end_date').eq('id', req.params.id).single();
-  if (!ev) return res.status(404).json({ error: 'Event not found.' });
-  if (!ev.forum_enabled) return res.status(403).json({ error: 'Forum is not enabled for this event.' });
-  if (ev.end_date) {
-    const expiry = new Date(ev.end_date).getTime() + 30 * 24 * 60 * 60 * 1000;
-    if (Date.now() > expiry) return res.status(403).json({ error: 'This forum has expired.' });
-  }
+  const { content } = req.body;
+  if (!content?.trim()) return res.status(400).json({ error: 'Content required.' });
   const { data, error } = await supabaseAdmin
     .from('event_forum_posts')
-    .insert({ event_id: req.params.id, author_id: req.userId, body: body.trim() })
-    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .insert({ event_id: req.params.id, user_id: req.userId, content: content.trim() })
+    .select('id, content, created_at, user_id')
     .single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.json({
-    ...data,
-    author_name:         data.profiles?.full_name || 'Member',
-    author_avatar_url:   data.profiles?.avatar_url,
-    author_avatar_color: data.profiles?.avatar_color,
-  });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
+// DELETE a message (own only)
+app.delete('/api/forum/:postId', requireAuth, async (req, res) => {
+  const { data: post } = await supabaseAdmin
+    .from('event_forum_posts').select('user_id').eq('id', req.params.postId).single();
+  if (!post || post.user_id !== req.userId)
+    return res.status(403).json({ error: 'Not your message.' });
+  await supabaseAdmin.from('event_forum_posts').delete().eq('id', req.params.postId);
+  res.json({ success: true });
+});
+
+// Legacy delete route (event-scoped) — kept for backward compatibility
 app.delete('/api/events/:eventId/forum/:postId', requireAuth, async (req, res) => {
   const { data: post } = await supabaseAdmin
-    .from('event_forum_posts').select('author_id, event_id, events(host_id)')
-    .eq('id', req.params.postId).single();
-  if (!post) return res.status(404).json({ error: 'Post not found.' });
-  if (post.author_id !== req.userId && post.events?.host_id !== req.userId)
-    return res.status(403).json({ error: 'Not authorized.' });
+    .from('event_forum_posts').select('user_id').eq('id', req.params.postId).single();
+  if (!post || post.user_id !== req.userId)
+    return res.status(403).json({ error: 'Not your message.' });
   await supabaseAdmin.from('event_forum_posts').delete().eq('id', req.params.postId);
   res.json({ success: true });
 });

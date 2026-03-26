@@ -94,7 +94,7 @@ input, textarea, select { font-size: max(16px, 1em) !important; }
 /* Explicit 16px on key fields */
 input.field, textarea.field, select.field,
 .reply-input, .post-field,
-#forumPostBody, #postInput, .otp-box,
+#postInput, .otp-box,
 #authEmail, #authName, #manualCodeInput,
 #heroSearch, #browseSearch { font-size: 16px !important; }
 button { cursor: pointer; touch-action: manipulation; }
@@ -515,54 +515,283 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 /* ═══════════════════════════════════════════════════════════
    EVENT DETAIL PAGE
 ═══════════════════════════════════════════════════════════ */
-#page-event-detail,#page-event-forum{padding-top:0}
-#page-event-forum.active {
+#page-event-detail{padding-top:0}
+/* ── FORUM / GROUP CHAT ─────────────────────────────────── */
+#page-forum {
   display: flex;
   flex-direction: column;
-  height: 100svh;
+  height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  width: 100%;
-  z-index: 500;
-  will-change: transform, height;
-  transform: translateY(0);
-  transition: height 0ms, transform 0ms;
+  background: var(--bg);
 }
-@supports (-webkit-touch-callout: none) {
-  #page-event-forum.active {
-    height: -webkit-fill-available;
-  }
-}
-/* ── Forum scroll area ───────────────────────────────────── */
-#forumScrollArea {
-  flex: 1;
-  min-height: 0; /* critical — lets flex child shrink below content */
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  width: 100%;
-}
-/* ── Forum input bar — always visible above keyboard ─────── */
-#forumInput {
+.forum-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  width: 100%;
-  box-sizing: border-box;
-  border-top: 1px solid var(--border);
-  padding: 10px 12px;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom));
-  background: var(--surface2);
-  position: relative;
   z-index: 10;
 }
-#forumInput > div { width: 100%; box-sizing: border-box; position: relative; }
-#forumInput textarea {
-  font-size: 16px !important;
-  line-height: 1.5;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  -webkit-text-size-adjust: 100%;
+.forum-topbar-back {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px 6px 8px;
+  border-radius: var(--r-full);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
+.forum-topbar-info   { flex: 1; min-width: 0; }
+.forum-topbar-title {
+  font-size: 15px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.forum-topbar-sub {
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+.forum-topbar-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  padding: 3px 9px;
+  flex-shrink: 0;
+}
+.forum-messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+.forum-date-sep {
+  text-align: center;
+  margin: 10px 0 6px;
+  flex-shrink: 0;
+}
+.forum-date-sep span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  padding: 3px 12px;
+}
+.forum-msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  max-width: 100%;
+}
+.forum-msg-row.own { flex-direction: row-reverse; }
+.forum-msg-av {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #000;
+  flex-shrink: 0;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.forum-msg-av img    { width:100%;height:100%;object-fit:cover; }
+.forum-msg-row.own .forum-msg-av { display: none; }
+.forum-msg-body { display:flex;flex-direction:column;max-width:72%; }
+.forum-msg-row.own .forum-msg-body { align-items: flex-end; }
+.forum-msg-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 3px;
+  padding-left: 12px;
+}
+.forum-bubble {
+  padding: 9px 13px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: break-word;
+  cursor: default;
+}
+.forum-msg-row:not(.own) .forum-bubble {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+.forum-msg-row.own .forum-bubble {
+  background: var(--gold);
+  color: #000;
+  border-bottom-right-radius: 4px;
+  cursor: pointer;
+}
+.forum-msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 0 4px;
+}
+.forum-msg-time { font-size: 10px; color: var(--muted); }
+.forum-msg-dots {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  color: var(--muted);
+  padding: 0;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.forum-msg-dots:hover,
+.forum-msg-dots:active { background: var(--surface2); color: var(--text); }
+.forum-msg-popup {
+  position: absolute;
+  bottom: 28px;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35);
+  overflow: hidden;
+  z-index: 100;
+  min-width: 130px;
+  display: none;
+  animation: forumPopupIn .12s ease;
+}
+.forum-msg-popup.open { display: block; }
+@keyframes forumPopupIn {
+  from { opacity:0; transform: scale(.92) translateY(4px); }
+  to   { opacity:1; transform: scale(1)   translateY(0);   }
+}
+.forum-popup-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 11px 14px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  text-align: left;
+  transition: background .12s;
+  color: var(--text);
+}
+.forum-popup-item:hover  { background: var(--surface2); }
+.forum-popup-item.danger { color: #ef4444; }
+.forum-msg-dots-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.forum-input-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 10;
+  transition: transform .1s;
+}
+.forum-input-wrap {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  display: flex;
+  align-items: flex-end;
+  padding: 6px 14px;
+  min-height: 40px;
+  transition: border-color .15s;
+}
+.forum-input-wrap:focus-within { border-color: var(--gold); }
+.forum-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.4;
+  font-family: var(--font-body);
+  min-height: 22px;
+  max-height: 100px;
+  overflow-y: auto;
+  padding: 0;
+  -webkit-text-fill-color: var(--text);
+}
+.forum-textarea::placeholder { color: var(--muted); }
+.forum-send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  transition: opacity .15s, transform .1s;
+}
+.forum-send-btn:active  { transform: scale(.92); opacity: .85; }
+.forum-send-btn:disabled{ opacity: .35; cursor: default; }
+.forum-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+  padding: 40px 24px;
+}
+.forum-empty-icon { font-size: 36px; opacity: .5; }
 /* ── Select dropdown — prevent iOS zoom + custom arrow ──── */
 select.field {
   font-size: 16px !important;
@@ -3073,60 +3302,44 @@ button, a, [onclick],
 </div>
 
 <!-- EVENT FORUM PAGE -->
-<div class="page" id="page-event-forum" style="padding:0;flex-direction:column">
-
-  <!-- Header -->
-  <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;padding:calc(var(--safe-t) + 14px) 16px 14px;border-bottom:1px solid var(--border);background:var(--bg)">
-    <button onclick="goTo('event-detail')"
-      style="display:flex;align-items:center;gap:5px;height:38px;padding:0 14px 0 10px;border-radius:var(--r-full);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0;touch-action:manipulation">
+<div class="page" id="page-forum">
+  <!-- Sticky top bar -->
+  <div class="forum-topbar">
+    <button class="forum-topbar-back" onclick="closeForum()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
       Back to Event
     </button>
-    <div style="min-width:0">
-      <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.2">Forum</div>
-      <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="forumEventName">—</div>
+    <div class="forum-topbar-info">
+      <div class="forum-topbar-title" id="forumEventTitle">Forum</div>
+      <div class="forum-topbar-sub"   id="forumEventSub">—</div>
+    </div>
+    <div class="forum-topbar-badge" id="forumMemberCount"></div>
+  </div>
+  <!-- Messages -->
+  <div class="forum-messages" id="forumMessages">
+    <div class="forum-empty" id="forumEmpty">
+      <div class="forum-empty-icon">💬</div>
+      <div>No messages yet.<br>Be the first to say something!</div>
     </div>
   </div>
-
-  <!-- Scrollable posts -->
-  <div id="forumScrollArea">
-    <div id="forumLoading" style="text-align:center;padding:60px 0">
-      <div class="spinner spinner-gold" style="margin:0 auto"></div>
-    </div>
-    <div id="forumPosts" style="display:none;padding:0 0 8px"></div>
-    <div id="forumEmpty" style="display:none;text-align:center;padding:60px 24px;color:var(--muted2)">
-      <div style="font-size:40px;margin-bottom:12px">💬</div>
-      <div style="font-weight:600;font-size:16px">No posts yet</div>
-      <div style="font-size:13px;margin-top:6px">Be the first to start the conversation!</div>
-    </div>
-    <div id="forumExpiredMsg" style="display:none;text-align:center;padding:60px 24px;color:var(--muted2)">
-      <div style="font-size:40px;margin-bottom:12px">🔒</div>
-      <div style="font-weight:600;font-size:16px">Forum has closed</div>
-      <div style="font-size:13px;margin-top:6px">This forum expired 30 days after the event ended.</div>
-    </div>
-  </div>
-
-  <!-- Sticky input bar — floats above keyboard on iOS Safari -->
-  <div id="forumInput" style="display:none">
-    <div style="position:relative;width:100%;box-sizing:border-box">
-      <textarea id="forumPostBody"
-        placeholder="Write something…"
+  <!-- Input bar -->
+  <div class="forum-input-bar" id="forumInputBar">
+    <div class="forum-input-wrap">
+      <textarea
+        class="forum-textarea"
+        id="forumTextarea"
+        placeholder="Message…"
         rows="1"
-        enterkeyhint="send"
-        autocorrect="on"
-        autocapitalize="sentences"
-        spellcheck="true"
-        style="display:block;width:100%;margin:0;resize:none;font-size:16px;min-height:44px;max-height:120px;overflow-y:auto;line-height:1.5;padding:10px 52px 10px 16px;box-sizing:border-box;background:var(--surface2);border:1.5px solid var(--border2);border-radius:var(--r-full);color:var(--text);font-family:var(--font-body);-webkit-appearance:none;outline:none;"
-        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
-      ></textarea>
-      <button
-        style="position:absolute;right:8px;bottom:4px;width:36px;height:36px;border-radius:50%;background:var(--gold);border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;cursor:pointer;"
-        onclick="submitForumPost()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-        </svg>
-      </button>
+        maxlength="1000"
+        oninput="autoResizeForumTextarea(this)"
+        onkeydown="forumTextareaKeydown(event)"></textarea>
     </div>
+    <button class="forum-send-btn" id="forumSendBtn" onclick="submitForumPost()" disabled>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
   </div>
 </div>
 
@@ -3577,13 +3790,13 @@ function goTo(page) {
   if (curr?.id) prevPage = curr.id.replace('page-', '');
   // Reset browseReady when leaving browse so re-navigation always fetches fresh events
   if (curr?.id === 'page-browse') browseReady = false;
-  // Stop forum live updates when leaving the forum page
-  if (curr?.id === 'page-event-forum') stopForumLive();
+  // Stop forum polling when leaving the forum page
+  if (curr?.id === 'page-forum') { clearInterval(forumPolling); forumPolling = null; }
   curr.classList.remove('active');
   next.classList.add('active');
 
   // update tab bar — hide on full-screen pages
-  const noTab = ['event-detail','event-forum'];
+  const noTab = ['event-detail','forum'];
   document.getElementById('tabbar').style.display = noTab.includes(page) ? 'none' : '';
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   const tab = document.getElementById('tab-' + page);
@@ -3596,7 +3809,7 @@ function goTo(page) {
   let hashPage;
   if (page === 'home') hashPage = '';
   else if (page === 'event-detail' && selectedEvent?.id) hashPage = `event/${selectedEvent.id}`;
-  else if (page === 'event-forum' && forumEventId) hashPage = `forum/${forumEventId}`;
+  else if (page === 'forum' && forumEventId) hashPage = `forum/${forumEventId}`;
   else hashPage = page;
   if (window.location.hash.replace('#','') !== hashPage) {
     history.replaceState({}, '', hashPage ? `#${hashPage}` : window.location.pathname);
@@ -3636,7 +3849,7 @@ function restorePageFromHash() {
     loadEventForumById(parts[1]);
     return;
   }
-  const valid = ['home','browse','community','host','profile','event-detail','event-forum'];
+  const valid = ['home','browse','community','host','profile','event-detail','forum'];
   if (raw && valid.includes(parts[0])) goTo(parts[0]);
 }
 window.addEventListener('hashchange', restorePageFromHash);
@@ -4829,34 +5042,8 @@ async function loadForumCount(eventId) {
 }
 
 // ── Live update state ─────────────────────────────────────────
-let _forumChannel   = null;
-let _forumPollTimer = null;
 let _commChannel    = null;
 let _commPollTimer  = null;
-
-function startForumLive(eventId) {
-  stopForumLive();
-  // Supabase Realtime — instant updates
-  try {
-    _forumChannel = sb.channel(`forum-${eventId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_forum_posts', filter: `event_id=eq.${eventId}` },
-        () => loadForumPosts(true))
-      .subscribe();
-  } catch(e) { /* realtime not enabled — fall through to polling */ }
-  // Polling fallback — refresh every 8 s while on the forum page
-  _forumPollTimer = setInterval(() => {
-    if (document.getElementById('page-event-forum')?.classList.contains('active')) {
-      loadForumPosts(true);
-    } else {
-      stopForumLive();
-    }
-  }, 8000);
-}
-
-function stopForumLive() {
-  if (_forumChannel)   { try { sb.removeChannel(_forumChannel); } catch(e){} _forumChannel = null; }
-  if (_forumPollTimer) { clearInterval(_forumPollTimer); _forumPollTimer = null; }
-}
 
 function startCommunityLive() {
   stopCommunityLive();
@@ -4885,164 +5072,243 @@ function stopCommunityLive() {
 // Clean up all Realtime channels and poll timers on page unload
 // to avoid WebSocket leaks / orphaned subscriptions in the Supabase dashboard.
 window.addEventListener('beforeunload', () => {
-  stopForumLive();
+  clearInterval(forumPolling);
   stopCommunityLive();
 });
+
+// ── EVENT FORUM (GROUP CHAT) ──────────────────────────────────
+let forumPosts   = [];
+let forumPolling = null;
+
+function openForum(eventId, eventName, eventSub) {
+  forumEventId = eventId;
+  forumPosts   = [];
+  document.getElementById('forumEventTitle').textContent = eventName || 'Forum';
+  document.getElementById('forumEventSub').textContent   = eventSub  || '';
+  const msgArea = document.getElementById('forumMessages');
+  msgArea.innerHTML = `
+    <div class="forum-empty" id="forumEmpty">
+      <div class="forum-empty-icon">💬</div>
+      <div>No messages yet.<br>Be the first to say something!</div>
+    </div>`;
+  const ta = document.getElementById('forumTextarea');
+  if (ta) { ta.value = ''; ta.style.height = ''; }
+  document.getElementById('forumSendBtn').disabled = true;
+  goTo('forum');
+  loadForumPosts();
+  // Poll for new messages every 8 seconds
+  clearInterval(forumPolling);
+  forumPolling = setInterval(loadForumPosts, 8000);
+  // iOS keyboard — push input bar above keyboard
+  if (window.visualViewport) {
+    window._forumVVH = () => {
+      const bar = document.getElementById('forumInputBar');
+      if (!bar) return;
+      const offset = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+      bar.style.transform = offset > 50 ? `translateY(-${offset}px)` : '';
+    };
+    window.visualViewport.addEventListener('resize', window._forumVVH);
+    window.visualViewport.addEventListener('scroll', window._forumVVH);
+  }
+}
 
 function openEventForum() {
   if (!selectedEvent) return;
   forumEventId = selectedEvent.id;
   forumIsHost  = selectedEvent.host_id === currentUser?.id;
-  document.getElementById('forumEventName').textContent = selectedEvent.name || '';
-  document.getElementById('forumPosts').innerHTML = '';
-  document.getElementById('forumPosts').style.display      = 'none';
-  document.getElementById('forumEmpty').style.display      = 'none';
-  document.getElementById('forumExpiredMsg').style.display = 'none';
-  document.getElementById('forumInput').style.display      = 'none';
-  document.getElementById('forumLoading').style.display    = 'block';
-  goTo('event-forum');
-  loadForumPosts(false);
-  startForumLive(forumEventId);
+  const eventDate = selectedEvent.start_date
+    ? new Date(selectedEvent.start_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+    : '';
+  openForum(selectedEvent.id, selectedEvent.name, eventDate);
 }
 
-async function loadForumPosts(silent = false) {
-  try {
-    const res  = await fetch(`${API_BASE}/api/events/${forumEventId}/forum`);
-    const data = await res.json();
-    if (!silent) document.getElementById('forumLoading').style.display = 'none';
-    if (data.expired) {
-      document.getElementById('forumExpiredMsg').style.display = 'block'; return;
-    }
-    if (data.enabled === false) {
-      if (!silent) {
-        const empty = document.getElementById('forumEmpty');
-        const isHost = selectedEvent?.host_id === currentUser?.id;
-        empty.innerHTML = `<div style="font-size:32px;margin-bottom:8px">💬</div>
-          <div style="font-weight:600;margin-bottom:6px">Forum not enabled</div>
-          <div style="font-size:13px;color:var(--muted2)">${isHost ? 'Enable it in Edit Event.' : 'The host hasn\'t enabled the forum.'}</div>`;
-        empty.style.display = 'block';
-      }
-      return;
-    }
-    const posts = data.posts || [];
-    const postsEl = document.getElementById('forumPosts');
-    const emptyEl = document.getElementById('forumEmpty');
-    if (posts.length === 0) {
-      postsEl.style.display = 'none';
-      emptyEl.innerHTML = `<div style="font-size:40px;margin-bottom:12px">💬</div>
-        <div style="font-weight:600;font-size:16px">No posts yet</div>
-        <div style="font-size:13px;margin-top:4px">Be the first to start the conversation!</div>`;
-      emptyEl.style.display = 'block';
-    } else {
-      emptyEl.style.display = 'none';
-      // Only re-render if post count changed (avoids scroll reset on no-op refreshes)
-      const current = postsEl.querySelectorAll('[data-post-id]').length;
-      if (current !== posts.length) {
-        const wasAtBottom = postsEl.scrollHeight - postsEl.scrollTop <= postsEl.clientHeight + 60;
-        renderForumPosts(posts);
-        if (wasAtBottom || silent) postsEl.scrollTop = postsEl.scrollHeight;
-      }
-    }
-    if (!silent) document.getElementById('forumLoading').style.display = 'none';
-    if (currentUser) document.getElementById('forumInput').style.display = 'flex';
-  } catch {
-    if (!silent) {
-      document.getElementById('forumLoading').style.display = 'none';
-      document.getElementById('forumEmpty').style.display   = 'block';
-    }
+function closeForum() {
+  clearInterval(forumPolling);
+  forumPolling = null;
+  if (window.visualViewport && window._forumVVH) {
+    window.visualViewport.removeEventListener('resize', window._forumVVH);
+    window.visualViewport.removeEventListener('scroll', window._forumVVH);
   }
+  const bar = document.getElementById('forumInputBar');
+  if (bar) bar.style.transform = '';
+  if (selectedEvent?.id) goTo('event-detail');
+  else goTo('home');
 }
 
-function renderForumPosts(posts) {
-  const el = document.getElementById('forumPosts');
-  el.innerHTML = '';
-  posts.forEach(p => el.appendChild(makeForumPost(p)));
-  el.style.display = 'block';
-}
-
-function makeForumPost(p) {
-  const wrap = document.createElement('div');
-  wrap.dataset.postId = p.id;
-  wrap.style.cssText = 'display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)';
-
-  const name  = p.profiles?.full_name || p.author_name || 'Member';
-  const avBg  = p.profiles?.avatar_color || p.author_avatar_color || 'var(--gold)';
-  const avUrl = p.profiles?.avatar_url  || p.author_avatar_url;
-  const isOwn = currentUser && p.author_id === currentUser.id;
-  // Delete allowed only for: post author OR event host
-  const canDel = isOwn || forumIsHost;
-  const time  = new Date(p.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-
-  // Avatar
-  const avEl = document.createElement('div');
-  avEl.style.cssText = 'flex-shrink:0;width:40px;height:40px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#000';
-  if (avUrl) {
-    avEl.innerHTML = `<img src="${avUrl}" style="width:100%;height:100%;object-fit:cover">`;
-  } else {
-    avEl.style.background = avBg;
-    avEl.textContent = name.charAt(0).toUpperCase();
-  }
-
-  // Content
-  const content = document.createElement('div');
-  content.style.cssText = 'flex:1;min-width:0';
-  content.innerHTML = `
-    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-bottom:4px">
-      <span style="font-size:14px;font-weight:700;color:var(--text)">${escapeHtml(name)}</span>
-      <span style="font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0">${time}</span>
-    </div>
-    <div style="font-size:15px;line-height:1.6;color:var(--text);word-break:break-word;white-space:pre-wrap">${escapeHtml(p.body)}</div>`;
-
-  if (canDel) {
-    const delBtn = document.createElement('button');
-    delBtn.textContent = 'Delete';
-    delBtn.style.cssText = 'margin-top:6px;display:inline-block;font-size:12px;font-weight:500;color:var(--red);background:none;border:none;padding:4px 0;cursor:pointer;touch-action:manipulation';
-    delBtn.onclick = () => deleteForumPost(p.id, wrap);
-    content.appendChild(delBtn);
-  }
-
-  wrap.appendChild(avEl);
-  wrap.appendChild(content);
-  return wrap;
-}
-
-async function submitForumPost() {
-  if (!currentUser) { openAuth('signin'); return; }
-  const body = document.getElementById('forumPostBody').value.trim();
-  if (!body) return;
+async function loadForumPosts() {
+  if (!forumEventId) return;
   try {
-    const res = await fetch(`${API_BASE}/api/events/${forumEventId}/forum`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
-      body: JSON.stringify({ body }),
-    });
-    const data = await res.json();
-    if (!res.ok) { showToast(data.error || 'Post failed', 'error'); return; }
-    document.getElementById('forumPostBody').value = '';
-    document.getElementById('forumEmpty').style.display = 'none';
-    const postsEl = document.getElementById('forumPosts');
-    postsEl.style.display = 'block';
-    postsEl.appendChild(makeForumPost(data));
-    postsEl.scrollTop = postsEl.scrollHeight;
-    loadForumCount(forumEventId);
-  } catch { showToast('Could not post. Try again.', 'error'); }
-}
-
-async function deleteForumPost(postId, wrapEl) {
-  if (!confirm('Delete this post?')) return;
-  try {
-    const res = await fetch(`${API_BASE}/api/events/${forumEventId}/forum/${postId}`, {
-      method: 'DELETE',
+    const res  = await fetch(`${API_BASE}/api/events/${forumEventId}/forum`, {
       headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
     });
-    if (res.ok) {
-      wrapEl.remove();
-      loadForumCount(forumEventId);
-    } else {
-      const d = await res.json();
-      showToast(d.error || 'Could not delete', 'error');
+    if (!res.ok) return;
+    const data  = await res.json();
+    const posts = data.posts || data || [];
+    if (posts.length === forumPosts.length) return;
+    forumPosts = posts;
+    renderForumMessages(posts);
+  } catch(e) { console.warn('[forum load]', e.message); }
+}
+
+function renderForumMessages(posts) {
+  const msgArea     = document.getElementById('forumMessages');
+  const wasAtBottom = msgArea.scrollHeight - msgArea.scrollTop - msgArea.clientHeight < 80;
+  const authors = new Set(posts.map(p => p.user_id));
+  const badge   = document.getElementById('forumMemberCount');
+  if (badge) badge.textContent = authors.size > 0 ? `${authors.size} member${authors.size !== 1 ? 's' : ''}` : '';
+  if (posts.length === 0) {
+    msgArea.innerHTML = `
+      <div class="forum-empty">
+        <div class="forum-empty-icon">💬</div>
+        <div>No messages yet.<br>Be the first to say something!</div>
+      </div>`;
+    return;
+  }
+  let html        = '';
+  let lastDateStr = '';
+  posts.forEach(post => {
+    const isOwn   = post.user_id === currentUser?.id;
+    const name    = post.profiles?.full_name || 'Member';
+    const avUrl   = post.profiles?.avatar_url;
+    const avColor = post.profiles?.avatar_color || 'var(--gold)';
+    const initial = name.charAt(0).toUpperCase();
+    const ts      = new Date(post.created_at);
+    const dateStr = ts.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+    const timeStr = ts.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    if (dateStr !== lastDateStr) {
+      lastDateStr = dateStr;
+      html += `<div class="forum-date-sep"><span>${dateStr}</span></div>`;
     }
-  } catch { showToast('Could not delete. Try again.', 'error'); }
+    const avHtml = avUrl
+      ? `<div class="forum-msg-av"><img src="${escapeHtml(avUrl)}" alt=""></div>`
+      : `<div class="forum-msg-av" style="background:${avColor}">${initial}</div>`;
+    html += `
+      <div class="forum-msg-row ${isOwn ? 'own' : ''}" data-id="${post.id}">
+        ${!isOwn ? avHtml : ''}
+        <div class="forum-msg-body">
+          ${!isOwn ? `<div class="forum-msg-name">${escapeHtml(name)}</div>` : ''}
+          <div class="forum-bubble">
+            ${escapeHtml(post.content || '')}
+          </div>
+          <div class="forum-msg-meta">
+            <span class="forum-msg-time">${timeStr}</span>
+            ${isOwn ? `
+            <div class="forum-msg-dots-wrap">
+              <button class="forum-msg-dots" onclick="forumDotsToggle(event,'${post.id}')" title="More">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="5"  cy="12" r="2"/>
+                  <circle cx="12" cy="12" r="2"/>
+                  <circle cx="19" cy="12" r="2"/>
+                </svg>
+              </button>
+              <div class="forum-msg-popup" id="popup-${post.id}">
+                <button class="forum-popup-item danger" onclick="forumDotsDelete('${post.id}')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                  Delete
+                </button>
+              </div>
+            </div>` : ''}
+          </div>
+        </div>
+      </div>`;
+  });
+  msgArea.innerHTML = html;
+  if (wasAtBottom || forumPosts.length <= 1) {
+    requestAnimationFrame(() => { msgArea.scrollTop = msgArea.scrollHeight; });
+  }
+}
+
+function forumDotsToggle(e, postId) {
+  e.stopPropagation();
+  const popup = document.getElementById(`popup-${postId}`);
+  if (!popup) return;
+  const isOpen = popup.classList.contains('open');
+  document.querySelectorAll('.forum-msg-popup.open').forEach(p => p.classList.remove('open'));
+  if (!isOpen) popup.classList.add('open');
+}
+
+function forumDotsDelete(postId) {
+  document.querySelectorAll('.forum-msg-popup.open').forEach(p => p.classList.remove('open'));
+  deleteForumPost(postId);
+}
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.forum-msg-popup.open').forEach(p => p.classList.remove('open'));
+});
+
+async function submitForumPost() {
+  const ta      = document.getElementById('forumTextarea');
+  const sendBtn = document.getElementById('forumSendBtn');
+  const content = ta?.value.trim();
+  if (!content || !forumEventId) return;
+  sendBtn.disabled = true;
+  ta.value         = '';
+  ta.style.height  = '';
+  const optimistic = {
+    id:         `opt-${Date.now()}`,
+    content,
+    user_id:    currentUser?.id,
+    created_at: new Date().toISOString(),
+    profiles:   {
+      full_name:    profileData?.full_name || 'You',
+      avatar_url:   profileData?.avatar_url,
+      avatar_color: profileData?.avatar_color,
+    },
+  };
+  forumPosts = [...forumPosts, optimistic];
+  renderForumMessages(forumPosts);
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${forumEventId}/forum`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+      body:    JSON.stringify({ content }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      showToast(err.error || 'Could not send.', 'error');
+      forumPosts = forumPosts.filter(p => p.id !== optimistic.id);
+      renderForumMessages(forumPosts);
+    } else {
+      forumPosts = forumPosts.filter(p => p.id !== optimistic.id);
+      await loadForumPosts();
+    }
+  } catch(e) {
+    showToast('Network error.', 'error');
+    forumPosts = forumPosts.filter(p => p.id !== optimistic.id);
+    renderForumMessages(forumPosts);
+  }
+  sendBtn.disabled = !ta.value.trim();
+  ta.focus();
+}
+
+async function deleteForumPost(postId) {
+  if (!postId || postId.startsWith('opt-')) return;
+  try {
+    await fetch(`${API_BASE}/api/forum/${postId}`, {
+      method:  'DELETE',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    forumPosts = forumPosts.filter(p => p.id !== postId);
+    renderForumMessages(forumPosts);
+  } catch(e) { showToast('Could not delete.', 'error'); }
+}
+
+function autoResizeForumTextarea(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 100) + 'px';
+  document.getElementById('forumSendBtn').disabled = !ta.value.trim();
+}
+
+function forumTextareaKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
+    e.preventDefault();
+    submitForumPost();
+  }
 }
 
 function switchPTab(el, tab) {
@@ -8224,77 +8490,6 @@ window.goTo = function(page) {
   }
 };
 
-// ── FORUM LAYOUT — Safari URL bar + keyboard handler ──────
-(function initForumLayout() {
-  const getPage   = () => document.getElementById('page-event-forum');
-  const getScroll = () => document.getElementById('forumScrollArea');
-
-  let _rafId = null;
-  function applyHeight() {
-    if (_rafId) cancelAnimationFrame(_rafId);
-    _rafId = requestAnimationFrame(() => {
-      const p = getPage();
-      if (!p || !p.classList.contains('active')) return;
-      const vv = window.visualViewport;
-      if (vv) {
-        p.style.height    = vv.height + 'px';
-        p.style.transform = `translateY(${vv.offsetTop}px)`;
-      } else {
-        p.style.height    = window.innerHeight + 'px';
-        p.style.transform = 'translateY(0)';
-      }
-      // Scroll to bottom so input stays visible
-      const s = getScroll();
-      if (s) s.scrollTop = s.scrollHeight;
-    });
-  }
-
-  function resetLayout() {
-    const p = getPage();
-    if (p) { p.style.height = ''; p.style.transform = ''; }
-  }
-
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', applyHeight);
-    window.visualViewport.addEventListener('scroll', applyHeight);
-  }
-  window.addEventListener('resize', applyHeight);
-
-  // focusin fires immediately on tap — before visualViewport resize (100–300ms later)
-  // Staggered timeouts catch Safari's multi-stage keyboard animation
-  document.addEventListener('focusin', (e) => {
-    if (e.target?.id !== 'forumPostBody') return;
-    applyHeight();
-    setTimeout(applyHeight, 100);
-    setTimeout(applyHeight, 300);
-    setTimeout(applyHeight, 600);
-    // Scroll the textarea into view
-    setTimeout(() => {
-      e.target.scrollIntoView({ block: 'end', behavior: 'smooth' });
-      const s = getScroll();
-      if (s) s.scrollTop = s.scrollHeight;
-    }, 350);
-  });
-
-  document.addEventListener('focusout', (e) => {
-    if (e.target?.id !== 'forumPostBody') return;
-    setTimeout(applyHeight, 50);
-    setTimeout(applyHeight, 200);
-    setTimeout(resetLayout, 400);
-    setTimeout(applyHeight, 420);
-  });
-
-  const _prevGoTo = window.goTo;
-  window.goTo = function(pg) {
-    if (pg !== 'event-forum') resetLayout();
-    _prevGoTo(pg);
-    if (pg === 'event-forum') {
-      requestAnimationFrame(applyHeight);
-      setTimeout(applyHeight, 150);
-      setTimeout(applyHeight, 500);
-    }
-  };
-})();
 
 // ── EVENT SALES ──────────────────────────────────────────────
 async function openEventSales(eventId) {
