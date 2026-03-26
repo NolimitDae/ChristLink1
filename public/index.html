@@ -5361,17 +5361,8 @@ async function loadForumCount(eventId) {
     const el      = document.getElementById('detailForumCount');
     const section = document.getElementById('detailForumSection');
     if (!el) return;
-    // Only hide when host has explicitly disabled it (enabled === false).
-    // undefined/error states keep the section visible.
-    if (data.enabled === false) {
-      if (section) section.style.display = 'none';
-      return;
-    }
-    if (section) section.style.display = 'block';
-    if (data.expired)              el.textContent = 'Forum closed';
-    else if (data.error)           el.textContent = 'Chat with people going';
-    else if (data.posts?.length)   el.textContent = `${data.posts.length} post${data.posts.length !== 1 ? 's' : ''}`;
-    else                           el.textContent = 'Be the first to post!';
+    if (data.posts?.length)   el.textContent = `${data.posts.length} post${data.posts.length !== 1 ? 's' : ''}`;
+    else                      el.textContent = 'Be the first to post!';
   } catch {
     const el = document.getElementById('detailForumCount');
     if (el) el.textContent = 'Chat with people going';
@@ -5864,10 +5855,15 @@ function viewDetail(ev) {
     dhAv.textContent = (ev.host_name||'H').charAt(0).toUpperCase();
     if (ev.host_avatar_color) dhAv.style.background = ev.host_avatar_color;
   }
-  // Show forum section immediately; loadForumCount will hide it if disabled
-  document.getElementById('detailForumSection').style.display = 'block';
-  document.getElementById('detailForumCount').textContent = 'Loading…';
-  loadForumCount(ev.id);
+  // Only show forum section if host has explicitly enabled it
+  const forumSection = document.getElementById('detailForumSection');
+  if (ev.forum_enabled) {
+    forumSection.style.display = 'block';
+    document.getElementById('detailForumCount').textContent = 'Loading…';
+    loadForumCount(ev.id);
+  } else {
+    forumSection.style.display = 'none';
+  }
   document.getElementById('detailDesc').textContent = ev.description || 'No description provided.';
 
   // Gallery section
