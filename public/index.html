@@ -4491,7 +4491,7 @@ function makeTicketCard(t) {
 
 function makeRsvpCard(r) {
   const el = document.createElement('div');
-  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px';
+  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;cursor:pointer';
   const fmtDate = r.event_start_date
     ? new Date(r.event_start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
     : 'Date TBD';
@@ -4508,10 +4508,18 @@ function makeRsvpCard(r) {
           <span style="font-size:11px;color:var(--muted)">Free</span>
         </div>
       </div>
-      <button onclick="cancelRsvpFromTickets('${r.event_id}',this)" style="flex-shrink:0;font-size:12px;font-weight:600;color:var(--muted2);background:transparent;border:1px solid var(--border);padding:7px 12px;border-radius:var(--r-full)">
+      <button onclick="event.stopPropagation();cancelRsvpFromTickets('${r.event_id}',this)" style="flex-shrink:0;font-size:12px;font-weight:600;color:var(--muted2);background:transparent;border:1px solid var(--border);padding:7px 12px;border-radius:var(--r-full)">
         Cancel
       </button>
     </div>`;
+  el.onclick = () => {
+    if (r.event_id) {
+      fetch(`${API_BASE}/api/events/${r.event_id}`)
+        .then(res => res.json())
+        .then(ev => { viewDetail(ev); goTo('event-detail'); })
+        .catch(() => showToast('Could not load event', 'error'));
+    }
+  };
   return el;
 }
 
