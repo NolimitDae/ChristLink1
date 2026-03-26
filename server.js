@@ -568,47 +568,66 @@ function forumExpired(ev) {
 
 // GET forum posts
 app.get('/api/events/:id/forum', requireAuth, async (req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from('event_forum_posts')
-    .select('id, content, created_at, user_id, profiles(full_name, avatar_url, avatar_color)')
-    .eq('event_id', req.params.id)
-    .order('created_at', { ascending: true })
-    .limit(200);
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ posts: data || [] });
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('event_forum_posts')
+      .select('id, content, created_at, user_id, profiles(full_name, avatar_url, avatar_color)')
+      .eq('event_id', req.params.id)
+      .order('created_at', { ascending: true })
+      .limit(200);
+    if (error) { console.error('[forum GET]', error.message); return res.status(500).json({ error: error.message }); }
+    res.json({ posts: data || [] });
+  } catch (e) {
+    console.error('[forum GET crash]', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // POST a message
 app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
-  const { content } = req.body;
-  if (!content?.trim()) return res.status(400).json({ error: 'Content required.' });
-  const { data, error } = await supabaseAdmin
-    .from('event_forum_posts')
-    .insert({ event_id: req.params.id, user_id: req.userId, content: content.trim() })
-    .select('id, content, created_at, user_id')
-    .single();
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  try {
+    const { content } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: 'Content required.' });
+    const { data, error } = await supabaseAdmin
+      .from('event_forum_posts')
+      .insert({ event_id: req.params.id, user_id: req.userId, content: content.trim() })
+      .select('id, content, created_at, user_id')
+      .single();
+    if (error) { console.error('[forum POST]', error.message); return res.status(500).json({ error: error.message }); }
+    res.json(data);
+  } catch (e) {
+    console.error('[forum POST crash]', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // DELETE a message (own only)
 app.delete('/api/forum/:postId', requireAuth, async (req, res) => {
-  const { data: post } = await supabaseAdmin
-    .from('event_forum_posts').select('user_id').eq('id', req.params.postId).single();
-  if (!post || post.user_id !== req.userId)
-    return res.status(403).json({ error: 'Not your message.' });
-  await supabaseAdmin.from('event_forum_posts').delete().eq('id', req.params.postId);
-  res.json({ success: true });
+  try {
+    const { data: post } = await supabaseAdmin
+      .from('event_forum_posts').select('user_id').eq('id', req.params.postId).single();
+    if (!post || post.user_id !== req.userId)
+      return res.status(403).json({ error: 'Not your message.' });
+    await supabaseAdmin.from('event_forum_posts').delete().eq('id', req.params.postId);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[forum DELETE crash]', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Legacy delete route (event-scoped) — kept for backward compatibility
 app.delete('/api/events/:eventId/forum/:postId', requireAuth, async (req, res) => {
-  const { data: post } = await supabaseAdmin
-    .from('event_forum_posts').select('user_id').eq('id', req.params.postId).single();
-  if (!post || post.user_id !== req.userId)
-    return res.status(403).json({ error: 'Not your message.' });
-  await supabaseAdmin.from('event_forum_posts').delete().eq('id', req.params.postId);
-  res.json({ success: true });
+  try {
+    const { data: post } = await supabaseAdmin
+      .from('event_forum_posts').select('user_id').eq('id', req.params.postId).single();
+    if (!post || post.user_id !== req.userId)
+      return res.status(403).json({ error: 'Not your message.' });
+    await supabaseAdmin.from('event_forum_posts').delete().eq('id', req.params.postId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ════════════════════════════════════════════════════════════

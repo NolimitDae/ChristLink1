@@ -5284,9 +5284,13 @@ async function submitForumPost() {
       await loadForumPosts();
     }
   } catch(e) {
-    showToast('Network error.', 'error');
+    console.error('[forum submit]', e);
+    showToast(e.message || 'Could not send message.', 'error');
     forumPosts = forumPosts.filter(p => p.id !== optimistic.id);
     renderForumMessages(forumPosts);
+    ta.value = content; // restore what the user typed
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 100) + 'px';
   }
   sendBtn.disabled = !ta.value.trim();
   ta.focus();
