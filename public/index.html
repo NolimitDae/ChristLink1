@@ -1765,6 +1765,47 @@ button, a, [onclick],
   max-width: none;
   overflow-x: auto;
 }
+
+/* ── Universal back button ── */
+.page-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px 0 10px;
+  border-radius: var(--r-full);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all .18s;
+  margin-bottom: 16px;
+}
+.page-back-btn:hover, .page-back-btn:active {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Scanner sheet — prevent any horizontal overflow */
+#scannerSheet .sheet {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+#scannerSheet * {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+#scannerVideo {
+  display: block;
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
 </style>
 </head>
 <body>
@@ -1932,6 +1973,10 @@ button, a, [onclick],
 ═══════════════════════════════════════════════════ -->
 <div class="page" id="page-browse">
   <div class="page-head">
+    <button class="page-back-btn" onclick="goTo('home')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Home
+    </button>
     <div class="page-h1">Explore Events</div>
     <div class="page-sub">Discover faith gatherings near you</div>
   </div>
@@ -1995,6 +2040,12 @@ button, a, [onclick],
   <div id="host-form" style="display:block">
     <!-- TYPE SELECTION — shown before steps -->
     <div id="hostTypeSelect" style="padding:24px 20px 40px;display:flex;flex-direction:column;align-items:center">
+      <div style="width:100%;max-width:380px;margin-bottom:8px">
+        <button class="page-back-btn" onclick="goTo('home')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Home
+        </button>
+      </div>
       <div style="font-size:28px;margin-bottom:8px">✝</div>
       <div style="font-family:var(--font-display);font-size:24px;font-weight:800;margin-bottom:6px;text-align:center">Host a Gathering</div>
       <div style="font-size:14px;color:var(--muted2);margin-bottom:32px;text-align:center">What kind of event are you creating?</div>
@@ -2183,6 +2234,14 @@ button, a, [onclick],
             <div class="rev-row"><span class="rev-label">Stripe fee</span><span class="rev-val" id="prevSf">—</span></div>
             <div class="rev-row net"><span class="rev-label">You receive</span><span class="rev-val" id="prevNet">—</span></div>
           </div>
+          <!-- ── COUPON CODES ── -->
+          <div id="couponSection" style="margin-bottom:18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-size:14px;font-weight:600">Discount Codes</div>
+              <button class="btn btn-ghost btn-sm" type="button" onclick="addCouponRow()">+ Add Code</button>
+            </div>
+            <div id="couponBuilder"></div>
+          </div>
         </div>
 
         <!-- Forum toggle -->
@@ -2281,6 +2340,10 @@ button, a, [onclick],
 ═══════════════════════════════════════════════════ -->
 <div class="page" id="page-community">
   <div class="page-head" style="margin-bottom:0">
+    <button class="page-back-btn" onclick="goTo('home')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Home
+    </button>
     <div class="page-h1">Community</div>
     <div class="page-sub">Prayers, testimonies & encouragement</div>
   </div>
@@ -2323,6 +2386,12 @@ button, a, [onclick],
 
   <!-- content (hidden until logged in) -->
   <div id="prof-content" style="display:none">
+    <div style="padding:12px 20px 0">
+      <button class="page-back-btn" onclick="goTo('home')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Home
+      </button>
+    </div>
     <div class="profile-hero">
       <div class="profile-top">
         <div class="profile-av" id="profAv">?</div>
@@ -2680,6 +2749,20 @@ button, a, [onclick],
       <div class="breakdown-row" id="bdTaxRow" style="display:none"><span class="breakdown-label">Tax</span><span id="bdTax">—</span></div>
       <div class="breakdown-row" style="padding-top:14px"><span>Total</span><span id="bdTotal" style="color:var(--gold)">—</span></div>
 
+      <!-- Coupon code input -->
+      <div style="margin:16px 0 4px">
+        <div style="display:flex;gap:8px">
+          <input type="text" id="couponInput" class="field"
+            placeholder="Coupon code (optional)"
+            style="margin:0;flex:1;height:44px;font-size:14px;text-transform:uppercase;font-family:monospace"
+            oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+            maxlength="20">
+          <button class="btn btn-outline btn-sm" style="height:44px;padding:0 16px;flex-shrink:0"
+            onclick="applyCoupon()">Apply</button>
+        </div>
+        <div id="couponMsg" style="font-size:12px;margin-top:6px;display:none"></div>
+      </div>
+
       <div style="margin:20px 0 6px;font-size:12px;color:var(--muted2);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Payment</div>
       <div class="card-wrap" id="cardWrap">
         <div id="cardEl"></div>
@@ -2902,68 +2985,64 @@ button, a, [onclick],
   </div>
 </div>
 
-<!-- SCANNER SHEET (for hosts) -->
-<div class="overlay" id="scannerSheet">
-  <div class="sheet" style="max-height:95dvh">
-    <div class="sheet-handle"></div>
-    <div class="sheet-head">
+<!-- SCANNER SHEET — compact, single-screen, no overflow -->
+<div class="sheet-overlay" id="scannerSheet" onclick="if(event.target===this)closeScannerSheet()">
+  <div class="sheet" style="max-height:92dvh;overflow:hidden;max-width:100vw;box-sizing:border-box;display:flex;flex-direction:column">
+    <div class="sheet-header" style="padding:14px 16px 10px;flex-shrink:0">
       <div>
-        <div class="sheet-title">Scan Tickets</div>
-        <div style="font-size:13px;color:var(--muted)" id="scannerEventName">—</div>
+        <div class="sheet-title" style="font-size:16px">Scan Tickets</div>
+        <div id="scannerEventName" style="font-size:12px;color:var(--muted);margin-top:1px">—</div>
       </div>
       <button class="sheet-close" onclick="closeScannerSheet()">×</button>
     </div>
-    <div class="sheet-body" style="padding-bottom:32px">
-      <!-- camera viewfinder -->
-      <div style="position:relative;width:100%;border-radius:var(--r-lg);overflow:hidden;background:#000;margin-bottom:16px" id="scannerViewWrap">
-        <video id="scannerVideo" style="width:100%;display:block;border-radius:var(--r-lg)" autoplay muted playsinline></video>
+    <div id="scannerStats" style="display:flex;gap:0;flex-shrink:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+      <div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid var(--border)">
+        <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--gold)" id="statScanned">0</div>
+        <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Scanned</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid var(--border)">
+        <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text)" id="statTotal">0</div>
+        <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Total</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:8px 4px">
+        <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--green)" id="statPct">0%</div>
+        <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Check-in</div>
+      </div>
+    </div>
+    <div style="overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;display:flex;flex-direction:column">
+      <div style="position:relative;width:100%;max-width:100vw;background:#000;flex-shrink:0">
+        <video id="scannerVideo" style="width:100%;height:180px;object-fit:cover;display:block" autoplay muted playsinline></video>
         <canvas id="scannerCanvas" style="display:none"></canvas>
-        <!-- aim overlay -->
         <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-          <div id="scanAim" style="width:200px;height:200px;border-radius:16px;border:3px solid rgba(201,168,76,.8);box-shadow:0 0 0 9999px rgba(0,0,0,.45)">
-            <div style="position:absolute;top:-3px;left:-3px;width:24px;height:24px;border-top:4px solid var(--gold);border-left:4px solid var(--gold);border-radius:4px 0 0 0"></div>
-            <div style="position:absolute;top:-3px;right:-3px;width:24px;height:24px;border-top:4px solid var(--gold);border-right:4px solid var(--gold);border-radius:0 4px 0 0"></div>
-            <div style="position:absolute;bottom:-3px;left:-3px;width:24px;height:24px;border-bottom:4px solid var(--gold);border-left:4px solid var(--gold);border-radius:0 0 0 4px"></div>
-            <div style="position:absolute;bottom:-3px;right:-3px;width:24px;height:24px;border-bottom:4px solid var(--gold);border-right:4px solid var(--gold);border-radius:0 0 4px 0"></div>
+          <div style="width:140px;height:140px;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.45)"></div>
+        </div>
+        <div id="scannerCamStatus" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:var(--r-full);white-space:nowrap">Starting camera…</div>
+      </div>
+      <div id="scanResult" style="display:none;margin:12px 16px 0;border-radius:var(--r-md);overflow:hidden;flex-shrink:0">
+        <div id="scanResultInner" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+          <div id="scanResultIcon" style="font-size:22px;flex-shrink:0">✓</div>
+          <div style="flex:1;min-width:0">
+            <div id="scanResultTitle" style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+            <div id="scanResultSub" style="font-size:12px;color:var(--muted);margin-top:1px"></div>
           </div>
         </div>
-        <!-- scan status bar -->
-        <div id="scanStatusBar" style="position:absolute;bottom:0;left:0;right:0;padding:12px 16px;background:linear-gradient(to top,rgba(0,0,0,.8),transparent);text-align:center">
-          <span id="scanStatusText" style="font-size:13px;font-weight:600;color:#fff">Point camera at ticket QR code</span>
-        </div>
       </div>
-
-      <!-- scan result card -->
-      <div id="scanResultCard" style="display:none;border-radius:var(--r-lg);padding:18px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div id="scanResultIcon" style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">✓</div>
-          <div>
-            <div id="scanResultTitle" style="font-weight:700;font-size:16px">—</div>
-            <div id="scanResultSub" style="font-size:13px;color:var(--muted2)">—</div>
-          </div>
-        </div>
-        <div id="scanResultDetails" style="font-size:13px;color:var(--muted2);line-height:1.7"></div>
-        <button class="btn btn-gold" style="margin-top:14px" onclick="resumeScanning()">Scan Next Ticket</button>
-      </div>
-
-      <!-- manual code entry -->
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px">
-        <div style="font-size:12px;font-weight:600;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Manual Entry</div>
+      <div style="padding:12px 16px;flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Manual Entry</div>
         <div style="display:flex;gap:8px">
-          <input type="text" id="manualCodeInput" class="field" placeholder="Enter ticket code…" style="margin:0;flex:1;height:44px;font-size:14px" oninput="this.value=this.value.toUpperCase()">
-          <button class="btn btn-gold btn-sm" style="flex-shrink:0;height:44px;padding:0 16px" onclick="verifyManualCode()">Verify</button>
+          <input id="manualCodeInput" type="text" placeholder="Ticket code…" class="field"
+            style="flex:1;margin:0;height:40px;font-size:14px;font-family:monospace;text-transform:uppercase"
+            oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+          <button onclick="manualScanLookup()"
+            style="height:40px;padding:0 16px;background:var(--gold);color:#000;font-size:13px;font-weight:700;border:none;border-radius:var(--r-sm);cursor:pointer;flex-shrink:0;touch-action:manipulation">
+            Check In
+          </button>
         </div>
       </div>
-
-      <!-- attendance count -->
-      <div style="display:flex;gap:10px;margin-top:14px">
-        <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;text-align:center">
-          <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--green)" id="scanCountCheckedIn">0</div>
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">Checked In</div>
-        </div>
-        <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;text-align:center">
-          <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--muted2)" id="scanCountTotal">0</div>
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">Total RSVPs</div>
+      <div style="padding:0 16px 20px;flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Recent Check-ins</div>
+        <div id="recentScansList">
+          <div data-empty style="font-size:13px;color:var(--muted);padding:8px 0">No check-ins yet.</div>
         </div>
       </div>
     </div>
@@ -3064,6 +3143,12 @@ button, a, [onclick],
 ═══════════════════════════════════════════════════ -->
 <div class="page" id="page-admin">
   <div class="page-head" style="margin-bottom:0">
+    <div style="padding-bottom:12px">
+      <button class="page-back-btn" onclick="goTo('profile')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Profile
+      </button>
+    </div>
     <div style="display:flex;align-items:center;gap:10px">
       <div style="width:36px;height:36px;border-radius:var(--r-sm);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;font-size:18px">⚙️</div>
       <div>
@@ -3599,6 +3684,13 @@ function closeSheet(id) {
     cardEl.destroy();
     cardEl = null;
   }
+  if (id === 'ticketSheet') {
+    _appliedCoupon = null;
+    const couponInput = document.getElementById('couponInput');
+    if (couponInput) couponInput.value = '';
+    const couponMsg = document.getElementById('couponMsg');
+    if (couponMsg) couponMsg.style.display = 'none';
+  }
 }
 document.querySelectorAll('.overlay, .sheet-overlay').forEach(o => {
   o.addEventListener('click', e => {
@@ -4026,6 +4118,11 @@ function makeHostedEventCard(ev) {
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
         ${ev.status === 'published' ? '<button onclick="event.stopPropagation();openScannerSheet(\''+ev.id+'\',\''+encodeURIComponent(ev.name||'')+'\')" style="font-size:11px;font-weight:600;color:#4EC98C;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);padding:5px 10px;border-radius:var(--r-full)">Scan</button>' : ''}
+        ${ev.status === 'published' ? `
+          <button onclick="event.stopPropagation();openEventSales('${ev.id}')"
+            style="font-size:11px;font-weight:600;color:#A882FF;background:rgba(168,130,255,.1);border:1px solid rgba(168,130,255,.25);padding:5px 10px;border-radius:var(--r-full)">
+            Sales
+          </button>` : ''}
         <button onclick="event.stopPropagation();openEditEventSheet(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:#7EB8F7;background:rgba(126,184,247,.1);border:1px solid rgba(126,184,247,.25);padding:5px 10px;border-radius:var(--r-full)">Edit</button>
         <button onclick="event.stopPropagation();viewDetail(${JSON.stringify(ev).replace(/"/g,'&quot;')})" style="font-size:11px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:5px 10px;border-radius:var(--r-full)">View</button>
         <button onclick="event.stopPropagation();shareEventById('${ev.id}','${escapeAttr(ev.name)}','${escapeAttr(ev.description||'')}',this)" style="font-size:11px;font-weight:600;color:var(--muted2);background:var(--surface3);border:1px solid var(--border);padding:5px 10px;border-radius:var(--r-full)">Share</button>
@@ -4063,10 +4160,23 @@ function makeTicketCard(t) {
         </div>
         ${t.status === 'confirmed' ? `<div style="font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.12em;margin-top:4px;font-family:monospace">CODE: ${shortCode}</div>` : ''}
       </div>
-      <button onclick="event.stopPropagation();openTicketViewer(${JSON.stringify(t).replace(/"/g,'&quot;')})" style="flex-shrink:0;font-size:12px;font-weight:700;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:8px 12px;border-radius:var(--r-full)">
-        View QR
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button onclick="openTicketViewer(${JSON.stringify(t).replace(/"/g,'&quot;')})"
+        style="flex:1;height:38px;border-radius:var(--r-full);background:var(--gold);color:#000;font-size:13px;font-weight:700;border:none;cursor:pointer;touch-action:manipulation">
+        View Ticket
       </button>
-    </div>`;
+      <button onclick="event.stopPropagation();shareEventById('${t.event_id}')"
+        style="width:38px;height:38px;border-radius:var(--r-full);background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;flex-shrink:0"
+        title="Share event">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+      </button>
+    </div>
+  </div>`;
   el.onclick = () => openTicketViewer(t);
   return el;
 }
@@ -5887,6 +5997,7 @@ async function processPayment() {
         ticketTypeId: (selectedEvent.ticket_types?.[selectedTicketTypeIdx] ?? selectedEvent.ticket_types?.[0])?.id,
         qty:          currentQty,
         buyerEmail:   currentUser?.email,
+        couponCode: _appliedCoupon ? document.getElementById('couponInput')?.value.trim() : null,
       }),
     });
 
@@ -5903,6 +6014,14 @@ async function processPayment() {
     });
     if (error) throw new Error(error.message);
     if (paymentIntent.status === 'succeeded') {
+      // Immediately confirm ticket via fallback route (don't wait for webhook)
+      try {
+        await fetch(`${API_BASE}/api/tickets/confirm-by-intent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+          body: JSON.stringify({ paymentIntentId: paymentIntent.id }),
+        });
+      } catch(e) { console.warn('[confirm fallback]', e.message); }
       closeSheet('ticketSheet');
       spawnConfetti();
       const codeDisplay = ticketCode ? ` · Code: ${ticketCode}` : '';
@@ -6484,6 +6603,15 @@ async function publishEvent() {
     }
 
     // ── 6. Done ───────────────────────────────────────────────
+    // Save coupon codes
+    const coupons = getCouponRowData();
+    for (const c of coupons) {
+      await fetch(`${API_BASE}/api/events/${event.id}/coupons`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+        body: JSON.stringify(c),
+      });
+    }
     listingFeePaymentMethodId = null; listingFeeHostEmail = null; listingFeePaid = false;
     publishMode = 'publish'; // reset for next use
     if (isScheduled) {
@@ -6855,11 +6983,15 @@ function openTicketViewer(t) {
     badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 14px;border-radius:999px;background:rgba(255,255,255,.05);color:#666070;border:1px solid rgba(255,255,255,.08)';
   }
 
-  // Use stored code if available, else derive from payment intent or ticket id
-  const shortCode = t.code
-    || (t.stripe_payment_intent ? t.stripe_payment_intent.replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase() : null)
-    || t.id?.replace(/-/g,'').slice(0,8).toUpperCase()
-    || 'TICKET';
+  // Always generate a displayable code — never show blank QR
+  const shortCode = (
+    t.code ||
+    (t.stripe_payment_intent
+      ? t.stripe_payment_intent.replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase()
+      : null) ||
+    t.id?.replace(/-/g,'').slice(0,8).toUpperCase() ||
+    'TICKET01'
+  );
   document.getElementById('tvTicketCode').textContent = shortCode;
 
   // Build QR payload — JSON with all verification data
@@ -6874,12 +7006,28 @@ function openTicketViewer(t) {
 
   // Render QR code onto canvas
   const canvas = document.getElementById('tvQrCanvas');
+  // Ensure canvas is visible before rendering
+  canvas.style.display = 'block';
+  canvas.width  = Math.min(window.innerWidth - 100, 240);
+  canvas.height = canvas.width;
   QRCode.toCanvas(canvas, qrPayload, {
-    width: Math.min(window.innerWidth - 100, 240),
+    width:  Math.min(window.innerWidth - 100, 240),
     margin: 2,
-    color: { dark: '#1A1400', light: '#FFFFFF' },
+    color:  { dark: '#1A1400', light: '#FFFFFF' },
     errorCorrectionLevel: 'H',
-  }, err => { if (err) console.error('QR error:', err); });
+  }, err => {
+    if (err) {
+      console.error('QR error:', err);
+      // Fallback: show the code as large text if QR fails
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#1A1400';
+      ctx.font = `bold ${Math.floor(canvas.width / 8)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(shortCode, canvas.width/2, canvas.height/2);
+    }
+  });
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   document.getElementById('tvWalletWrap').style.display = isIOS ? 'block' : 'none';
@@ -6905,14 +7053,18 @@ function openScannerSheet(eventId, eventName) {
   scannerPaused  = false;
   scannerCheckedIn = 0;
   scannedCodes.clear();
-  document.getElementById('scannerEventName').textContent = eventName || 'Event';
-  document.getElementById('scanResultCard').style.display = 'none';
-  document.getElementById('scanCountCheckedIn').textContent = '0';
-  document.getElementById('manualCodeInput').value = '';
-  setScanStatus('Point camera at ticket QR code', '');
+  const manInput = document.getElementById('manualCodeInput');
+  if (manInput) manInput.value = '';
+  updateScannerStats(0, 0);
+  openSheet('scannerSheet');
+  const scanResult = document.getElementById('scanResult');
+  if (scanResult) scanResult.style.display = 'none';
+  const recentList = document.getElementById('recentScansList');
+  if (recentList) recentList.innerHTML = '<div data-empty style="font-size:13px;color:var(--muted);padding:8px 0">No check-ins yet.</div>';
+  const evNameEl = document.getElementById('scannerEventName');
+  if (evNameEl) evNameEl.textContent = eventName || 'Event';
   // Load attendance counts
   loadAttendanceCounts(eventId);
-  openSheet('scannerSheet');
   setTimeout(startCamera, 300);
 }
 
@@ -6923,9 +7075,8 @@ async function loadAttendanceCounts(eventId) {
     });
     if (res.ok) {
       const d = await res.json();
-      document.getElementById('scanCountTotal').textContent = d.total || 0;
-      document.getElementById('scanCountCheckedIn').textContent = d.checked_in || 0;
       scannerCheckedIn = d.checked_in || 0;
+      updateScannerStats(scannerCheckedIn, d.total || 0);
     }
   } catch {}
 }
@@ -6938,9 +7089,11 @@ async function startCamera() {
     const video = document.getElementById('scannerVideo');
     video.srcObject = scannerStream;
     await video.play();
+    const statusEl = document.getElementById('scannerCamStatus');
+    if (statusEl) statusEl.style.display = 'none';
     startScanLoop();
   } catch(e) {
-    setScanStatus('Camera access denied. Use manual entry below.', 'error');
+    setScanStatus('Camera access denied. Use manual entry below.');
   }
 }
 
@@ -6976,15 +7129,15 @@ function closeScannerSheet() {
 }
 
 function setScanStatus(msg, type = '') {
-  const el = document.getElementById('scanStatusText');
+  const el = document.getElementById('scannerCamStatus');
+  if (!el) return;
   el.textContent = msg;
-  el.style.color = type === 'success' ? '#4EC98C' : type === 'error' ? '#E05050' : '#fff';
 }
 
 function resumeScanning() {
   scannerPaused = false;
-  document.getElementById('scanResultCard').style.display = 'none';
-  setScanStatus('Point camera at ticket QR code', '');
+  const scanResult = document.getElementById('scanResult');
+  if (scanResult) scanResult.style.display = 'none';
 }
 
 async function handleScannedCode(raw) {
@@ -6995,12 +7148,12 @@ async function handleScannedCode(raw) {
 
   const dedupeKey = payload.ticketId || payload.code;
   if (scannedCodes.has(dedupeKey)) {
-    showScanResult('warning', 'Already Scanned', 'This ticket was already checked in this session.', payload);
+    showScanResult('warning', 'Already Scanned', 'This ticket was already checked in this session.');
+    addRecentScan(payload.event_name || payload.code, payload.code || dedupeKey, 'warning');
     return;
   }
 
   scannerPaused = true;
-  setScanStatus('Verifying…', '');
 
   try {
     const res = await fetch(`${API_BASE}/api/tickets/verify`, {
@@ -7013,60 +7166,53 @@ async function handleScannedCode(raw) {
     if (data.valid) {
       scannedCodes.add(dedupeKey);
       scannerCheckedIn++;
-      document.getElementById('scanCountCheckedIn').textContent = scannerCheckedIn;
-      showScanResult('success', 'Valid Ticket ✓', data.message || 'Check-in confirmed.', data.ticket);
+      const total = parseInt(document.getElementById('statTotal')?.textContent) || 0;
+      updateScannerStats(scannerCheckedIn, total);
+      showScanResult('success', 'Valid Ticket ✓', data.message || 'Check-in confirmed.');
+      addRecentScan(data.ticket?.event_name || payload.code, data.ticket?.code || dedupeKey, 'success');
     } else {
-      showScanResult('error', 'Invalid Ticket', data.error || 'This ticket could not be verified.', payload);
+      showScanResult('error', 'Invalid Ticket', data.error || 'This ticket could not be verified.');
+      addRecentScan(payload.code || dedupeKey, dedupeKey, 'error');
     }
+    scannerPaused = false;
   } catch(e) {
     // Offline fallback — verify locally from QR data
     if (payload.status === 'confirmed' && payload.eventId === scannerEventId) {
       scannedCodes.add(dedupeKey);
       scannerCheckedIn++;
-      document.getElementById('scanCountCheckedIn').textContent = scannerCheckedIn;
-      showScanResult('success', 'Valid Ticket ✓ (Offline)', 'Check-in recorded. Will sync when online.', payload);
+      const total = parseInt(document.getElementById('statTotal')?.textContent) || 0;
+      updateScannerStats(scannerCheckedIn, total);
+      showScanResult('success', 'Valid Ticket ✓ (Offline)', 'Check-in recorded. Will sync when online.');
+      addRecentScan(payload.event_name || payload.code, payload.code || dedupeKey, 'success');
     } else {
-      showScanResult('error', 'Cannot Verify', 'Network unavailable. Check ticket manually.', payload);
+      showScanResult('error', 'Cannot Verify', 'Network unavailable. Check ticket manually.');
+      addRecentScan(payload.code || dedupeKey, dedupeKey, 'error');
     }
+    scannerPaused = false;
   }
 }
 
-function showScanResult(type, title, sub, data) {
-  const card   = document.getElementById('scanResultCard');
-  const icon   = document.getElementById('scanResultIcon');
-  const ttl    = document.getElementById('scanResultTitle');
-  const stxt   = document.getElementById('scanResultSub');
-  const details = document.getElementById('scanResultDetails');
-
-  card.style.display = 'block';
-  ttl.textContent  = title;
-  stxt.textContent = sub;
-
-  if (type === 'success') {
-    card.style.cssText   = 'display:block;background:rgba(78,201,140,.08);border:1px solid rgba(78,201,140,.25);border-radius:var(--r-lg);padding:18px;margin-bottom:16px';
-    icon.style.cssText   = 'width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:rgba(78,201,140,.15);color:#4EC98C';
-    icon.textContent     = '✓';
-    setScanStatus('Check-in successful!', 'success');
-  } else if (type === 'error') {
-    card.style.cssText   = 'display:block;background:rgba(224,80,80,.08);border:1px solid rgba(224,80,80,.25);border-radius:var(--r-lg);padding:18px;margin-bottom:16px';
-    icon.style.cssText   = 'width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:rgba(224,80,80,.15);color:#E05050';
-    icon.textContent     = '✕';
-    setScanStatus('Invalid ticket', 'error');
-  } else {
-    card.style.cssText   = 'display:block;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.25);border-radius:var(--r-lg);padding:18px;margin-bottom:16px';
-    icon.style.cssText   = 'width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:rgba(201,168,76,.15);color:#C9A84C';
-    icon.textContent     = '⚠';
-    setScanStatus('Already scanned', '');
-  }
-
-  // Show ticket details
-  const qty  = data?.qty  || data?.quantity || '—';
-  const name = data?.event_name || '—';
-  details.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:4px">
-      <div><span style="color:var(--muted)">Qty:</span> <strong>${qty}</strong></div>
-      <div><span style="color:var(--muted)">Code:</span> <strong>${data?.code || '—'}</strong></div>
-    </div>`;
+function showScanResult(status, title, sub) {
+  const el    = document.getElementById('scanResult');
+  const inner = document.getElementById('scanResultInner');
+  const icon  = document.getElementById('scanResultIcon');
+  const ttl   = document.getElementById('scanResultTitle');
+  const subEl = document.getElementById('scanResultSub');
+  if (!el) return;
+  const colors = {
+    success: { bg: 'rgba(34,197,94,.12)',  border: 'rgba(34,197,94,.3)',  icon: '✓', color: 'var(--green)' },
+    error:   { bg: 'rgba(239,68,68,.12)',  border: 'rgba(239,68,68,.3)',  icon: '✕', color: 'var(--red)'   },
+    warning: { bg: 'rgba(251,191,36,.12)', border: 'rgba(251,191,36,.3)', icon: '⚠', color: 'var(--gold)'  },
+  };
+  const c = colors[status] || colors.error;
+  inner.style.cssText = `padding:12px 14px;display:flex;align-items:center;gap:10px;background:${c.bg};border:1px solid ${c.border};border-radius:var(--r-md)`;
+  icon.style.color    = c.color;
+  icon.textContent    = c.icon;
+  ttl.textContent     = title;
+  subEl.textContent   = sub || '';
+  el.style.display    = 'block';
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
 }
 
 async function verifyManualCode() {
@@ -8134,12 +8280,290 @@ window.goTo = function(page) {
     }
   };
 })();
+
+// ── EVENT SALES ──────────────────────────────────────────────
+async function openEventSales(eventId) {
+  document.getElementById('salesEventName').textContent = 'Loading…';
+  document.getElementById('salesSummaryCards').innerHTML = '';
+  document.getElementById('salesTicketList').innerHTML =
+    '<div style="color:var(--muted);font-size:13px;padding:16px 0">Loading…</div>';
+  document.getElementById('salesRsvpSection').style.display = 'none';
+  document.getElementById('eventSalesSheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  try {
+    const res  = await fetch(`${API_BASE}/api/events/${eventId}/sales`, {
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to load sales');
+    const { event: ev, tickets, rsvps, summary } = data;
+    document.getElementById('salesEventName').textContent = ev.name;
+    const cards = [
+      { label: 'Tickets Sold',   value: summary.totalTicketsSold, color: 'var(--gold)' },
+      { label: 'Free RSVPs',     value: summary.totalRsvps,       color: 'var(--green)' },
+      { label: 'Gross Revenue',  value: `$${(summary.grossRevenue/100).toFixed(2)}`,  color: 'var(--gold)' },
+      { label: 'Your Earnings',  value: `$${(summary.hostEarnings/100).toFixed(2)}`,  color: 'var(--green)' },
+    ];
+    document.getElementById('salesSummaryCards').innerHTML = cards.map(c => `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">${c.label}</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:${c.color}">${c.value}</div>
+      </div>`).join('');
+    const confirmed = tickets.filter(t => t.status === 'confirmed');
+    if (confirmed.length === 0) {
+      document.getElementById('salesTicketList').innerHTML =
+        '<div style="color:var(--muted);font-size:13px;padding:12px 0">No ticket sales yet.</div>';
+    } else {
+      document.getElementById('salesTicketList').innerHTML = confirmed.map(t => {
+        const name    = t.profiles?.full_name || t.buyer_email || 'Unknown';
+        const initial = name.charAt(0).toUpperCase();
+        const avBg    = t.profiles?.avatar_color || 'var(--gold)';
+        const date    = t.confirmed_at
+          ? new Date(t.confirmed_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})
+          : '—';
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)">
+            <div style="width:36px;height:36px;border-radius:50%;background:${avBg};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0;overflow:hidden">
+              ${t.profiles?.avatar_url ? `<img src="${t.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initial}
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(name)}</div>
+              <div style="font-size:11px;color:var(--muted2)">${t.ticket_types?.name || 'Ticket'} · ${t.quantity}x · ${date}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:14px;font-weight:700;color:var(--gold)">$${((t.total_charged_cents||0)/100).toFixed(2)}</div>
+              <div style="font-size:10px;color:var(--muted);font-family:monospace">${t.code || '—'}</div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+    if (rsvps.length > 0) {
+      document.getElementById('salesRsvpSection').style.display = 'block';
+      document.getElementById('salesRsvpList').innerHTML = rsvps.map(r => {
+        const name    = r.profiles?.full_name || r.profiles?.email || 'Member';
+        const initial = name.charAt(0).toUpperCase();
+        const avBg    = r.profiles?.avatar_color || 'var(--gold)';
+        const date    = new Date(r.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)">
+            <div style="width:36px;height:36px;border-radius:50%;background:${avBg};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0;overflow:hidden">
+              ${r.profiles?.avatar_url ? `<img src="${r.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initial}
+            </div>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:600">${escapeHtml(name)}</div>
+              <div style="font-size:11px;color:var(--muted2)">RSVP'd ${date}</div>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:var(--green)">✓ Going</div>
+          </div>`;
+      }).join('');
+    }
+  } catch(e) {
+    document.getElementById('salesTicketList').innerHTML =
+      `<div style="color:var(--red);font-size:13px;padding:12px 0">${e.message}</div>`;
+  }
+}
+
+// ── COUPON BUILDER ────────────────────────────────────────────
+let couponRows = [];
+function addCouponRow() {
+  const id  = Date.now();
+  couponRows.push(id);
+  const builder = document.getElementById('couponBuilder');
+  if (!builder) return;
+  const row = document.createElement('div');
+  row.id = `coupon-row-${id}`;
+  row.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:10px';
+  row.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 90px 80px 32px;gap:8px;align-items:end">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Code</div>
+        <input type="text" placeholder="SAVE20" maxlength="20" autocapitalize="characters"
+          style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;color:var(--text);font-family:monospace;text-transform:uppercase"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Type</div>
+        <select style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 8px;font-size:13px;color:var(--text)">
+          <option value="percent">% Off</option>
+          <option value="fixed">$ Off</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Amount</div>
+        <input type="number" placeholder="20" min="1" max="100"
+          style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;color:var(--text)">
+      </div>
+      <button type="button" onclick="removeCouponRow(${id})"
+        style="width:32px;height:32px;border-radius:var(--r-sm);background:transparent;border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;margin-bottom:2px">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Max Uses <span style="font-weight:400;text-transform:none">(optional)</span></div>
+        <input type="number" placeholder="Unlimited" min="1"
+          style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;color:var(--text)">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Expires <span style="font-weight:400;text-transform:none">(optional)</span></div>
+        <input type="date"
+          style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;color:var(--text)">
+      </div>
+    </div>`;
+  builder.appendChild(row);
+}
+function removeCouponRow(id) {
+  document.getElementById(`coupon-row-${id}`)?.remove();
+  couponRows = couponRows.filter(r => r !== id);
+}
+function getCouponRowData() {
+  return couponRows.map(id => {
+    const row      = document.getElementById(`coupon-row-${id}`);
+    if (!row) return null;
+    const inputs   = row.querySelectorAll('input');
+    const selects  = row.querySelectorAll('select');
+    const code     = inputs[0]?.value.trim().toUpperCase();
+    const type     = selects[0]?.value;
+    const amount   = parseFloat(inputs[1]?.value);
+    const maxUses  = inputs[2]?.value ? parseInt(inputs[2].value) : null;
+    const expires  = inputs[3]?.value || null;
+    if (!code || !amount) return null;
+    return { code, discount_type: type, discount_value: amount, max_uses: maxUses, expires_at: expires };
+  }).filter(Boolean);
+}
+
+let _appliedCoupon = null;
+async function applyCoupon() {
+  const code   = document.getElementById('couponInput')?.value.trim();
+  const msgEl  = document.getElementById('couponMsg');
+  const btn    = document.querySelector('#ticketSheet .btn-outline');
+  if (!code || !selectedEvent) return;
+  btn.disabled = true; btn.textContent = '…';
+  msgEl.style.display = 'none';
+  try {
+    const tt  = selectedEvent.ticket_types?.[selectedTicketTypeIdx] ?? selectedEvent.ticket_types?.[0];
+    const res = await fetch(`${API_BASE}/api/events/${selectedEvent.id}/validate-coupon`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, ticketPriceCents: tt?.price_cents || 0, qty: currentQty }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      msgEl.style.cssText = 'font-size:12px;margin-top:6px;display:block;color:var(--red)';
+      msgEl.textContent   = data.error || 'Invalid code';
+      _appliedCoupon      = null;
+      btn.disabled = false; btn.textContent = 'Apply';
+      return;
+    }
+    _appliedCoupon = data;
+    msgEl.style.cssText = 'font-size:12px;margin-top:6px;display:block;color:var(--green)';
+    msgEl.textContent   = `✓ ${data.label} applied!`;
+    const newTotal = data.newTotal;
+    const pf       = Math.round(newTotal * 0.07);
+    document.getElementById('bdFace').textContent  = `$${(newTotal/100).toFixed(2)}`;
+    document.getElementById('bdPf').textContent    = `$${(pf/100).toFixed(2)}`;
+    document.getElementById('bdTotal').textContent = `$${((newTotal + pf)/100).toFixed(2)}`;
+    document.getElementById('payBtnAmt').textContent = `$${((newTotal + pf)/100).toFixed(2)}`;
+    btn.disabled = false; btn.textContent = 'Applied ✓';
+    btn.style.color = 'var(--green)';
+  } catch(e) {
+    msgEl.style.cssText = 'font-size:12px;margin-top:6px;display:block;color:var(--red)';
+    msgEl.textContent   = 'Could not apply code.';
+    btn.disabled = false; btn.textContent = 'Apply';
+  }
+}
+
+async function shareEventById(eventId) {
+  const url   = `${location.origin}/#event/${eventId}`;
+  const title = 'Check out this event on ChristLink';
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, url });
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link copied!', 'success');
+  } catch {
+    showToast(url, 'info');
+  }
+}
+
+// ── SCANNER STATS & RECENT SCANS ─────────────────────────────
+function updateScannerStats(scanned, total) {
+  const pct = total > 0 ? Math.round((scanned / total) * 100) : 0;
+  const s = document.getElementById('statScanned');
+  const t = document.getElementById('statTotal');
+  const p = document.getElementById('statPct');
+  if (s) s.textContent = scanned;
+  if (t) t.textContent = total;
+  if (p) p.textContent = `${pct}%`;
+}
+
+function addRecentScan(name, code, status) {
+  const list = document.getElementById('recentScansList');
+  if (!list) return;
+  const empty = list.querySelector('[data-empty]');
+  if (empty) empty.remove();
+  const color = status === 'success' ? 'var(--green)' : status === 'warning' ? 'var(--gold)' : 'var(--red)';
+  const icon  = status === 'success' ? '✓' : status === 'warning' ? '⚠' : '✕';
+  const time  = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const row   = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)';
+  row.innerHTML = `
+    <div style="width:24px;height:24px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:12px;color:${color};flex-shrink:0">${icon}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(name || code)}</div>
+      <div style="font-size:10px;color:var(--muted);font-family:monospace">${code}</div>
+    </div>
+    <div style="font-size:10px;color:var(--muted2);flex-shrink:0">${time}</div>`;
+  list.prepend(row);
+  const rows = list.querySelectorAll('div[style]');
+  if (rows.length > 10) rows[rows.length - 1].remove();
+}
+
+async function manualScanLookup() {
+  const code = document.getElementById('manualCodeInput')?.value.trim().toUpperCase();
+  if (!code) return;
+  await handleScannedCode(JSON.stringify({ code, eventId: scannerEventId }));
+  document.getElementById('manualCodeInput').value = '';
+}
 </script>
 
 <!-- ── Image Lightbox ─────────────────────────────────── -->
 <div id="imgLightbox" onclick="closeLightbox()">
   <button id="imgLightboxClose" onclick="closeLightbox()" aria-label="Close">✕</button>
   <img id="imgLightboxImg" src="" alt="Event photo" onclick="event.stopPropagation()">
+</div>
+
+<!-- EVENT SALES SHEET -->
+<div class="sheet-overlay" id="eventSalesSheet" onclick="if(event.target===this)closeSheet('eventSalesSheet')">
+  <div class="sheet" style="max-height:90dvh">
+    <div class="sheet-header">
+      <div>
+        <div class="sheet-title">Event Sales</div>
+        <div style="font-size:13px;color:var(--muted)" id="salesEventName">—</div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet('eventSalesSheet')">×</button>
+    </div>
+    <div class="sheet-body" style="overflow-y:auto;padding-bottom:32px">
+      <!-- Summary cards -->
+      <div id="salesSummaryCards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px"></div>
+      <!-- Ticket list -->
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+        Ticket Sales
+      </div>
+      <div id="salesTicketList"></div>
+      <!-- RSVP list -->
+      <div id="salesRsvpSection" style="margin-top:20px;display:none">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+          Free RSVPs
+        </div>
+        <div id="salesRsvpList"></div>
+      </div>
+    </div>
+  </div>
 </div>
 </body>
 </html>
