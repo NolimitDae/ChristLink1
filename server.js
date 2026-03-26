@@ -404,6 +404,50 @@ app.patch('/api/events/:id/schedule', requireAuth, async (req, res) => {
   res.json(data);
 });
 
+// GET sales breakdown for a specific event (host only)
+app.get('/api/events/:id/sales', requireAuth, async (req, res) => {
+  // Verify requester is the host
+  const { data: ev } = await supabaseAdmin
+    .from('events').select('id, name, host_id, is_paid')
+    .eq('id', req.params.id).single();
+  if (!ev) return res.status(404).json({ error: 'Event not found.' });
+  if (ev.host_id !== req.userId) return res.status(403).json({ error: 'Not your event.' });
+  const { data: tickets } = await supabaseAdmin
+    .from('tickets')
+    .select(`
+      id, quantity, unit_price_cents, total_charged_cents,
+      platform_fee_cents, host_receives_cents, status,
+      confirmed_at, created_at, buyer_email, code,
+      ticket_types ( name ),
+      profiles ( full_name, email, avatar_url, avatar_color )
+    `)
+    .eq('event_id', req.params.id)
+    .order('created_at', { ascending: false });
+  const { data: rsvps } = await supabaseAdmin
+    .from('rsvps')
+    .select('id, created_at, profiles(full_name, email, avatar_url, avatar_color)')
+    .eq('event_id', req.params.id)
+    .eq('status', 'confirmed')
+    .order('created_at', { ascending: false });
+  const confirmed  = (tickets || []).filter(t => t.status === 'confirmed');
+  const totalGross = confirmed.reduce((s, t) => s + (t.total_charged_cents || 0), 0);
+  const totalFees  = confirmed.reduce((s, t) => s + (t.platform_fee_cents || 0), 0);
+  const hostEarns  = confirmed.reduce((s, t) => s + (t.host_receives_cents || 0), 0);
+  const totalQty   = confirmed.reduce((s, t) => s + (t.quantity || 1), 0);
+  res.json({
+    event:   ev,
+    tickets: tickets || [],
+    rsvps:   rsvps   || [],
+    summary: {
+      totalTicketsSold: totalQty,
+      totalRsvps:       (rsvps || []).length,
+      grossRevenue:     totalGross,
+      platformFees:     totalFees,
+      hostEarnings:     hostEarns,
+    },
+  });
+});
+
 // ── My Events (host's own events) ───────────────────────────
 app.get('/api/my-events', requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
@@ -559,6 +603,83 @@ app.post('/api/ticket-types', requireAuth, async (req, res) => {
     .insert({ event_id, name, price_cents, quantity: quantity || null, sold: 0 }).select().single();
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
+});
+
+// ── COUPONS ──────────────────────────────────────────────
+// GET coupons for an event (host only)
+app.get('/api/events/:id/coupons', requireAuth, async (req, res) => {
+  const { data: ev } = await supabaseAdmin
+    .from('events').select('host_id').eq('id', req.params.id).single();
+  if (!ev || ev.host_id !== req.userId)
+    return res.status(403).json({ error: 'Not your event.' });
+  const { data, error } = await supabaseAdmin
+    .from('coupons').select('*').eq('event_id', req.params.id)
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ coupons: data || [] });
+});
+// POST create a coupon
+app.post('/api/events/:id/coupons', requireAuth, async (req, res) => {
+  const { code, discount_type, discount_value, max_uses, expires_at } = req.body;
+  if (!code || !discount_type || !discount_value)
+    return res.status(400).json({ error: 'code, discount_type, discount_value required.' });
+  const { data: ev } = await supabaseAdmin
+    .from('events').select('host_id').eq('id', req.params.id).single();
+  if (!ev || ev.host_id !== req.userId)
+    return res.status(403).json({ error: 'Not your event.' });
+  const { data, error } = await supabaseAdmin.from('coupons').insert({
+    event_id:       req.params.id,
+    host_id:        req.userId,
+    code:           code.trim().toUpperCase(),
+    discount_type,
+    discount_value: Number(discount_value),
+    max_uses:       max_uses || null,
+    expires_at:     expires_at || null,
+    active:         true,
+  }).select().single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+// DELETE / deactivate a coupon
+app.delete('/api/events/:eventId/coupons/:couponId', requireAuth, async (req, res) => {
+  const { data: coupon } = await supabaseAdmin
+    .from('coupons').select('host_id').eq('id', req.params.couponId).single();
+  if (!coupon || coupon.host_id !== req.userId)
+    return res.status(403).json({ error: 'Not your coupon.' });
+  await supabaseAdmin.from('coupons').update({ active: false }).eq('id', req.params.couponId);
+  res.json({ success: true });
+});
+// POST validate a coupon code (called during checkout)
+app.post('/api/events/:id/validate-coupon', async (req, res) => {
+  const { code, ticketPriceCents, qty } = req.body;
+  if (!code) return res.status(400).json({ error: 'Code required.' });
+  const { data: coupon } = await supabaseAdmin
+    .from('coupons')
+    .select('*')
+    .eq('event_id', req.params.id)
+    .eq('code', code.trim().toUpperCase())
+    .eq('active', true)
+    .single();
+  if (!coupon) return res.status(404).json({ error: 'Invalid coupon code.' });
+  if (coupon.expires_at && new Date(coupon.expires_at) < new Date())
+    return res.status(400).json({ error: 'This coupon has expired.' });
+  if (coupon.max_uses && coupon.uses >= coupon.max_uses)
+    return res.status(400).json({ error: 'This coupon has reached its usage limit.' });
+  const face = ticketPriceCents * (qty || 1);
+  const discountCents = coupon.discount_type === 'percent'
+    ? Math.round(face * coupon.discount_value / 100)
+    : Math.min(coupon.discount_value * 100, face);
+  res.json({
+    valid:         true,
+    couponId:      coupon.id,
+    discountType:  coupon.discount_type,
+    discountValue: coupon.discount_value,
+    discountCents,
+    newTotal:      Math.max(0, face - discountCents),
+    label: coupon.discount_type === 'percent'
+      ? `${coupon.discount_value}% off`
+      : `$${(coupon.discount_value).toFixed(2)} off`,
+  });
 });
 
 // ════════════════════════════════════════════════════════════
@@ -863,7 +984,28 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
       return res.status(400).json({ error: `Only ${remaining} ticket${remaining !== 1 ? 's' : ''} remaining.` });
 
     // ── 4. Calculate amounts ──────────────────────────────────────
-    const amounts        = calcAmounts(tt.price_cents, Number(qty), ev.absorb_stripe_fee !== false);
+    // Apply coupon discount if provided
+    let adjustedPriceCents = tt.price_cents;
+    let couponId           = null;
+    let discountCents      = 0;
+    if (req.body.couponCode) {
+      const { data: coupon } = await supabaseAdmin
+        .from('coupons')
+        .select('*')
+        .eq('event_id', eventId)
+        .eq('code', req.body.couponCode.trim().toUpperCase())
+        .eq('active', true)
+        .single();
+      if (coupon && !(coupon.expires_at && new Date(coupon.expires_at) < new Date())
+        && !(coupon.max_uses && coupon.uses >= coupon.max_uses)) {
+        couponId      = coupon.id;
+        discountCents = coupon.discount_type === 'percent'
+          ? Math.round(tt.price_cents * coupon.discount_value / 100)
+          : Math.min(coupon.discount_value * 100, tt.price_cents);
+        adjustedPriceCents = Math.max(0, tt.price_cents - discountCents);
+      }
+    }
+    const amounts        = calcAmounts(adjustedPriceCents, Number(qty), ev.absorb_stripe_fee !== false);
     const idempotencyKey = `pi-${req.userId}-${eventId}-${ticketTypeId}-${qty}-${Date.now()}`;
 
     // ── 5. Create PaymentIntent ───────────────────────────────────
@@ -907,9 +1049,16 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
         status:                 'pending',
         buyer_email:            buyerEmail || req.user.email,
         code:                   ticketCode,
+        coupon_id:      couponId      || null,
+        discount_cents: discountCents || 0,
       })
       .select('id, code')
       .single();
+
+    // Increment coupon use count
+    if (couponId) {
+      await supabaseAdmin.rpc('increment_coupon_uses', { p_coupon_id: couponId });
+    }
 
     res.json({
       clientSecret: intent.client_secret,
@@ -1028,6 +1177,39 @@ app.post('/api/connect-sync', requireAuth, async (req, res) => {
   }
 });
 
+// Fallback route — called by frontend after payment succeeds
+// Confirms the ticket without relying on webhook delivery
+app.post('/api/tickets/confirm-by-intent', requireAuth, async (req, res) => {
+  const { paymentIntentId } = req.body;
+  if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId required.' });
+  try {
+    // Verify the payment intent actually succeeded with Stripe
+    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (intent.status !== 'succeeded') {
+      return res.status(400).json({ error: `Payment status is ${intent.status}, not succeeded.` });
+    }
+    // Confirm the ticket in DB
+    const { data: tickets, error } = await supabaseAdmin
+      .from('tickets')
+      .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+      .eq('stripe_payment_intent', paymentIntentId)
+      .eq('user_id', req.userId)
+      .select('id, code, quantity, ticket_type_id, event_id');
+    if (error) throw error;
+    // Increment sold count
+    if (tickets?.length > 0 && tickets[0].ticket_type_id) {
+      await supabaseAdmin.rpc('increment_tickets_sold', {
+        p_ticket_type_id: tickets[0].ticket_type_id,
+        p_qty: tickets[0].quantity || 1,
+      });
+    }
+    res.json({ confirmed: true, tickets: tickets || [] });
+  } catch (e) {
+    console.error('[confirm-by-intent]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ════════════════════════════════════════════════════════════
 // STRIPE WEBHOOK
 // ════════════════════════════════════════════════════════════
@@ -1044,18 +1226,19 @@ async function handleWebhook(req, res) {
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const pi = event.data.object;
+        console.log('[webhook] payment_intent.succeeded:', pi.id, 'metadata:', pi.metadata);
         if (pi.metadata.type === 'listing_fee') {
           if (pi.metadata.event_id) await supabaseAdmin.from('events')
             .update({ listing_fee_paid: true, listing_payment_id: pi.id }).eq('id', pi.metadata.event_id);
           break;
         }
-        // Only update rows that are still 'pending' — ensures idempotency on webhook replay
-        const { data: updatedTickets } = await supabaseAdmin.from('tickets')
+        const { data: updatedTickets, error: ticketErr } = await supabaseAdmin.from('tickets')
           .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
           .eq('stripe_payment_intent', pi.id)
           .eq('status', 'pending')
           .select('id');
-        // Only increment sold count if we actually changed something (prevents double-count on replay)
+        if (ticketErr) console.error('[webhook] ticket update error:', ticketErr.message);
+        console.log('[webhook] confirmed tickets:', updatedTickets?.length || 0);
         if (pi.metadata.ticket_type_id && updatedTickets?.length > 0) {
           await supabaseAdmin.rpc('increment_tickets_sold', {
             p_ticket_type_id: pi.metadata.ticket_type_id,
