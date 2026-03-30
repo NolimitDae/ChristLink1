@@ -5248,7 +5248,7 @@ function renderForumMessages(posts) {
   let lastDateStr = '';
   let prevUserId  = null;
   posts.forEach(post => {
-    const postUserId = post.user_id || post.author_id;
+    const postUserId = post.user_id;
     const isOwn     = postUserId === currentUser?.id;
     const name      = post.profiles?.full_name || 'Member';
     const avUrl     = post.profiles?.avatar_url;
@@ -5293,7 +5293,7 @@ function renderForumMessages(posts) {
                   style="max-width:220px;max-height:200px;border-radius:12px;display:block;margin-top:${post.content||post.body ? '6px' : '0'}"
                   onerror="this.style.display='none'">`
               : ''}
-            ${escapeHtml(post.content || post.body || '')}
+            ${escapeHtml(post.content || '')}
           </div>
           <div class="forum-msg-meta">
             <span class="forum-msg-time">${timeStr}</span>
@@ -5347,11 +5347,9 @@ async function submitForumPost() {
   const optimistic = {
     id:           `opt-${Date.now()}`,
     content,
-    body:         content,
     image_url:    uploadedImageUrl || null,
     message_type: uploadedImageUrl ? 'image' : 'text',
     user_id:      currentUser?.id,
-    author_id:    currentUser?.id,
     created_at:   new Date().toISOString(),
     profiles: {
       full_name:    profileData?.full_name || currentUser?.email?.split('@')[0] || 'You',

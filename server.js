@@ -571,42 +571,31 @@ app.get('/api/events/:id/forum', requireAuth, async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
       .from('event_forum_posts')
-      .select(`id, body, content, image_url, message_type, created_at, author_id, user_id,
-        profiles!event_forum_posts_author_id_fkey(full_name, avatar_url, avatar_color)`)
+      .select('id, content, image_url, message_type, created_at, user_id, profiles(full_name, avatar_url, avatar_color)')
       .eq('event_id', req.params.id)
       .order('created_at', { ascending: true })
       .limit(200);
 
     if (error) {
-      // Fallback: fetch without FK hint, enrich profiles manually
+      // Fallback: fetch without join, enrich profiles manually
       console.warn('[forum GET] join failed, falling back:', error.message);
       const { data: d2, error: e2 } = await supabaseAdmin
         .from('event_forum_posts')
-        .select('id, body, content, image_url, message_type, created_at, author_id, user_id')
+        .select('id, content, image_url, message_type, created_at, user_id')
         .eq('event_id', req.params.id)
         .order('created_at', { ascending: true })
         .limit(200);
       if (e2) { console.error('[forum GET]', e2.message); return res.status(500).json({ error: e2.message }); }
-      const ids = [...new Set((d2 || []).map(p => p.author_id || p.user_id).filter(Boolean))];
+      const ids = [...new Set((d2 || []).map(p => p.user_id).filter(Boolean))];
       const { data: profs } = ids.length
         ? await supabaseAdmin.from('profiles').select('id, full_name, avatar_url, avatar_color').in('id', ids)
         : { data: [] };
       const pm = Object.fromEntries((profs || []).map(p => [p.id, p]));
-      const posts = (d2 || []).map(p => ({
-        ...p,
-        user_id:  p.user_id || p.author_id,
-        content:  p.content || p.body,
-        profiles: pm[p.author_id || p.user_id] || null,
-      }));
+      const posts = (d2 || []).map(p => ({ ...p, profiles: pm[p.user_id] || null }));
       return res.json({ posts });
     }
 
-    const posts = (data || []).map(p => ({
-      ...p,
-      user_id:  p.user_id || p.author_id,
-      content:  p.content || p.body,
-    }));
-    res.json({ posts });
+    res.json({ posts: data || [] });
   } catch (e) {
     console.error('[forum GET crash]', e.message);
     res.status(500).json({ error: e.message });
@@ -628,19 +617,17 @@ app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
     const insert = {
       event_id:     req.params.id,
       user_id:      req.userId,
-      author_id:    req.userId,
       image_url:    image_url || null,
       message_type: message_type,
+      content:      content?.trim() || null,
       created_at:   new Date().toISOString(),
     };
-    // Support tables with either 'content' or 'body' column
-    if (content?.trim()) { insert.content = content.trim(); insert.body = content.trim(); }
 
     const { data, error } = await supabaseAdmin
       .from('event_forum_posts').insert(insert)
-      .select('id, body, content, image_url, message_type, created_at, author_id, user_id').single();
+      .select('id, content, image_url, message_type, created_at, user_id').single();
     if (error) { console.error('[forum POST]', error.message); return res.status(500).json({ error: error.message }); }
-    res.json({ ...data, content: data.content || data.body, user_id: data.user_id || data.author_id });
+    res.json(data);
   } catch (e) {
     console.error('[forum POST crash]', e.message);
     res.status(500).json({ error: e.message });
@@ -651,10 +638,9 @@ app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
 app.delete('/api/forum/:postId', requireAuth, async (req, res) => {
   try {
     const { data: post } = await supabaseAdmin
-      .from('event_forum_posts').select('author_id, user_id').eq('id', req.params.postId).single();
+      .from('event_forum_posts').select('user_id').eq('id', req.params.postId).single();
     if (!post) return res.status(404).json({ error: 'Post not found.' });
-    const isOwner = post.author_id === req.userId || post.user_id === req.userId;
-    if (!isOwner) return res.status(403).json({ error: 'Not your message.' });
+    if (post.user_id !== req.userId) return res.status(403).json({ error: 'Not your message.' });
     await supabaseAdmin.from('event_forum_posts').delete().eq('id', req.params.postId);
     res.json({ success: true });
   } catch (e) {
@@ -667,10 +653,9 @@ app.delete('/api/forum/:postId', requireAuth, async (req, res) => {
 app.delete('/api/events/:eventId/forum/:postId', requireAuth, async (req, res) => {
   try {
     const { data: post } = await supabaseAdmin
-      .from('event_forum_posts').select('author_id, user_id').eq('id', req.params.postId).single();
+      .from('event_forum_posts').select('user_id').eq('id', req.params.postId).single();
     if (!post) return res.status(404).json({ error: 'Post not found.' });
-    const isOwner = post.author_id === req.userId || post.user_id === req.userId;
-    if (!isOwner) return res.status(403).json({ error: 'Not your message.' });
+    if (post.user_id !== req.userId) return res.status(403).json({ error: 'Not your message.' });
     await supabaseAdmin.from('event_forum_posts').delete().eq('id', req.params.postId);
     res.json({ success: true });
   } catch (e) {
