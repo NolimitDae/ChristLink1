@@ -4489,24 +4489,39 @@ function makeTicketCard(t) {
     </div>
     ${t.status === 'confirmed' ? `
     <div style="padding:0 14px 14px;display:flex;gap:8px">
-      <button onclick="event.stopPropagation();openTicketViewer(_ticketCache['${t.id}'])"
+      <button class="view-ticket-btn"
         style="flex:1;height:40px;border-radius:var(--r-full);background:var(--gold);color:#000;font-size:13px;font-weight:700;border:none;cursor:pointer;touch-action:manipulation">
         🎟 View Ticket
       </button>
-      <button onclick="event.stopPropagation();shareEventById('${t.event_id}','${(t.event_name||'').replace(/'/g,"\\'")}','',this)"
+      <button class="share-event-btn"
         style="width:40px;height:40px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;flex-shrink:0">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       </button>
     </div>` : ''}`;
+  // Wire up buttons with closures — avoids global variable lookups and string-encoding issues
+  const viewBtn = el.querySelector('.view-ticket-btn');
+  if (viewBtn) {
+    viewBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      openTicketViewer(t);
+    });
+  }
+  const shareBtn = el.querySelector('.share-event-btn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      shareEventById(t.event_id, t.event_name || '', '', shareBtn);
+    });
+  }
   // Tapping the card body navigates to the event detail page
-  el.onclick = () => {
+  el.addEventListener('click', () => {
     if (t.event_id) {
       fetch(`${API_BASE}/api/events/${t.event_id}`)
         .then(r => r.json())
         .then(ev => { viewDetail(ev); goTo('event-detail'); })
         .catch(() => showToast('Could not load event', 'error'));
     }
-  };
+  });
   return el;
 }
 
