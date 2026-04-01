@@ -4400,7 +4400,7 @@ async function fetchMyTickets(countOnly = false) {
       return;
     }
     container.innerHTML = '';
-    tickets.forEach(t => container.appendChild(makeTicketCard(t)));
+    tickets.forEach(t => { _ticketCache[t.id] = t; container.appendChild(makeTicketCard(t)); });
     rsvps.forEach(r   => container.appendChild(makeRsvpCard(r)));
   } catch {
     if (countOnly) return;
@@ -4471,7 +4471,6 @@ function makeTicketCard(t) {
   const shortCode = t.code || (t.stripe_payment_intent
     ? t.stripe_payment_intent.replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase()
     : t.id?.replace(/-/g,'').slice(0,8).toUpperCase() || '—');
-  const ticketJson = JSON.stringify(t).replace(/"/g, '&quot;');
   el.innerHTML = `
     <div style="display:flex;gap:12px;padding:14px 16px;align-items:center">
       <div style="width:56px;height:56px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#1A0E38,#0F0F1A);display:flex;align-items:center;justify-content:center;font-size:24px">
@@ -4490,7 +4489,7 @@ function makeTicketCard(t) {
     </div>
     ${t.status === 'confirmed' ? `
     <div style="padding:0 14px 14px;display:flex;gap:8px">
-      <button onclick="event.stopPropagation();openTicketViewer(${ticketJson})"
+      <button onclick="event.stopPropagation();openTicketViewer(_ticketCache['${t.id}'])"
         style="flex:1;height:40px;border-radius:var(--r-full);background:var(--gold);color:#000;font-size:13px;font-weight:700;border:none;cursor:pointer;touch-action:manipulation">
         🎟 View Ticket
       </button>
@@ -7480,12 +7479,13 @@ function openTicketViewer(t) {
 
   // Build QR payload — JSON with all verification data
   const qrPayload = JSON.stringify({
-    ticketId:    t.id,
-    eventId:     t.event_id,
-    userId:      t.user_id,
-    qty:         t.quantity,
-    code:        shortCode,
-    status:      t.status,
+    ticketId:   t.id,
+    eventId:    t.event_id,
+    userId:     t.user_id,
+    qty:        t.quantity,
+    code:       shortCode,
+    status:     t.status,
+    event_name: t.event_name || 'Event',
   });
 
   // Render QR code onto canvas
@@ -7523,6 +7523,7 @@ function openTicketViewer(t) {
 // TICKET SCANNER — FOR HOSTS
 // ═══════════════════════════════════════════════════════════
 let currentViewedTicketId = null; // set by openTicketViewer, used by addToAppleWallet
+const _ticketCache = {}; // id → ticket object, populated by fetchMyTickets
 let scannerStream    = null;
 let scannerLoop      = null;
 let scannerPaused    = false;

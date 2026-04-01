@@ -462,23 +462,32 @@ app.get('/api/my-events', requireAuth, async (req, res) => {
 
 // ── My Tickets (attendee's purchased tickets) ────────────────
 app.get('/api/my-tickets', requireAuth, async (req, res) => {
-  const { data, error } = await supabaseAdmin
+  const { data: ticketRows, error } = await supabaseAdmin
     .from('tickets')
-    .select(`
-      *,
-      events ( name, start_date, city, cover_url ),
-      ticket_types ( name )
-    `)
+    .select('*')
     .eq('user_id', req.userId)
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
-  const tickets = (data || []).map(t => ({
+  if (!ticketRows || ticketRows.length === 0) return res.json({ tickets: [] });
+
+  const eventIds = [...new Set(ticketRows.map(t => t.event_id).filter(Boolean))];
+  const typeIds  = [...new Set(ticketRows.map(t => t.ticket_type_id).filter(Boolean))];
+
+  const [{ data: events }, { data: ticketTypes }] = await Promise.all([
+    supabaseAdmin.from('events').select('id, name, start_date, city, cover_url').in('id', eventIds),
+    supabaseAdmin.from('ticket_types').select('id, name').in('id', typeIds),
+  ]);
+
+  const eventsMap = Object.fromEntries((events || []).map(e => [e.id, e]));
+  const typesMap  = Object.fromEntries((ticketTypes || []).map(tt => [tt.id, tt]));
+
+  const tickets = ticketRows.map(t => ({
     ...t,
-    event_name:       t.events?.name,
-    event_start_date: t.events?.start_date,
-    event_city:       t.events?.city,
-    event_cover_url:  t.events?.cover_url,
-    ticket_type_name: t.ticket_types?.name,
+    event_name:       eventsMap[t.event_id]?.name,
+    event_start_date: eventsMap[t.event_id]?.start_date,
+    event_city:       eventsMap[t.event_id]?.city,
+    event_cover_url:  eventsMap[t.event_id]?.cover_url,
+    ticket_type_name: typesMap[t.ticket_type_id]?.name,
   }));
   res.json({ tickets });
 });
