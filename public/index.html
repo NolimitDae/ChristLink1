@@ -7464,78 +7464,75 @@ function showSuccess(icon, title, msg) {
 let currentViewedTicketId = null; // used by addToAppleWallet
 
 function openTicketViewer(t) {
-  currentViewedTicketId = t.id || null;
+  if (!t) { showToast('Ticket data not available', 'error'); return; }
+  try {
+    currentViewedTicketId = t.id || null;
 
-  // Header + cover
-  document.getElementById('tvEventName').textContent = t.event_name || 'Event';
-  document.getElementById('tvTitle').textContent     = t.event_name || 'Event';
-  document.getElementById('tvDate').textContent      = t.event_start_date
-    ? new Date(t.event_start_date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})
-    : 'Date TBD';
-  document.getElementById('tvLocation').textContent  = t.event_city || '—';
-  document.getElementById('tvQty').textContent       = t.quantity || 1;
-  document.getElementById('tvType').textContent      = t.ticket_type_name || 'General';
-  document.getElementById('tvAmount').textContent    = t.total_charged_cents > 0
-    ? `$${(t.total_charged_cents/100).toFixed(2)}`
-    : 'Free';
+    // Header + cover
+    document.getElementById('tvEventName').textContent = t.event_name || 'Event';
+    document.getElementById('tvTitle').textContent     = t.event_name || 'Event';
+    document.getElementById('tvDate').textContent      = t.event_start_date
+      ? new Date(t.event_start_date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})
+      : 'Date TBD';
+    document.getElementById('tvLocation').textContent  = t.event_city || '—';
+    document.getElementById('tvQty').textContent       = t.quantity || 1;
+    document.getElementById('tvType').textContent      = t.ticket_type_name || 'General';
+    document.getElementById('tvAmount').textContent    = t.total_charged_cents > 0
+      ? `$${(t.total_charged_cents/100).toFixed(2)}`
+      : 'Free';
 
-  // Cover image — clear src when hiding to prevent ghost network requests
-  const coverImg = document.getElementById('tvCoverImg');
-  if (t.event_cover_url) {
-    coverImg.src = t.event_cover_url;
-    coverImg.style.display = 'block';
-    document.getElementById('tvCoverEmoji').style.opacity = '0.15';
-  } else {
-    coverImg.src = '';
-    coverImg.style.display = 'none';
-    document.getElementById('tvCoverEmoji').style.opacity = '0.4';
-  }
+    // Cover image — clear src when hiding to prevent ghost network requests
+    const coverImg = document.getElementById('tvCoverImg');
+    if (t.event_cover_url) {
+      coverImg.src = t.event_cover_url;
+      coverImg.style.display = 'block';
+      document.getElementById('tvCoverEmoji').style.opacity = '0.15';
+    } else {
+      coverImg.src = '';
+      coverImg.style.display = 'none';
+      document.getElementById('tvCoverEmoji').style.opacity = '0.4';
+    }
 
-  // Status badge
-  const badge = document.getElementById('tvStatusBadge');
-  if (t.status === 'confirmed') {
-    badge.textContent = '✓ Confirmed';
-    badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 16px;border-radius:999px;background:rgba(78,201,140,.12);color:#4EC98C;border:1px solid rgba(78,201,140,.3)';
-  } else if (t.status === 'pending') {
-    badge.textContent = '⏳ Pending';
-    badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 16px;border-radius:999px;background:rgba(201,168,76,.12);color:#C9A84C;border:1px solid rgba(201,168,76,.3)';
-  } else {
-    badge.textContent = t.status || 'Unknown';
-    badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 16px;border-radius:999px;background:rgba(255,255,255,.05);color:#888;border:1px solid rgba(255,255,255,.1)';
-  }
+    // Status badge
+    const badge = document.getElementById('tvStatusBadge');
+    if (t.status === 'confirmed') {
+      badge.textContent = '✓ Confirmed';
+      badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 16px;border-radius:999px;background:rgba(78,201,140,.12);color:#4EC98C;border:1px solid rgba(78,201,140,.3)';
+    } else if (t.status === 'pending') {
+      badge.textContent = '⏳ Pending';
+      badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 16px;border-radius:999px;background:rgba(201,168,76,.12);color:#C9A84C;border:1px solid rgba(201,168,76,.3)';
+    } else {
+      badge.textContent = t.status || 'Unknown';
+      badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 16px;border-radius:999px;background:rgba(255,255,255,.05);color:#888;border:1px solid rgba(255,255,255,.1)';
+    }
 
-  // Ticket code — always show something scannable
-  const shortCode = (
-    t.code ||
-    (t.stripe_payment_intent ? t.stripe_payment_intent.replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase() : null) ||
-    t.id?.replace(/-/g,'').slice(0,8).toUpperCase() ||
-    'TICKET01'
-  );
-  document.getElementById('tvTicketCode').textContent = shortCode;
+    // Ticket code — always show something scannable
+    const shortCode = (
+      t.code ||
+      (t.stripe_payment_intent ? t.stripe_payment_intent.replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase() : null) ||
+      t.id?.replace(/-/g,'').slice(0,8).toUpperCase() ||
+      'TICKET01'
+    );
+    document.getElementById('tvTicketCode').textContent = shortCode;
 
-  // QR payload — all fields needed for scanner verification
-  const qrPayload = JSON.stringify({
-    ticketId:   t.id,
-    eventId:    t.event_id,
-    userId:     t.user_id,
-    qty:        t.quantity,
-    code:       shortCode,
-    status:     t.status,
-    event_name: t.event_name || 'Event',
-  });
+    // QR payload — all fields needed for scanner verification
+    const qrPayload = JSON.stringify({
+      ticketId:   t.id,
+      eventId:    t.event_id,
+      userId:     t.user_id,
+      qty:        t.quantity,
+      code:       shortCode,
+      status:     t.status,
+      event_name: t.event_name || 'Event',
+    });
 
-  // Render QR — larger size, square in white card
-  const canvas = document.getElementById('tvQrCanvas');
-  const qrSize = Math.min(window.innerWidth - 112, 220);
-  canvas.width  = qrSize;
-  canvas.height = qrSize;
-  QRCode.toCanvas(canvas, qrPayload, {
-    width: qrSize,
-    margin: 2,
-    color: { dark: '#000000', light: '#FFFFFF' },
-    errorCorrectionLevel: 'M',
-  }, err => {
-    if (err) {
+    // Render QR — larger size, square in white card
+    const canvas  = document.getElementById('tvQrCanvas');
+    const qrSize  = Math.max(180, Math.min(window.innerWidth - 112, 220));
+    canvas.width  = qrSize;
+    canvas.height = qrSize;
+
+    const drawFallback = () => {
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, qrSize, qrSize);
@@ -7544,14 +7541,28 @@ function openTicketViewer(t) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(shortCode, qrSize / 2, qrSize / 2);
+    };
+
+    if (typeof QRCode !== 'undefined') {
+      QRCode.toCanvas(canvas, qrPayload, {
+        width: qrSize,
+        margin: 2,
+        color: { dark: '#000000', light: '#FFFFFF' },
+        errorCorrectionLevel: 'M',
+      }, err => { if (err) drawFallback(); });
+    } else {
+      drawFallback();
     }
-  });
 
-  // Apple Wallet — iOS only (pkpass format)
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  document.getElementById('tvWalletWrap').style.display = isIOS ? 'block' : 'none';
+    // Apple Wallet — iOS only (pkpass format)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    document.getElementById('tvWalletWrap').style.display = isIOS ? 'block' : 'none';
 
-  openSheet('ticketViewerSheet');
+    openSheet('ticketViewerSheet');
+  } catch (err) {
+    console.error('[openTicketViewer]', err);
+    showToast('Could not open ticket — please try again', 'error');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
