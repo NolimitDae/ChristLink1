@@ -412,23 +412,35 @@ app.get('/api/events/:id/sales', requireAuth, async (req, res) => {
     .eq('id', req.params.id).single();
   if (!ev) return res.status(404).json({ error: 'Event not found.' });
   if (ev.host_id !== req.userId) return res.status(403).json({ error: 'Not your event.' });
-  const { data: tickets } = await supabaseAdmin
-    .from('tickets')
-    .select(`
-      id, quantity, unit_price_cents, total_charged_cents,
-      platform_fee_cents, host_receives_cents, status,
-      confirmed_at, created_at, buyer_email, code,
-      ticket_types ( name ),
-      profiles ( full_name, email, avatar_url, avatar_color )
-    `)
-    .eq('event_id', req.params.id)
-    .order('created_at', { ascending: false });
-  const { data: rsvps } = await supabaseAdmin
-    .from('rsvps')
-    .select('id, created_at, profiles(full_name, email, avatar_url, avatar_color)')
-    .eq('event_id', req.params.id)
-    .eq('status', 'confirmed')
-    .order('created_at', { ascending: false });
+  const [{ data: ticketRows }, { data: rsvpRows }] = await Promise.all([
+    supabaseAdmin.from('tickets')
+      .select('id, quantity, unit_price_cents, total_charged_cents, platform_fee_cents, host_receives_cents, status, confirmed_at, created_at, buyer_email, code, ticket_type_id, user_id')
+      .eq('event_id', req.params.id)
+      .order('created_at', { ascending: false }),
+    supabaseAdmin.from('rsvps')
+      .select('id, created_at, user_id')
+      .eq('event_id', req.params.id).eq('status', 'confirmed')
+      .order('created_at', { ascending: false }),
+  ]);
+
+  const typeIds    = [...new Set((ticketRows || []).map(t => t.ticket_type_id).filter(Boolean))];
+  const allUserIds = [...new Set([...(ticketRows || []), ...(rsvpRows || [])].map(r => r.user_id).filter(Boolean))];
+  const [{ data: ticketTypes }, { data: profileRows }] = await Promise.all([
+    typeIds.length    ? supabaseAdmin.from('ticket_types').select('id, name').in('id', typeIds) : { data: [] },
+    allUserIds.length ? supabaseAdmin.from('profiles').select('id, full_name, email, avatar_url, avatar_color').in('id', allUserIds) : { data: [] },
+  ]);
+  const typesMap    = Object.fromEntries((ticketTypes || []).map(tt => [tt.id, tt]));
+  const profilesMap = Object.fromEntries((profileRows  || []).map(p  => [p.id, p]));
+
+  const tickets = (ticketRows || []).map(t => ({
+    ...t,
+    ticket_types: typesMap[t.ticket_type_id]   ? { name: typesMap[t.ticket_type_id].name }   : null,
+    profiles:     profilesMap[t.user_id]        || null,
+  }));
+  const rsvps = (rsvpRows || []).map(r => ({
+    ...r,
+    profiles: profilesMap[r.user_id] || null,
+  }));
   const confirmed  = (tickets || []).filter(t => t.status === 'confirmed');
   const totalGross = confirmed.reduce((s, t) => s + (t.total_charged_cents || 0), 0);
   const totalFees  = confirmed.reduce((s, t) => s + (t.platform_fee_cents || 0), 0);
@@ -773,20 +785,26 @@ app.get('/api/rsvp/:eventId', requireAuth, async (req, res) => {
 });
 
 app.get('/api/my-rsvps', requireAuth, async (req, res) => {
-  const { data, error } = await supabaseAdmin
+  const { data: rsvpRows, error } = await supabaseAdmin
     .from('rsvps')
-    .select('*, events(id, name, start_date, city, cover_url)')
+    .select('*')
     .eq('user_id', req.userId)
     .eq('status', 'confirmed')
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
-  const rsvps = (data || []).map(r => ({
+  if (!rsvpRows || rsvpRows.length === 0) return res.json({ rsvps: [] });
+
+  const eventIds = [...new Set(rsvpRows.map(r => r.event_id).filter(Boolean))];
+  const { data: events } = await supabaseAdmin
+    .from('events').select('id, name, start_date, city, cover_url').in('id', eventIds);
+  const eventsMap = Object.fromEntries((events || []).map(e => [e.id, e]));
+
+  const rsvps = rsvpRows.map(r => ({
     ...r,
-    event_name:       r.events?.name,
-    event_start_date: r.events?.start_date,
-    event_city:       r.events?.city,
-    event_cover_url:  r.events?.cover_url,
-    event_id:         r.events?.id || r.event_id,
+    event_name:       eventsMap[r.event_id]?.name,
+    event_start_date: eventsMap[r.event_id]?.start_date,
+    event_city:       eventsMap[r.event_id]?.city,
+    event_cover_url:  eventsMap[r.event_id]?.cover_url,
     type: 'rsvp',
   }));
   res.json({ rsvps });
@@ -817,22 +835,17 @@ app.delete('/api/rsvp/:eventId', requireAuth, async (req, res) => {
 
 // ── Public Attendee List ─────────────────────────────────────
 app.get('/api/events/:id/attendees', async (req, res) => {
-  const [{ data: rsvpData }, { data: ticketData }] = await Promise.all([
-    supabaseAdmin.from('rsvps')
-      .select('user_id, profiles(id, full_name, bio, city, avatar_url, avatar_color, instagram_url, facebook_url, tiktok_url)')
-      .eq('event_id', req.params.id).eq('status', 'confirmed').limit(100),
-    supabaseAdmin.from('tickets')
-      .select('user_id, profiles(id, full_name, bio, city, avatar_url, avatar_color, instagram_url, facebook_url, tiktok_url)')
-      .eq('event_id', req.params.id).eq('status', 'confirmed').limit(100),
+  const [{ data: rsvpRows }, { data: ticketRows }] = await Promise.all([
+    supabaseAdmin.from('rsvps').select('user_id').eq('event_id', req.params.id).eq('status', 'confirmed').limit(100),
+    supabaseAdmin.from('tickets').select('user_id').eq('event_id', req.params.id).eq('status', 'confirmed').limit(100),
   ]);
-  const seen = new Set();
-  const attendees = [];
-  for (const row of [...(rsvpData || []), ...(ticketData || [])]) {
-    if (!row.profiles || seen.has(row.user_id)) continue;
-    seen.add(row.user_id);
-    attendees.push(row.profiles);
-  }
-  res.json({ attendees, total: attendees.length });
+  const userIds = [...new Set([...(rsvpRows || []), ...(ticketRows || [])].map(r => r.user_id).filter(Boolean))];
+  if (userIds.length === 0) return res.json({ attendees: [], total: 0 });
+  const { data: profiles } = await supabaseAdmin
+    .from('profiles')
+    .select('id, full_name, bio, city, avatar_url, avatar_color, instagram_url, facebook_url, tiktok_url')
+    .in('id', userIds);
+  res.json({ attendees: profiles || [], total: (profiles || []).length });
 });
 
 // ── Ticket Verification (scanner) ───────────────────────────
@@ -1547,40 +1560,49 @@ app.get('/api/tickets/:ticketId/wallet', requireAuth, async (req, res) => {
 // ════════════════════════════════════════════════════════════
 app.get('/api/community-posts', async (req, res) => {
   const { limit = 30, offset = 0 } = req.query;
-  const { data, error } = await supabaseAdmin
+  const { data: posts, error } = await supabaseAdmin
     .from('community_posts')
-    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .select('*')
     .order('created_at', { ascending: false })
     .range(Number(offset), Number(offset) + Number(limit) - 1);
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ posts: data || [] });
+  if (!posts || posts.length === 0) return res.json({ posts: [] });
+
+  const authorIds = [...new Set(posts.map(p => p.author_id).filter(Boolean))];
+  const { data: profiles } = authorIds.length
+    ? await supabaseAdmin.from('profiles').select('id, full_name, avatar_url, avatar_color').in('id', authorIds)
+    : { data: [] };
+  const profilesMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+  res.json({ posts: posts.map(p => ({ ...p, profiles: profilesMap[p.author_id] || null })) });
 });
 
 app.post('/api/community-posts', requireAuth, async (req, res) => {
   const { body } = req.body;
   if (!body?.trim()) return res.status(400).json({ error: 'Post body required.' });
-  const { data, error } = await supabaseAdmin
+  const { data: post, error } = await supabaseAdmin
     .from('community_posts')
-    .insert({ author_id: req.userId, body: body.trim() })
-    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .insert({ author_id: req.userId, user_id: req.userId, body: body.trim() })
+    .select('*')
     .single();
   if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
+  const { data: profile } = await supabaseAdmin
+    .from('profiles').select('id, full_name, avatar_url, avatar_color').eq('id', req.userId).single();
+  res.json({ ...post, profiles: profile || null });
 });
 
 app.patch('/api/community-posts/:id', requireAuth, async (req, res) => {
   const { body } = req.body;
   if (!body?.trim()) return res.status(400).json({ error: 'Body required.' });
-  // Only the author can edit
   const { data: post } = await supabaseAdmin
     .from('community_posts').select('author_id').eq('id', req.params.id).single();
   if (!post) return res.status(404).json({ error: 'Post not found.' });
   if (post.author_id !== req.userId) return res.status(403).json({ error: 'Not your post.' });
-  const { data, error } = await supabaseAdmin
-    .from('community_posts').update({ body: body.trim() }).eq('id', req.params.id)
-    .select('*, profiles(full_name, avatar_url, avatar_color)').single();
+  const { data: updated, error } = await supabaseAdmin
+    .from('community_posts').update({ body: body.trim() }).eq('id', req.params.id).select('*').single();
   if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
+  const { data: profile } = await supabaseAdmin
+    .from('profiles').select('id, full_name, avatar_url, avatar_color').eq('id', req.userId).single();
+  res.json({ ...updated, profiles: profile || null });
 });
 
 app.delete('/api/community-posts/:id', requireAuth, async (req, res) => {
@@ -1611,13 +1633,20 @@ app.post('/api/community-posts/:id/amen', requireAuth, async (req, res) => {
 
 // GET /api/community-posts/:id/replies
 app.get('/api/community-posts/:id/replies', async (req, res) => {
-  const { data, error } = await supabaseAdmin
+  const { data: replies, error } = await supabaseAdmin
     .from('community_replies')
-    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .select('*')
     .eq('post_id', req.params.id)
     .order('created_at', { ascending: true });
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ replies: data || [] });
+  if (!replies || replies.length === 0) return res.json({ replies: [] });
+
+  const authorIds = [...new Set(replies.map(r => r.author_id).filter(Boolean))];
+  const { data: profiles } = authorIds.length
+    ? await supabaseAdmin.from('profiles').select('id, full_name, avatar_url, avatar_color').in('id', authorIds)
+    : { data: [] };
+  const profilesMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+  res.json({ replies: replies.map(r => ({ ...r, profiles: profilesMap[r.author_id] || null })) });
 });
 
 // POST /api/community-posts/:id/replies
@@ -1626,25 +1655,22 @@ app.post('/api/community-posts/:id/replies', requireAuth, async (req, res) => {
   if (!body?.trim()) return res.status(400).json({ error: 'Reply body required.' });
   if (body.trim().length > 500) return res.status(400).json({ error: 'Reply must be 500 characters or less.' });
 
-  // Verify parent post exists
   const { data: post } = await supabaseAdmin
     .from('community_posts').select('id').eq('id', req.params.id).single();
   if (!post) return res.status(404).json({ error: 'Post not found.' });
 
-  const { data, error } = await supabaseAdmin
+  const { data: reply, error } = await supabaseAdmin
     .from('community_replies')
     .insert({ post_id: req.params.id, author_id: req.userId, body: body.trim() })
-    .select('*, profiles(full_name, avatar_url, avatar_color)')
+    .select('*')
     .single();
   if (error) return res.status(400).json({ error: error.message });
 
-  // Increment reply_count on parent post
-  await supabaseAdmin.rpc('increment_reply_count', {
-    p_post_id: req.params.id,
-    p_delta: 1,
-  });
+  await supabaseAdmin.rpc('increment_reply_count', { p_post_id: req.params.id, p_delta: 1 });
 
-  res.json(data);
+  const { data: profile } = await supabaseAdmin
+    .from('profiles').select('id, full_name, avatar_url, avatar_color').eq('id', req.userId).single();
+  res.json({ ...reply, profiles: profile || null });
 });
 
 // DELETE /api/community-posts/:postId/replies/:replyId
