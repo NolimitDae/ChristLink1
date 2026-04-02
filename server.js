@@ -288,14 +288,39 @@ app.post('/api/upload-event-image', requireAuth, async (req, res) => {
 // ════════════════════════════════════════════════════════════
 // EVENTS
 // ════════════════════════════════════════════════════════════
+// Haversine distance in miles between two lat/lng points
+function haversineMiles(lat1, lng1, lat2, lng2) {
+  const R = 3958.8;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// Geocode an address string to {lat, lng} using Nominatim (free, no key)
+async function geocodeAddress(parts) {
+  const q = parts.filter(Boolean).join(', ');
+  if (!q) return null;
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`, {
+      headers: { 'User-Agent': 'ChristLink/1.0' }
+    });
+    const data = await res.json();
+    if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch {}
+  return null;
+}
+
 app.get('/api/events', async (req, res) => {
-  const { city, type, is_paid, q, format, host_id, limit = 20, offset = 0 } = req.query;
+  const { city, type, is_paid, q, format, host_id, lat, lng, radius = 100, limit = 50, offset = 0 } = req.query;
+  const useRadius = lat && lng;
   let query = supabaseAdmin
     .from('events_with_details').select('*')
     .eq('status', 'published')
     .order('start_date', { ascending: true, nullsFirst: false })
-    .range(Number(offset), Number(offset) + Number(limit) - 1);
-  if (city)    query = query.ilike('city', `%${city}%`);
+    // Fetch more when doing radius filter so we have enough to filter from
+    .range(Number(offset), Number(offset) + (useRadius ? 499 : Number(limit) - 1));
+  if (!useRadius && city) query = query.ilike('city', `%${city}%`);
   if (type)    query = query.ilike('event_type', `%${type}%`);
   if (format)  query = query.eq('format', format);
   if (host_id) query = query.eq('host_id', host_id);
@@ -303,8 +328,16 @@ app.get('/api/events', async (req, res) => {
   if (q)       query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%,event_type.ilike.%${q}%`);
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
-  // View now has explicit cover_url and forum_enabled columns — no aliasing needed.
-  res.json({ events: data || [] });
+  let events = data || [];
+  // Radius filter: keep events that have lat/lng within radius miles, or fall back to city match
+  if (useRadius) {
+    const uLat = parseFloat(lat), uLng = parseFloat(lng), r = parseFloat(radius);
+    events = events.filter(ev => {
+      if (ev.lat && ev.lng) return haversineMiles(uLat, uLng, ev.lat, ev.lng) <= r;
+      return false; // exclude events with no coordinates from radius search
+    });
+  }
+  res.json({ events });
 });
 
 app.get('/api/events/:id', async (req, res) => {
@@ -325,6 +358,8 @@ app.post('/api/events', requireAuth, async (req, res) => {
   } = req.body;
   if (!name) return res.status(400).json({ error: 'Event name is required.' });
   await supabaseAdmin.from('profiles').update({ role: 'host' }).eq('id', req.userId).eq('role', 'attendee');
+  // Geocode address to lat/lng for Near Me radius search
+  const coords = format !== 'online' ? await geocodeAddress([address, city, state, zip]) : null;
   const { data, error } = await supabaseAdmin.from('events').insert({
     host_id: req.userId, name, description,
     cover_url: cover_url || null,
@@ -341,6 +376,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
     forum_enabled: forum_enabled !== false,
     publish_at: publish_at || null,
     status: 'draft',
+    lat: coords?.lat || null, lng: coords?.lng || null,
   }).select().single();
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
@@ -363,6 +399,12 @@ app.patch('/api/events/:id', requireAuth, async (req, res) => {
   // cover_url is now the canonical column name; add it to allowed fields
   if (req.body.cover_url !== undefined) updates.cover_url = req.body.cover_url;
   if (!Object.keys(updates).length) return res.status(400).json({ error: 'No fields to update.' });
+  // Re-geocode if any address field changed
+  const addrChanged = ['address','city','state','zip','venue_name'].some(k => req.body[k] !== undefined);
+  if (addrChanged && updates.format !== 'online') {
+    const coords = await geocodeAddress([updates.address||req.body.address, updates.city||req.body.city, updates.state||req.body.state, updates.zip||req.body.zip]);
+    if (coords) { updates.lat = coords.lat; updates.lng = coords.lng; }
+  }
   updates.updated_at = new Date().toISOString();
   const { data, error } = await supabaseAdmin
     .from('events').update(updates).eq('id', req.params.id).select().single();
