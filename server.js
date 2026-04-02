@@ -27,8 +27,13 @@ const REQUIRED_VARS = [
 ];
 const missingVars = REQUIRED_VARS.filter(v => !process.env[v]);
 if (missingVars.length) {
-  console.warn(`⚠️  Missing env vars: ${missingVars.join(', ')}`);
-  console.warn('   Some API routes will not work until these are set.');
+  if (process.env.NODE_ENV === 'production') {
+    console.error(`❌ Missing required env vars: ${missingVars.join(', ')}. Refusing to start.`);
+    process.exit(1);
+  } else {
+    console.warn(`⚠️  Missing env vars: ${missingVars.join(', ')}`);
+    console.warn('   Some API routes will not work until these are set.');
+  }
 }
 
 const supabase = createClient(
@@ -88,6 +93,12 @@ const pmtLimiter  = rateLimit({ windowMs: 60*60*1000, max: 20,  message: { error
 app.use('/api', apiLimiter);
 
 // ─── HELPERS ────────────────────────────────────────────────
+// Strip all HTML tags to prevent stored XSS
+function sanitizeText(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/<[^>]*>/g, '').trim();
+}
+
 function calcAmounts(priceCents, qty, absorb) {
   const face        = priceCents * qty;
   const platformFee = Math.round(face * PLATFORM_FEE_PCT); // added to attendee charge
@@ -362,11 +373,13 @@ app.post('/api/events', requireAuth, async (req, res) => {
     forum_enabled, publish_at,
   } = req.body;
   if (!name) return res.status(400).json({ error: 'Event name is required.' });
+  const safeName        = sanitizeText(name);
+  const safeDescription = sanitizeText(description);
   await supabaseAdmin.from('profiles').update({ role: 'host' }).eq('id', req.userId).eq('role', 'attendee');
   // Geocode address to lat/lng for Near Me radius search
   const coords = format !== 'online' ? await geocodeAddress([address, city, state, zip]) : null;
   const { data, error } = await supabaseAdmin.from('events').insert({
-    host_id: req.userId, name, description,
+    host_id: req.userId, name: safeName, description: safeDescription,
     cover_url: cover_url || null,
     gallery_urls: gallery_urls || [],
     event_type,
@@ -533,7 +546,7 @@ app.get('/api/my-tickets', requireAuth, async (req, res) => {
   const typeIds  = [...new Set(ticketRows.map(t => t.ticket_type_id).filter(Boolean))];
 
   const [{ data: events }, { data: ticketTypes }] = await Promise.all([
-    supabaseAdmin.from('events').select('id, name, start_date, city, cover_url').in('id', eventIds),
+    supabaseAdmin.from('events').select('id, name, start_date, city, cover_url, host_id').in('id', eventIds),
     supabaseAdmin.from('ticket_types').select('id, name').in('id', typeIds),
   ]);
 
@@ -546,6 +559,7 @@ app.get('/api/my-tickets', requireAuth, async (req, res) => {
     event_start_date: eventsMap[t.event_id]?.start_date,
     event_city:       eventsMap[t.event_id]?.city,
     event_cover_url:  eventsMap[t.event_id]?.cover_url,
+    event_host_id:    eventsMap[t.event_id]?.host_id,
     ticket_type_name: typesMap[t.ticket_type_id]?.name,
   }));
   res.json({ tickets });
@@ -1019,7 +1033,7 @@ app.get('/api/price-breakdown', async (req, res) => {
   res.json(calcAmounts(Number(price), Number(qty), absorb === 'true'));
 });
 
-app.post('/api/tax-estimate', async (req, res) => {
+app.post('/api/tax-estimate', requireAuth, async (req, res) => {
   const { amountCents } = req.body;
   if (!amountCents) return res.status(400).json({ error: 'Amount required.' });
   try {
@@ -1361,6 +1375,48 @@ app.post('/api/tickets/confirm-by-intent', requireAuth, async (req, res) => {
   }
 });
 
+// ── Host-initiated refund ────────────────────────────────────
+// Only the event host can refund a ticket; attendee must be confirmed.
+app.post('/api/tickets/:ticketId/refund', pmtLimiter, requireAuth, async (req, res) => {
+  const { ticketId } = req.params;
+  try {
+    const { data: ticket } = await supabaseAdmin
+      .from('tickets')
+      .select('id, stripe_payment_intent, status, event_id, quantity, ticket_type_id')
+      .eq('id', ticketId)
+      .single();
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found.' });
+    if (ticket.status !== 'confirmed') return res.status(400).json({ error: 'Only confirmed tickets can be refunded.' });
+
+    // Verify requester is the event host
+    const { data: ev } = await supabaseAdmin
+      .from('events').select('host_id').eq('id', ticket.event_id).single();
+    if (!ev || ev.host_id !== req.userId) return res.status(403).json({ error: 'Only the event host can issue refunds.' });
+
+    if (!ticket.stripe_payment_intent) return res.status(400).json({ error: 'No payment on record for this ticket.' });
+
+    // Look up the PaymentIntent to get the charge
+    const intent = await stripe.paymentIntents.retrieve(ticket.stripe_payment_intent);
+    if (!intent.latest_charge) return res.status(400).json({ error: 'No charge found for this payment.' });
+
+    const refund = await stripe.refunds.create({ charge: intent.latest_charge });
+
+    await supabaseAdmin.from('tickets').update({ status: 'refunded' }).eq('id', ticketId);
+
+    // Decrement sold count
+    if (ticket.ticket_type_id) {
+      await supabaseAdmin.rpc('increment_tickets_sold', {
+        p_ticket_type_id: ticket.ticket_type_id,
+        p_qty: -(ticket.quantity || 1),
+      });
+    }
+    res.json({ success: true, refundId: refund.id });
+  } catch (e) {
+    console.error('[refund]', e.message);
+    res.status(400).json({ error: e.message });
+  }
+});
+
 // ════════════════════════════════════════════════════════════
 // STRIPE WEBHOOK
 // ════════════════════════════════════════════════════════════
@@ -1373,6 +1429,17 @@ async function handleWebhook(req, res) {
     console.error('Webhook sig failed:', e.message);
     return res.status(400).send(`Webhook Error: ${e.message}`);
   }
+  // Idempotency: skip already-processed webhook events
+  const { data: existing } = await supabaseAdmin
+    .from('webhook_events')
+    .select('id')
+    .eq('stripe_event_id', event.id)
+    .single();
+  if (existing) {
+    return res.json({ received: true, duplicate: true });
+  }
+  await supabaseAdmin.from('webhook_events').insert({ stripe_event_id: event.id, event_type: event.type });
+
   try {
     switch (event.type) {
       case 'payment_intent.succeeded': {
@@ -1636,9 +1703,11 @@ app.get('/api/community-posts', async (req, res) => {
 app.post('/api/community-posts', requireAuth, async (req, res) => {
   const { body } = req.body;
   if (!body?.trim()) return res.status(400).json({ error: 'Post body required.' });
+  const safeBody = sanitizeText(body);
+  if (!safeBody) return res.status(400).json({ error: 'Post body required.' });
   const { data: post, error } = await supabaseAdmin
     .from('community_posts')
-    .insert({ author_id: req.userId, user_id: req.userId, body: body.trim() })
+    .insert({ author_id: req.userId, user_id: req.userId, body: safeBody })
     .select('*')
     .single();
   if (error) return res.status(400).json({ error: error.message });
@@ -1650,12 +1719,14 @@ app.post('/api/community-posts', requireAuth, async (req, res) => {
 app.patch('/api/community-posts/:id', requireAuth, async (req, res) => {
   const { body } = req.body;
   if (!body?.trim()) return res.status(400).json({ error: 'Body required.' });
+  const safeBody = sanitizeText(body);
+  if (!safeBody) return res.status(400).json({ error: 'Body required.' });
   const { data: post } = await supabaseAdmin
     .from('community_posts').select('author_id').eq('id', req.params.id).single();
   if (!post) return res.status(404).json({ error: 'Post not found.' });
   if (post.author_id !== req.userId) return res.status(403).json({ error: 'Not your post.' });
   const { data: updated, error } = await supabaseAdmin
-    .from('community_posts').update({ body: body.trim() }).eq('id', req.params.id).select('*').single();
+    .from('community_posts').update({ body: safeBody }).eq('id', req.params.id).select('*').single();
   if (error) return res.status(400).json({ error: error.message });
   const { data: profile } = await supabaseAdmin
     .from('profiles').select('id, full_name, avatar_url, avatar_color').eq('id', req.userId).single();
@@ -1710,7 +1781,9 @@ app.get('/api/community-posts/:id/replies', async (req, res) => {
 app.post('/api/community-posts/:id/replies', requireAuth, async (req, res) => {
   const { body } = req.body;
   if (!body?.trim()) return res.status(400).json({ error: 'Reply body required.' });
-  if (body.trim().length > 500) return res.status(400).json({ error: 'Reply must be 500 characters or less.' });
+  const safeReply = sanitizeText(body);
+  if (!safeReply) return res.status(400).json({ error: 'Reply body required.' });
+  if (safeReply.length > 500) return res.status(400).json({ error: 'Reply must be 500 characters or less.' });
 
   const { data: post } = await supabaseAdmin
     .from('community_posts').select('id').eq('id', req.params.id).single();
@@ -1718,7 +1791,7 @@ app.post('/api/community-posts/:id/replies', requireAuth, async (req, res) => {
 
   const { data: reply, error } = await supabaseAdmin
     .from('community_replies')
-    .insert({ post_id: req.params.id, author_id: req.userId, body: body.trim() })
+    .insert({ post_id: req.params.id, author_id: req.userId, body: safeReply })
     .select('*')
     .single();
   if (error) return res.status(400).json({ error: error.message });

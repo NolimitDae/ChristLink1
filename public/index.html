@@ -2940,6 +2940,16 @@ button, a, [onclick],
           <button id="resendBtn" onclick="resendOtp()" disabled style="color:var(--muted);font-weight:600;background:none;border:none;font-size:13px">Resend code</button>
           <span id="resendTimer" style="display:none;color:var(--muted);font-size:13px"> in <span id="resendCount">30</span>s</span>
         </div>
+        <div style="margin-top:18px;text-align:center">
+          <button onclick="sendMagicLink()" style="background:none;border:none;color:var(--gold);font-size:13px;cursor:pointer;text-decoration:underline;padding:0">Can't find the code? Send a sign-in link instead</button>
+        </div>
+      </div>
+
+      <div class="auth-step" id="auth-magic-sent" style="text-align:center;padding:20px 0 8px">
+        <div style="font-size:36px;margin-bottom:12px">📬</div>
+        <div class="font-serif" style="font-size:20px;font-weight:700;margin-bottom:8px">Check your email</div>
+        <div style="font-size:14px;color:var(--muted2)">A sign-in link has been sent to <strong id="magicLinkEmail" style="color:var(--text)">—</strong>. Click it to sign in — no code needed.</div>
+        <button onclick="showAuthStep('auth-otp')" style="margin-top:18px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;text-decoration:underline">← Back to code entry</button>
       </div>
 
       <div class="auth-step" id="auth-success" style="text-align:center;padding:20px 0 8px">
@@ -3326,6 +3336,7 @@ button, a, [onclick],
         </button>
       </div>
 
+      <button id="tvRefundBtn" onclick="requestTicketRefund()" style="display:none;width:100%;height:44px;background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.25);border-radius:var(--r-full);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">Request Refund</button>
       <button class="btn btn-outline" onclick="closeSheet('ticketViewerSheet')">Close</button>
     </div>
   </div>
@@ -4146,6 +4157,22 @@ async function sendOtp() {
   } catch {
     showErr('err-email','Something went wrong. Please try again.');
     btn.disabled=false; btn.innerHTML='Send Verification Code →';
+  }
+}
+
+async function sendMagicLink() {
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
+  if (!email) { showToast('Enter your email first', 'error'); return; }
+  try {
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false, emailRedirectTo: window.location.origin },
+    });
+    if (error) throw error;
+    document.getElementById('magicLinkEmail').textContent = email;
+    showAuthStep('auth-magic-sent');
+  } catch (e) {
+    showToast(e.message || 'Could not send link', 'error');
   }
 }
 
@@ -7641,10 +7668,38 @@ function openTicketViewer(t) {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     document.getElementById('tvWalletWrap').style.display = isIOS ? 'block' : 'none';
 
+    // Refund button — show only to event host for confirmed paid tickets
+    const refundBtn = document.getElementById('tvRefundBtn');
+    if (refundBtn) {
+      const isHost = t.event_host_id && currentUser?.id === t.event_host_id;
+      const isPaid = (t.total_charged_cents || 0) > 0;
+      refundBtn.style.display = (isHost && isPaid && t.status === 'confirmed') ? 'block' : 'none';
+    }
+
     openSheet('ticketViewerSheet');
   } catch (err) {
     console.error('[openTicketViewer]', err);
     showToast('Could not open ticket — please try again', 'error');
+  }
+}
+
+async function requestTicketRefund() {
+  if (!currentViewedTicketId) return;
+  if (!confirm('Refund this ticket? The full amount will be returned to the buyer.')) return;
+  const btn = document.getElementById('tvRefundBtn');
+  btn.disabled = true; btn.textContent = 'Processing…';
+  try {
+    const res = await fetch(`${API_BASE}/api/tickets/${currentViewedTicketId}/refund`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Refund failed');
+    showToast('Refund issued successfully', 'success');
+    closeSheet('ticketViewerSheet');
+  } catch (e) {
+    showToast(e.message, 'error');
+    btn.disabled = false; btn.textContent = 'Request Refund';
   }
 }
 

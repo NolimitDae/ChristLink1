@@ -535,3 +535,15 @@ left join public.events  e on e.host_id = p.id
 left join public.tickets t on t.event_id = e.id
 group by p.id, p.full_name, p.email
 order by tickets_sold desc limit 50;
+
+-- ─── WEBHOOK IDEMPOTENCY TABLE ───────────────────────────────
+create table if not exists public.webhook_events (
+  id              uuid primary key default uuid_generate_v4(),
+  stripe_event_id text not null unique,
+  event_type      text not null,
+  created_at      timestamptz not null default now()
+);
+create index if not exists webhook_events_created_idx on public.webhook_events(created_at);
+-- Auto-purge rows older than 30 days to prevent unbounded growth
+-- (Run as a Supabase scheduled job or pg_cron task)
+-- delete from public.webhook_events where created_at < now() - interval '30 days';
