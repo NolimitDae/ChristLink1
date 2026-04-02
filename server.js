@@ -55,7 +55,12 @@ const STRIPE_FIXED     = 30;
 app.post('/webhook', express.raw({ type: 'application/json' }), handleWebhook);
 
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: process.env.APP_URL || '*', credentials: true }));
+app.use(cors({
+  origin: process.env.APP_URL
+    ? process.env.APP_URL.split(',').map(s => s.trim())
+    : ['http://localhost:4242', 'http://127.0.0.1:4242'],
+  credentials: true,
+}));
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -1150,7 +1155,7 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
       }
     }
     const amounts        = calcAmounts(adjustedPriceCents, Number(qty), ev.absorb_stripe_fee !== false);
-    const idempotencyKey = `pi-${req.userId}-${eventId}-${ticketTypeId}-${qty}-${Date.now()}`;
+    const idempotencyKey = `pi-${req.userId}-${eventId}-${ticketTypeId}-${qty}`;
 
     // ── 5. Create PaymentIntent ───────────────────────────────────
     const intent = await stripe.paymentIntents.create({
@@ -1339,9 +1344,10 @@ app.post('/api/tickets/confirm-by-intent', requireAuth, async (req, res) => {
       .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
       .eq('stripe_payment_intent', paymentIntentId)
       .eq('user_id', req.userId)
+      .eq('status', 'pending')
       .select('id, code, quantity, ticket_type_id, event_id');
     if (error) throw error;
-    // Increment sold count
+    // Increment sold count only if we actually updated a pending ticket (prevents double-count with webhook)
     if (tickets?.length > 0 && tickets[0].ticket_type_id) {
       await supabaseAdmin.rpc('increment_tickets_sold', {
         p_ticket_type_id: tickets[0].ticket_type_id,

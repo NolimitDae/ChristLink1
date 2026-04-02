@@ -395,3 +395,143 @@ begin
 end;
 $$ language plpgsql security definer;
 
+
+-- ════════════════════════════════════════════════════════════
+-- MIGRATION v2.2 — Missing tables, columns, indexes & views
+-- ════════════════════════════════════════════════════════════
+
+-- ─── EVENTS: missing columns ────────────────────────────────
+alter table public.events add column if not exists lat        double precision;
+alter table public.events add column if not exists lng        double precision;
+alter table public.events add column if not exists publish_at timestamptz;
+
+create index if not exists events_lat_lng_idx    on public.events(lat, lng) where lat is not null;
+create index if not exists events_host_id_idx    on public.events(host_id);
+create index if not exists events_publish_at_idx on public.events(publish_at) where publish_at is not null;
+
+-- ─── COUPONS TABLE ──────────────────────────────────────────
+create table if not exists public.coupons (
+  id              uuid primary key default uuid_generate_v4(),
+  event_id        uuid not null references public.events(id) on delete cascade,
+  host_id         uuid not null references public.profiles(id) on delete cascade,
+  code            text not null,
+  discount_type   text not null check (discount_type in ('percent', 'amount')),
+  discount_value  numeric not null,
+  max_uses        integer,
+  uses            integer not null default 0,
+  active          boolean not null default true,
+  expires_at      timestamptz,
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists coupons_event_id_idx   on public.coupons(event_id);
+create index if not exists coupons_code_event_idx on public.coupons(code, event_id);
+
+alter table public.coupons enable row level security;
+
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='coupons' and policyname='Hosts can manage own coupons') then
+    create policy "Hosts can manage own coupons" on public.coupons for all using (auth.uid() = host_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='coupons' and policyname='Service role manages coupons') then
+    create policy "Service role manages coupons" on public.coupons for all using (true);
+  end if;
+end $$;
+
+-- ─── TICKETS: missing columns for coupons ───────────────────
+alter table public.tickets add column if not exists coupon_id      uuid references public.coupons(id) on delete set null;
+alter table public.tickets add column if not exists discount_cents integer not null default 0;
+
+-- ─── MISSING INDEXES ────────────────────────────────────────
+create index if not exists tickets_user_id_idx         on public.tickets(user_id);
+create index if not exists tickets_event_id_idx        on public.tickets(event_id);
+create index if not exists tickets_status_event_idx    on public.tickets(status, event_id);
+create index if not exists rsvps_user_id_idx           on public.rsvps(user_id);
+create index if not exists rsvps_event_status_idx      on public.rsvps(event_id, status);
+create index if not exists ticket_checkins_event_idx   on public.ticket_checkins(event_id);
+
+-- ─── increment_coupon_uses RPC ───────────────────────────────
+create or replace function public.increment_coupon_uses(p_coupon_id uuid)
+returns void as $$
+begin
+  update public.coupons set uses = uses + 1 where id = p_coupon_id;
+end;
+$$ language plpgsql security definer;
+
+-- ─── UPDATE events_with_details VIEW (add lat/lng/publish_at) ─
+create or replace view public.events_with_details as
+select
+  e.id, e.host_id, e.name, e.description,
+  e.cover_url,
+  e.gallery_urls,
+  e.event_type, e.age_group, e.format, e.denomination, e.tags,
+  e.is_paid, e.absorb_stripe_fee,
+  e.start_date, e.end_date,
+  e.venue_name, e.address, e.city, e.state, e.zip, e.online_url,
+  e.max_capacity, e.rsvp_count,
+  e.forum_enabled,
+  e.status, e.listing_fee_paid, e.listing_payment_id,
+  e.lat, e.lng,
+  e.publish_at,
+  e.created_at, e.updated_at,
+  p.full_name    as host_name,
+  p.avatar_url   as host_avatar,
+  p.avatar_color as host_avatar_color,
+  coalesce(
+    (select json_agg(t order by t.price_cents asc)
+     from public.ticket_types t
+     where t.event_id = e.id),
+    '[]'::json
+  ) as ticket_types,
+  (select count(*) from public.rsvps r where r.event_id = e.id and r.status = 'confirmed') as confirmed_rsvps
+from public.events e
+join public.profiles p on p.id = e.host_id;
+
+-- ─── ADMIN ANALYTICS VIEWS ──────────────────────────────────
+create or replace view public.admin_overview as
+select
+  (select count(*) from public.profiles)                                               as total_users,
+  (select count(*) from public.events where status = 'published')                      as published_events,
+  (select count(*) from public.events)                                                  as total_events,
+  (select coalesce(sum(total_charged_cents),0) from public.tickets where status='confirmed') as total_revenue_cents,
+  (select count(*) from public.tickets where status = 'confirmed')                     as total_tickets_sold,
+  (select count(*) from public.rsvps   where status = 'confirmed')                     as total_rsvps;
+
+create or replace view public.admin_daily_signups as
+select date_trunc('day', created_at)::date as day, count(*) as signups
+from public.profiles group by 1 order by 1 desc;
+
+create or replace view public.admin_daily_revenue as
+select
+  date_trunc('day', created_at)::date as day,
+  count(*)                            as tickets_sold,
+  sum(total_charged_cents)            as revenue_cents,
+  sum(platform_fee_cents)             as platform_fee_cents
+from public.tickets where status = 'confirmed'
+group by 1 order by 1 desc;
+
+create or replace view public.admin_events_by_type as
+select event_type,
+  count(*) as total,
+  count(*) filter (where status='published') as published
+from public.events group by 1 order by 2 desc;
+
+create or replace view public.admin_top_events as
+select e.id, e.name, e.city, e.state, e.start_date,
+  count(t.id) filter (where t.status='confirmed') as tickets_sold,
+  coalesce(sum(t.total_charged_cents) filter (where t.status='confirmed'),0) as revenue_cents
+from public.events e
+left join public.tickets t on t.event_id = e.id
+group by e.id, e.name, e.city, e.state, e.start_date
+order by tickets_sold desc limit 50;
+
+create or replace view public.admin_top_hosts as
+select p.id, p.full_name, p.email,
+  count(distinct e.id) as events_created,
+  count(t.id) filter (where t.status='confirmed') as tickets_sold,
+  coalesce(sum(t.host_receives_cents) filter (where t.status='confirmed'),0) as host_revenue_cents
+from public.profiles p
+left join public.events  e on e.host_id = p.id
+left join public.tickets t on t.event_id = e.id
+group by p.id, p.full_name, p.email
+order by tickets_sold desc limit 50;
