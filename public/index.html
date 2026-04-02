@@ -6645,6 +6645,16 @@ async function processPayment() {
 
 // ─── LISTING FEE ─────────────────────────────────────────────
 let lfMounted = false;
+function resetListingCard() {
+  listingFeePaid = false;
+  listingFeePaymentMethodId = null;
+  listingFeeHostEmail = null;
+  lfMounted = false;
+  lfCardNum = lfCardExp = lfCardCvc = null;
+  ['lfCardNumberEl','lfCardExpiryEl','lfCardCvcEl'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.innerHTML = '';
+  });
+}
 function mountListingCard() {
   if (lfMounted) return; lfMounted = true;
   const elems = stripeClient.elements({appearance:{theme:'night',variables:{colorPrimary:'#C9A84C',colorBackground:'#1E1E2A',colorText:'#F0EBE0',fontFamily:'DM Sans,sans-serif',borderRadius:'8px'}}});
@@ -7154,17 +7164,7 @@ async function publishEvent() {
       });
       const feeData = await feeRes.json();
       if (!feeData.success) {
-        if (feeData.resetCard) {
-          // Reset card state so user must re-enter payment details
-          listingFeePaid = false;
-          listingFeePaymentMethodId = null;
-          listingFeeHostEmail = null;
-          lfMounted = false;
-          lfCardNum = lfCardExp = lfCardCvc = null;
-          ['lfCardNumberEl','lfCardExpiryEl','lfCardCvcEl'].forEach(id => {
-            const el = document.getElementById(id); if (el) el.innerHTML = '';
-          });
-        }
+        if (feeData.resetCard) resetListingCard();
         throw new Error(feeData.error||'Listing fee payment failed.');
       }
     }
