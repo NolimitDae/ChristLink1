@@ -3217,7 +3217,7 @@ button, a, [onclick],
 <div class="overlay" id="ticketViewerSheet">
   <div class="sheet" style="max-height:92dvh;overflow-y:auto">
     <div class="sheet-handle"></div>
-    <div class="sheet-head">
+    <div class="sheet-head" style="position:sticky;top:0;background:var(--surface);z-index:10;padding-bottom:12px">
       <div>
         <div class="sheet-title">Your Ticket</div>
         <div style="font-size:13px;color:var(--muted)" id="tvEventName">—</div>
@@ -7461,6 +7461,8 @@ function showSuccess(icon, title, msg) {
 // ═══════════════════════════════════════════════════════════
 // TICKET VIEWER — QR CODE GENERATION
 // ═══════════════════════════════════════════════════════════
+let currentViewedTicketId = null; // used by addToAppleWallet
+
 function openTicketViewer(t) {
   currentViewedTicketId = t.id || null;
 
@@ -7477,13 +7479,14 @@ function openTicketViewer(t) {
     ? `$${(t.total_charged_cents/100).toFixed(2)}`
     : 'Free';
 
-  // Cover image
+  // Cover image — clear src when hiding to prevent ghost network requests
   const coverImg = document.getElementById('tvCoverImg');
   if (t.event_cover_url) {
     coverImg.src = t.event_cover_url;
     coverImg.style.display = 'block';
     document.getElementById('tvCoverEmoji').style.opacity = '0.15';
   } else {
+    coverImg.src = '';
     coverImg.style.display = 'none';
     document.getElementById('tvCoverEmoji').style.opacity = '0.4';
   }
@@ -7530,7 +7533,7 @@ function openTicketViewer(t) {
     width: qrSize,
     margin: 2,
     color: { dark: '#000000', light: '#FFFFFF' },
-    errorCorrectionLevel: 'H',
+    errorCorrectionLevel: 'M',
   }, err => {
     if (err) {
       const ctx = canvas.getContext('2d');
@@ -7554,7 +7557,6 @@ function openTicketViewer(t) {
 // ═══════════════════════════════════════════════════════════
 // TICKET SCANNER — FOR HOSTS
 // ═══════════════════════════════════════════════════════════
-let currentViewedTicketId = null; // set by openTicketViewer, used by addToAppleWallet
 const _ticketCache = {}; // id → ticket object, populated by fetchMyTickets
 let scannerStream    = null;
 let scannerLoop      = null;
