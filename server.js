@@ -399,10 +399,10 @@ app.patch('/api/events/:id', requireAuth, async (req, res) => {
   // cover_url is now the canonical column name; add it to allowed fields
   if (req.body.cover_url !== undefined) updates.cover_url = req.body.cover_url;
   if (!Object.keys(updates).length) return res.status(400).json({ error: 'No fields to update.' });
-  // Re-geocode if any address field changed
+  // Re-geocode if any address field changed (use req.body.format — updates.format is only set if format was in the PATCH body)
   const addrChanged = ['address','city','state','zip','venue_name'].some(k => req.body[k] !== undefined);
-  if (addrChanged && updates.format !== 'online') {
-    const coords = await geocodeAddress([updates.address||req.body.address, updates.city||req.body.city, updates.state||req.body.state, updates.zip||req.body.zip]);
+  if (addrChanged && req.body.format !== 'online') {
+    const coords = await geocodeAddress([req.body.address, req.body.city, req.body.state, req.body.zip]);
     if (coords) { updates.lat = coords.lat; updates.lng = coords.lng; }
   }
   updates.updated_at = new Date().toISOString();
@@ -1036,12 +1036,15 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
   if (ev.listing_fee_paid) return res.status(400).json({ error: 'Listing fee already paid.' });
   try {
     const intent = await stripe.paymentIntents.create({
-      amount: HOST_LISTING_FEE, currency: 'usd',
-      payment_method: paymentMethodId, confirm: true,
-      receipt_email: hostEmail || req.user.email,
-      description: `Christ Link listing fee — ${ev.name}`,
-      metadata: { type: 'listing_fee', event_id: eventId, host_id: req.userId },
-      return_url: `${process.env.APP_URL}/?listing_success=1`,
+      amount:               HOST_LISTING_FEE,
+      currency:             'usd',
+      payment_method_types: ['card'],
+      payment_method:       paymentMethodId,
+      confirm:              true,
+      receipt_email:        hostEmail || req.user.email,
+      description:          `Christ Link listing fee — ${ev.name}`,
+      metadata:             { type: 'listing_fee', event_id: eventId, host_id: req.userId },
+      return_url:           `${process.env.APP_URL}/?listing_success=1`,
     }, { idempotencyKey: `listing-fee-${eventId}-${paymentMethodId.slice(-12)}` });
     if (intent.status === 'succeeded') {
       await supabaseAdmin
@@ -1103,7 +1106,7 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
       });
     }
 
-    if (!stripeAcct.payouts_enabled) {
+    if (!stripeAcct.charges_enabled) {
       return res.status(400).json({
         error: "The host's payment account is still being verified by Stripe. Please try again later or contact the event organiser.",
       });
@@ -1151,10 +1154,11 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
 
     // ── 5. Create PaymentIntent ───────────────────────────────────
     const intent = await stripe.paymentIntents.create({
-      amount:        amounts.chargeAmount,
-      currency:      'usd',
-      receipt_email: buyerEmail || req.user.email,
-      description:   `${qty}x ${tt.name} — ${ev.name}`,
+      amount:               amounts.chargeAmount,
+      currency:             'usd',
+      payment_method_types: ['card'],
+      receipt_email:        buyerEmail || req.user.email,
+      description:          `${qty}x ${tt.name} — ${ev.name}`,
       metadata: {
         event_id:       eventId,
         ticket_type_id: ticketTypeId,
