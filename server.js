@@ -1000,7 +1000,7 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
       description: `Christ Link listing fee — ${ev.name}`,
       metadata: { type: 'listing_fee', event_id: eventId, host_id: req.userId },
       return_url: `${process.env.APP_URL}/?listing_success=1`,
-    }, { idempotencyKey: `listing-fee-${eventId}` });
+    }, { idempotencyKey: `listing-fee-${eventId}-${paymentMethodId.slice(-12)}` });
     if (intent.status === 'succeeded') {
       await supabaseAdmin
         .from('events')
@@ -1015,7 +1015,12 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
       status: intent.status,
       error: `Payment status: ${intent.status}. Please try again.`,
     });
-  } catch (e) { res.status(400).json({ error: e.message }); }
+  } catch (e) {
+    const msg = (e.raw?.code === 'payment_method_unexpected_state' || (e.message||'').toLowerCase().includes('previously used'))
+      ? 'Your card could not be reused. Please re-enter your card details and try again.'
+      : e.message;
+    res.status(400).json({ error: msg, resetCard: true });
+  }
 });
 
 app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res) => {

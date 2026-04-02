@@ -7124,7 +7124,20 @@ async function publishEvent() {
         body: JSON.stringify({paymentMethodId:listingFeePaymentMethodId,eventId:event.id,hostEmail:listingFeeHostEmail}),
       });
       const feeData = await feeRes.json();
-      if (!feeData.success) throw new Error(feeData.error||'Listing fee payment failed.');
+      if (!feeData.success) {
+        if (feeData.resetCard) {
+          // Reset card state so user must re-enter payment details
+          listingFeePaid = false;
+          listingFeePaymentMethodId = null;
+          listingFeeHostEmail = null;
+          lfMounted = false;
+          lfCardNum = lfCardExp = lfCardCvc = null;
+          ['lfCardNumberEl','lfCardExpiryEl','lfCardCvcEl'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.innerHTML = '';
+          });
+        }
+        throw new Error(feeData.error||'Listing fee payment failed.');
+      }
     }
 
     // ── 4a. Scheduled — store publish_at, auto-publisher handles the rest ──
@@ -8898,7 +8911,7 @@ function addCouponRow() {
       <button type="button" onclick="removeCouponRow(${id})"
         style="width:32px;height:32px;border-radius:var(--r-sm);background:transparent;border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;margin-bottom:2px">×</button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+    <div style="display:grid;grid-template-columns:1fr 150px;gap:8px;margin-top:8px">
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Max Uses <span style="font-weight:400;text-transform:none">(optional)</span></div>
         <input type="number" placeholder="Unlimited" min="1"
@@ -8907,7 +8920,7 @@ function addCouponRow() {
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Expires <span style="font-weight:400;text-transform:none">(optional)</span></div>
         <input type="date"
-          style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;color:var(--text)">
+          style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;color:var(--text)">
       </div>
     </div>`;
   builder.appendChild(row);
