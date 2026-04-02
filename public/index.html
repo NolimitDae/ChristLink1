@@ -3272,6 +3272,47 @@ button, a, [onclick],
 
       <!-- Apple Wallet button (iOS only) -->
       <div id="tvWalletWrap" style="display:none;margin-bottom:10px">
+        <!-- Pass preview card -->
+        <div style="background:linear-gradient(135deg,#1a1200,#2a1e00,#1a1200);border:1.5px solid rgba(201,168,76,.45);border-radius:16px;overflow:hidden;margin-bottom:10px;box-shadow:0 4px 20px rgba(201,168,76,.15)">
+          <div style="display:flex;align-items:center;padding:12px 14px;gap:12px">
+            <!-- Golden ticket illustration -->
+            <div style="flex-shrink:0;width:48px;height:48px;display:flex;align-items:center;justify-content:center">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- ticket base -->
+                <rect x="2" y="12" width="44" height="24" rx="5" fill="url(#goldGrad)" stroke="rgba(201,168,76,.6)" stroke-width="1"/>
+                <!-- left notch -->
+                <circle cx="2" cy="24" r="5" fill="#0F0F1A"/>
+                <!-- right notch -->
+                <circle cx="46" cy="24" r="5" fill="#0F0F1A"/>
+                <!-- perforation line -->
+                <line x1="14" y1="13" x2="14" y2="35" stroke="rgba(0,0,0,.25)" stroke-width="1.5" stroke-dasharray="2 2"/>
+                <!-- cross symbol -->
+                <rect x="18" y="20" width="14" height="3" rx="1.5" fill="rgba(0,0,0,.35)"/>
+                <rect x="23" y="15" width="3" height="13" rx="1.5" fill="rgba(0,0,0,.35)"/>
+                <!-- shine -->
+                <rect x="3" y="13" width="41" height="5" rx="2" fill="rgba(255,255,255,.18)"/>
+                <defs>
+                  <linearGradient id="goldGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stop-color="#F5D060"/>
+                    <stop offset="40%" stop-color="#C9A84C"/>
+                    <stop offset="70%" stop-color="#E8C84A"/>
+                    <stop offset="100%" stop-color="#A07820"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <!-- ChristLink branding -->
+            <div>
+              <div style="font-family:var(--font-display);font-size:16px;font-weight:800;color:#C9A84C;letter-spacing:.02em;line-height:1.1">ChristLink</div>
+              <div style="font-size:11px;color:rgba(201,168,76,.6);margin-top:2px;font-weight:500">Event Ticket Pass</div>
+            </div>
+            <!-- Wallet logo right side -->
+            <div style="margin-left:auto;opacity:.5">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#C9A84C"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            </div>
+          </div>
+        </div>
+        <!-- Add to Wallet button -->
         <button id="tvWalletBtn" onclick="addToAppleWallet()" style="width:100%;height:52px;border-radius:var(--r-full);background:#000;border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
           <span style="color:#fff;font-size:15px;font-weight:700">Add to Apple Wallet</span>
