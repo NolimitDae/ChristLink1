@@ -6708,7 +6708,31 @@ async function processPayment() {
       throw new Error(piData.error || `Server error ${res.status}. Please try again.`);
     }
 
-    const { clientSecret, ticketCode } = piData;
+    const { clientSecret, ticketCode, free: isFree } = piData;
+
+    // ── FREE ticket path (coupon brought total to $0) ──────────────
+    if (isFree) {
+      closeSheet('ticketSheet');
+      spawnConfetti();
+      const codeDisplay = ticketCode ? ` · Code: ${ticketCode}` : '';
+      showSuccess('🎟️','Tickets Confirmed!',`${currentQty} ticket${currentQty>1?'s':''} to ${selectedEvent.name}${codeDisplay}.`);
+      document.getElementById('detailRsvpBtn').textContent = '✅ Tickets Purchased!';
+      document.getElementById('detailRsvpBtn').classList.add('confirmed');
+      document.getElementById('detailCancelRsvpBtn').style.display = 'none';
+      fetchMyTickets();
+      const whoGoingEl = document.getElementById('detailWhoGoing');
+      const countEl    = document.getElementById('detailAttendanceCount');
+      const curCount   = parseInt(countEl?.textContent) || 0;
+      const newCount   = curCount + currentQty;
+      if (countEl) countEl.textContent = `${newCount} going`;
+      const seeAllBtn = document.getElementById('detailWhoGoingBtn');
+      if (seeAllBtn) seeAllBtn.textContent = `See All ${newCount} Attendees ↓`;
+      if (whoGoingEl) whoGoingEl.style.display = 'block';
+      setTimeout(() => loadInlineAttendees(selectedEvent.id, selectedEvent.is_paid), 1000);
+      return;
+    }
+
+    // ── PAID ticket path ───────────────────────────────────────────
     if (!clientSecret) throw new Error('Payment setup failed — no client secret returned.');
     const {error, paymentIntent} = await stripeClient.confirmCardPayment(clientSecret,{
       payment_method:{card:cardEl,billing_details:{email:currentUser?.email}}

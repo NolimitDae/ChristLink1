@@ -1171,7 +1171,48 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
     const amounts        = calcAmounts(adjustedPriceCents, Number(qty), ev.absorb_stripe_fee !== false);
     const idempotencyKey = `pi-${req.userId}-${eventId}-${ticketTypeId}-${qty}`;
 
-    // ── 5. Create PaymentIntent ───────────────────────────────────
+    // ── 6. Generate short ticket code ────────────────────────────
+    const ticketCode = (
+      Math.random().toString(36).slice(2, 6) +
+      Math.random().toString(36).slice(2, 6)
+    ).toUpperCase();
+
+    // ── 5a. FREE PATH — coupon discounts to $0, skip Stripe entirely ──
+    if (amounts.chargeAmount === 0) {
+      const { data: insertedTicket } = await supabaseAdmin
+        .from('tickets')
+        .insert({
+          event_id:            eventId,
+          ticket_type_id:      ticketTypeId,
+          user_id:             req.userId,
+          quantity:            Number(qty),
+          unit_price_cents:    tt.price_cents,
+          total_charged_cents: 0,
+          platform_fee_cents:  0,
+          stripe_fee_cents:    0,
+          host_receives_cents: 0,
+          status:              'confirmed',
+          buyer_email:         buyerEmail || req.user.email,
+          code:                ticketCode,
+          coupon_id:           couponId      || null,
+          discount_cents:      discountCents || 0,
+        })
+        .select('id, code')
+        .single();
+
+      if (couponId) {
+        await supabaseAdmin.rpc('increment_coupon_uses', { p_coupon_id: couponId });
+      }
+      await supabaseAdmin.rpc('increment_tickets_sold', { p_ticket_type_id: ticketTypeId, p_qty: Number(qty) });
+
+      return res.json({
+        free:       true,
+        breakdown:  amounts,
+        ticketCode: insertedTicket?.code || ticketCode,
+      });
+    }
+
+    // ── 5b. PAID PATH — create Stripe PaymentIntent ───────────────
     const intent = await stripe.paymentIntents.create({
       amount:               amounts.chargeAmount,
       currency:             'usd',
@@ -1188,12 +1229,6 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
       transfer_data:          { destination: stripeAcct.stripe_account_id },
       application_fee_amount: amounts.platformFee,
     }, { idempotencyKey });
-
-    // ── 6. Generate short ticket code ────────────────────────────
-    const ticketCode = (
-      Math.random().toString(36).slice(2, 6) +
-      Math.random().toString(36).slice(2, 6)
-    ).toUpperCase();
 
     // ── 7. Create pending ticket record ──────────────────────────
     const { data: insertedTicket } = await supabaseAdmin
