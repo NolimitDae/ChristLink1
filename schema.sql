@@ -547,3 +547,46 @@ create index if not exists webhook_events_created_idx on public.webhook_events(c
 -- Auto-purge rows older than 30 days to prevent unbounded growth
 -- (Run as a Supabase scheduled job or pg_cron task)
 -- delete from public.webhook_events where created_at < now() - interval '30 days';
+
+-- ─── REFUND REQUESTS ─────────────────────────────────────────
+create table if not exists public.refund_requests (
+  id            uuid primary key default uuid_generate_v4(),
+  ticket_id     uuid not null references public.tickets(id) on delete cascade,
+  event_id      uuid not null references public.events(id)  on delete cascade,
+  requester_id  uuid not null references public.profiles(id) on delete cascade,
+  host_id       uuid not null references public.profiles(id) on delete cascade,
+  reason        text,
+  status        text not null default 'pending' check (status in ('pending','approved','denied')),
+  created_at    timestamptz not null default now(),
+  resolved_at   timestamptz,
+  unique(ticket_id)  -- one open request per ticket
+);
+create index if not exists refund_requests_host_idx   on public.refund_requests(host_id, status);
+create index if not exists refund_requests_ticket_idx on public.refund_requests(ticket_id);
+
+alter table public.refund_requests enable row level security;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='refund_requests' and policyname='Service role manages refund_requests') then
+    create policy "Service role manages refund_requests" on public.refund_requests for all using (true);
+  end if;
+end $$;
+
+-- ─── NOTIFICATIONS ───────────────────────────────────────────
+create table if not exists public.notifications (
+  id          uuid primary key default uuid_generate_v4(),
+  user_id     uuid not null references public.profiles(id) on delete cascade,
+  type        text not null,
+  title       text not null,
+  body        text,
+  data        jsonb,
+  read        boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+create index if not exists notifications_user_read_idx on public.notifications(user_id, read, created_at desc);
+
+alter table public.notifications enable row level security;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='notifications' and policyname='Service role manages notifications') then
+    create policy "Service role manages notifications" on public.notifications for all using (true);
+  end if;
+end $$;

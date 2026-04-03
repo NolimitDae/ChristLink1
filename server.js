@@ -1418,6 +1418,238 @@ app.post('/api/tickets/:ticketId/refund', pmtLimiter, requireAuth, async (req, r
 });
 
 // ════════════════════════════════════════════════════════════
+// REFUND REQUESTS (attendee-initiated)
+// ════════════════════════════════════════════════════════════
+
+// Helper: send email via Resend (no extra package — plain fetch)
+async function sendEmail({ to, subject, html }) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return; // email silently skipped if not configured
+  const from = process.env.FROM_EMAIL || 'ChristLink <noreply@christlink.com>';
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to, subject, html }),
+    });
+  } catch (e) {
+    console.error('[sendEmail]', e.message);
+  }
+}
+
+// Helper: create in-app notification
+async function createNotification(userId, { type, title, body, data }) {
+  await supabaseAdmin.from('notifications')
+    .insert({ user_id: userId, type, title, body: body || null, data: data || null });
+}
+
+// POST /api/tickets/:ticketId/request-refund
+// Attendee submits a refund request — notifies host in-app and by email
+app.post('/api/tickets/:ticketId/request-refund', requireAuth, async (req, res) => {
+  const { reason } = req.body;
+  const { ticketId } = req.params;
+  try {
+    // Fetch ticket + event + host info in one round
+    const { data: ticket } = await supabaseAdmin
+      .from('tickets')
+      .select('id, event_id, status, total_charged_cents, quantity, code, buyer_email, user_id')
+      .eq('id', ticketId)
+      .eq('user_id', req.userId)
+      .single();
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found.' });
+    if (ticket.status !== 'confirmed') return res.status(400).json({ error: 'Only confirmed tickets can be refunded.' });
+    if ((ticket.total_charged_cents || 0) === 0) return res.status(400).json({ error: 'Free tickets cannot be refunded.' });
+
+    const { data: ev } = await supabaseAdmin
+      .from('events').select('id, name, host_id').eq('id', ticket.event_id).single();
+    if (!ev) return res.status(404).json({ error: 'Event not found.' });
+
+    const [{ data: requester }, { data: host }] = await Promise.all([
+      supabaseAdmin.from('profiles').select('full_name, email').eq('id', req.userId).single(),
+      supabaseAdmin.from('profiles').select('full_name, email').eq('id', ev.host_id).single(),
+    ]);
+
+    // Upsert request (only one per ticket)
+    const { data: request, error: reqErr } = await supabaseAdmin
+      .from('refund_requests')
+      .upsert({
+        ticket_id:    ticketId,
+        event_id:     ev.id,
+        requester_id: req.userId,
+        host_id:      ev.host_id,
+        reason:       reason?.trim() || null,
+        status:       'pending',
+      }, { onConflict: 'ticket_id' })
+      .select()
+      .single();
+    if (reqErr) throw reqErr;
+
+    const requesterName = requester?.full_name || ticket.buyer_email || 'A guest';
+    const amount = `$${((ticket.total_charged_cents) / 100).toFixed(2)}`;
+
+    // In-app notification for host
+    await createNotification(ev.host_id, {
+      type:  'refund_request',
+      title: `Refund request — ${ev.name}`,
+      body:  `${requesterName} requested a refund (${amount}).${reason ? ' Reason: ' + reason.trim() : ''}`,
+      data:  { refund_request_id: request.id, ticket_id: ticketId, event_id: ev.id },
+    });
+
+    // Email to host
+    await sendEmail({
+      to:      host?.email,
+      subject: `Refund request for "${ev.name}"`,
+      html: `
+        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
+          <h2 style="color:#C9A84C">Refund Request</h2>
+          <p><strong>${requesterName}</strong> has requested a refund for their ticket to <strong>${ev.name}</strong>.</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0">
+            <tr><td style="padding:8px 0;color:#555">Amount:</td><td style="padding:8px 0;font-weight:600">${amount}</td></tr>
+            <tr><td style="padding:8px 0;color:#555">Ticket code:</td><td style="padding:8px 0;font-family:monospace">${ticket.code || ticketId.slice(0,8).toUpperCase()}</td></tr>
+            ${reason ? `<tr><td style="padding:8px 0;color:#555;vertical-align:top">Reason:</td><td style="padding:8px 0">${reason.trim()}</td></tr>` : ''}
+          </table>
+          <p>Log in to ChristLink to approve or deny this request from your event's Sales section.</p>
+          <p style="color:#888;font-size:12px">ChristLink · Faith Events Platform</p>
+        </div>`,
+    });
+
+    res.json({ success: true, requestId: request.id });
+  } catch (e) {
+    console.error('[request-refund]', e.message);
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// POST /api/refund-requests/:id/approve — host approves → issues Stripe refund
+app.post('/api/refund-requests/:id/approve', pmtLimiter, requireAuth, async (req, res) => {
+  try {
+    const { data: request } = await supabaseAdmin
+      .from('refund_requests')
+      .select('*, tickets(id, stripe_payment_intent, quantity, ticket_type_id, user_id, total_charged_cents, buyer_email)')
+      .eq('id', req.params.id)
+      .eq('host_id', req.userId)
+      .single();
+    if (!request) return res.status(404).json({ error: 'Request not found.' });
+    if (request.status !== 'pending') return res.status(400).json({ error: 'Request already resolved.' });
+
+    const ticket = request.tickets;
+    if (!ticket?.stripe_payment_intent) return res.status(400).json({ error: 'No payment on record.' });
+
+    const intent = await stripe.paymentIntents.retrieve(ticket.stripe_payment_intent);
+    if (!intent.latest_charge) return res.status(400).json({ error: 'No charge found.' });
+    const refund = await stripe.refunds.create({ charge: intent.latest_charge });
+
+    await Promise.all([
+      supabaseAdmin.from('tickets').update({ status: 'refunded' }).eq('id', ticket.id),
+      supabaseAdmin.from('refund_requests').update({ status: 'approved', resolved_at: new Date().toISOString() }).eq('id', request.id),
+      ticket.ticket_type_id
+        ? supabaseAdmin.rpc('increment_tickets_sold', { p_ticket_type_id: ticket.ticket_type_id, p_qty: -(ticket.quantity || 1) })
+        : Promise.resolve(),
+      createNotification(ticket.user_id, {
+        type:  'refund_approved',
+        title: 'Refund approved',
+        body:  `Your refund of $${((ticket.total_charged_cents||0)/100).toFixed(2)} has been issued. It may take 5–10 business days to appear.`,
+        data:  { ticket_id: ticket.id, event_id: request.event_id },
+      }),
+    ]);
+
+    // Email to attendee
+    const [{ data: ev }, { data: attendee }] = await Promise.all([
+      supabaseAdmin.from('events').select('name').eq('id', request.event_id).single(),
+      supabaseAdmin.from('profiles').select('full_name, email').eq('id', ticket.user_id).single(),
+    ]);
+    await sendEmail({
+      to: attendee?.email || ticket.buyer_email,
+      subject: `Your refund for "${ev?.name}" has been approved`,
+      html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
+        <h2 style="color:#4EC98C">Refund Approved ✓</h2>
+        <p>Your refund of <strong>$${((ticket.total_charged_cents||0)/100).toFixed(2)}</strong> for <strong>${ev?.name}</strong> has been approved.</p>
+        <p>It may take <strong>5–10 business days</strong> to appear on your statement.</p>
+        <p style="color:#888;font-size:12px">ChristLink · Faith Events Platform</p>
+      </div>`,
+    });
+
+    res.json({ success: true, refundId: refund.id });
+  } catch (e) {
+    console.error('[approve-refund]', e.message);
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// POST /api/refund-requests/:id/deny — host denies request
+app.post('/api/refund-requests/:id/deny', requireAuth, async (req, res) => {
+  try {
+    const { data: request } = await supabaseAdmin
+      .from('refund_requests')
+      .select('*, tickets(id, user_id, total_charged_cents, buyer_email), events(name)')
+      .eq('id', req.params.id)
+      .eq('host_id', req.userId)
+      .single();
+    if (!request) return res.status(404).json({ error: 'Request not found.' });
+    if (request.status !== 'pending') return res.status(400).json({ error: 'Request already resolved.' });
+
+    await supabaseAdmin.from('refund_requests')
+      .update({ status: 'denied', resolved_at: new Date().toISOString() }).eq('id', request.id);
+
+    const ticket = request.tickets;
+    const evName = request.events?.name;
+    await createNotification(ticket.user_id, {
+      type:  'refund_denied',
+      title: 'Refund request declined',
+      body:  `Your refund request for "${evName}" was not approved. Contact the host for questions.`,
+      data:  { ticket_id: ticket.id, event_id: request.event_id },
+    });
+
+    await sendEmail({
+      to: (await supabaseAdmin.from('profiles').select('email').eq('id', ticket.user_id).single())?.data?.email || ticket.buyer_email,
+      subject: `Update on your refund request for "${evName}"`,
+      html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
+        <h2 style="color:#ef4444">Refund Not Approved</h2>
+        <p>Your refund request for <strong>${evName}</strong> was not approved by the host.</p>
+        <p>If you have questions, please contact the event host directly.</p>
+        <p style="color:#888;font-size:12px">ChristLink · Faith Events Platform</p>
+      </div>`,
+    });
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[deny-refund]', e.message);
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// GET /api/notifications — current user's notifications (newest 30)
+app.get('/api/notifications', requireAuth, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('notifications')
+    .select('*')
+    .eq('user_id', req.userId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ notifications: data || [] });
+});
+
+// PATCH /api/notifications/read-all — mark all read
+app.patch('/api/notifications/read-all', requireAuth, async (req, res) => {
+  await supabaseAdmin.from('notifications')
+    .update({ read: true }).eq('user_id', req.userId).eq('read', false);
+  res.json({ success: true });
+});
+
+// GET /api/refund-requests — host fetches pending requests for their events
+app.get('/api/refund-requests', requireAuth, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('refund_requests')
+    .select('*, tickets(id, quantity, total_charged_cents, code, buyer_email), events(id, name), profiles!refund_requests_requester_id_fkey(full_name, avatar_url, avatar_color)')
+    .eq('host_id', req.userId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ requests: data || [] });
+});
+
+// ════════════════════════════════════════════════════════════
 // STRIPE WEBHOOK
 // ════════════════════════════════════════════════════════════
 async function handleWebhook(req, res) {
