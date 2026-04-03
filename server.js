@@ -1179,26 +1179,29 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
 
     // ── 5a. FREE PATH — coupon discounts to $0, skip Stripe entirely ──
     if (amounts.chargeAmount === 0) {
-      const { data: insertedTicket } = await supabaseAdmin
+      const { data: insertedTicket, error: insertErr } = await supabaseAdmin
         .from('tickets')
         .insert({
-          event_id:            eventId,
-          ticket_type_id:      ticketTypeId,
-          user_id:             req.userId,
-          quantity:            Number(qty),
-          unit_price_cents:    tt.price_cents,
-          total_charged_cents: 0,
-          platform_fee_cents:  0,
-          stripe_fee_cents:    0,
-          host_receives_cents: 0,
-          status:              'confirmed',
-          buyer_email:         buyerEmail || req.user.email,
-          code:                ticketCode,
-          coupon_id:           couponId      || null,
-          discount_cents:      discountCents || 0,
+          event_id:               eventId,
+          ticket_type_id:         ticketTypeId,
+          user_id:                req.userId,
+          quantity:               Number(qty),
+          unit_price_cents:       tt.price_cents,
+          total_charged_cents:    0,
+          platform_fee_cents:     0,
+          stripe_fee_cents:       0,
+          host_receives_cents:    0,
+          stripe_payment_intent:  null,
+          stripe_idempotency_key: null,
+          status:                 'confirmed',
+          buyer_email:            buyerEmail || req.user.email,
+          code:                   ticketCode,
+          coupon_id:              couponId      || null,
+          discount_cents:         discountCents || 0,
         })
         .select('id, code')
         .single();
+      if (insertErr) throw insertErr;
 
       if (couponId) {
         await supabaseAdmin.rpc('increment_coupon_uses', { p_coupon_id: couponId });
@@ -1530,10 +1533,9 @@ async function createNotification(userId, { type, title, body, data }) {
 // Helper: notify host when a ticket sale is confirmed
 async function notifyHostOfSale(ticket) {
   try {
-    const [{ data: ev }, { data: buyer }, { data: host }] = await Promise.all([
+    const [{ data: ev }, { data: buyer }] = await Promise.all([
       supabaseAdmin.from('events').select('name, host_id').eq('id', ticket.event_id).single(),
       supabaseAdmin.from('profiles').select('full_name, email').eq('id', ticket.user_id).single(),
-      null, // fetched after ev
     ]);
     if (!ev) return;
     const { data: hostProfile } = await supabaseAdmin

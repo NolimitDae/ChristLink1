@@ -4060,8 +4060,8 @@ function goTo(page) {
   if (page === 'profile') {
     fetchProfile();
     fetchNotifCount();
-    // If events tab is already active, refresh it
-    if (document.getElementById('ptab-events')?.classList.contains('active')) fetchMyEvents();
+    if (document.getElementById('ptab-events')?.classList.contains('active'))  fetchMyEvents();
+    if (document.getElementById('ptab-tickets')?.classList.contains('active')) fetchMyTickets();
   }
   if (page === 'community') initCommunityFeed(false); // first load — show spinner
   if (page === 'host') {
@@ -4534,7 +4534,9 @@ async function fetchMyTickets(countOnly = false) {
       fetch(`${API_BASE}/api/my-tickets`, { headers }),
       fetch(`${API_BASE}/api/my-rsvps`,   { headers }),
     ]);
-    const tickets = ticketRes.ok ? (await ticketRes.json()).tickets || [] : [];
+    const allTickets = ticketRes.ok ? (await ticketRes.json()).tickets || [] : [];
+    // Only show confirmed/refunded tickets — filter out incomplete pending payments
+    const tickets = allTickets.filter(t => t.status !== 'pending' && t.status !== 'failed');
     const rsvps   = rsvpRes.ok  ? (await rsvpRes.json()).rsvps     || [] : [];
     const total   = tickets.length + rsvps.length;
     const statEl = document.getElementById('statTickets');
