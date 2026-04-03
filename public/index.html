@@ -2689,10 +2689,16 @@ button, a, [onclick],
             Joined
           </div>
         </div>
-        <button class="profile-edit-btn" onclick="openEditProfile()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Edit
-        </button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="notifBellBtn" onclick="openNotifSheet()" style="position:relative;width:38px;height:38px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted2)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span id="notifBadge" style="display:none;position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#ef4444;border:1.5px solid var(--surface3)"></span>
+          </button>
+          <button class="profile-edit-btn" onclick="openEditProfile()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+        </div>
       </div>
       <div class="profile-bio" id="profBio">—</div>
       <div id="profSocialLinks" style="display:flex;gap:14px;margin:10px 0 0;flex-wrap:wrap"></div>
@@ -2940,6 +2946,16 @@ button, a, [onclick],
           <button id="resendBtn" onclick="resendOtp()" disabled style="color:var(--muted);font-weight:600;background:none;border:none;font-size:13px">Resend code</button>
           <span id="resendTimer" style="display:none;color:var(--muted);font-size:13px"> in <span id="resendCount">30</span>s</span>
         </div>
+        <div style="margin-top:18px;text-align:center">
+          <button onclick="sendMagicLink()" style="background:none;border:none;color:var(--gold);font-size:13px;cursor:pointer;text-decoration:underline;padding:0">Can't find the code? Send a sign-in link instead</button>
+        </div>
+      </div>
+
+      <div class="auth-step" id="auth-magic-sent" style="text-align:center;padding:20px 0 8px">
+        <div style="font-size:36px;margin-bottom:12px">📬</div>
+        <div class="font-serif" style="font-size:20px;font-weight:700;margin-bottom:8px">Check your email</div>
+        <div style="font-size:14px;color:var(--muted2)">A sign-in link has been sent to <strong id="magicLinkEmail" style="color:var(--text)">—</strong>. Click it to sign in — no code needed.</div>
+        <button onclick="showAuthStep('auth-otp')" style="margin-top:18px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;text-decoration:underline">← Back to code entry</button>
       </div>
 
       <div class="auth-step" id="auth-success" style="text-align:center;padding:20px 0 8px">
@@ -3162,6 +3178,47 @@ button, a, [onclick],
 </div>
 
 <!-- FOOTER PAGE SHEET -->
+<!-- NOTIFICATION SHEET -->
+<div class="overlay" id="notifSheet">
+  <div class="sheet" style="max-height:80dvh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Notifications</div>
+      <button class="sheet-close" onclick="closeSheet('notifSheet')">×</button>
+    </div>
+    <div class="sheet-body" id="notifList" style="padding-bottom:24px">
+      <div style="color:var(--muted);font-size:14px;text-align:center;padding:24px 0">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- REFUND REQUEST SHEET -->
+<div class="overlay" id="refundRequestSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div>
+        <div class="sheet-title">Request Refund</div>
+        <div style="font-size:13px;color:var(--muted)" id="refundReqEventName">—</div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet('refundRequestSheet')">×</button>
+    </div>
+    <div class="sheet-body" style="padding-bottom:24px">
+      <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:var(--r-md);padding:14px;margin-bottom:18px">
+        <div style="font-size:13px;color:var(--muted2);line-height:1.6">This will send a refund request to the event host. Refunds are at the host's discretion per ChristLink's terms.</div>
+      </div>
+      <div id="refundAmountRow" style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:16px">
+        <span style="font-size:13px;color:var(--muted2)">Amount paid</span>
+        <span style="font-size:16px;font-weight:700;color:var(--gold)" id="refundAmountLabel">—</span>
+      </div>
+      <label class="field-label">Reason (optional)</label>
+      <textarea id="refundReasonInput" class="field" rows="3" placeholder="Let the host know why you're requesting a refund…" style="resize:none;height:80px"></textarea>
+      <div class="error-msg" id="refundReqErr"></div>
+      <button id="refundReqSubmitBtn" class="btn btn-gold" style="margin-top:14px;background:#ef4444;border-color:#ef4444" onclick="submitRefundRequest()">Send Refund Request</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="footerSheet">
   <div class="sheet" style="max-height:80dvh">
     <div class="sheet-handle"></div>
@@ -3326,6 +3383,7 @@ button, a, [onclick],
         </button>
       </div>
 
+      <button id="tvRefundBtn" onclick="requestTicketRefund()" style="display:none;width:100%;height:44px;background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.25);border-radius:var(--r-full);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">Request Refund</button>
       <button class="btn btn-outline" onclick="closeSheet('ticketViewerSheet')">Close</button>
     </div>
   </div>
@@ -3846,7 +3904,7 @@ sb.auth.onAuthStateChange((event, session) => {
   currentSession = session;
   currentUser    = session?.user || null;
   syncAuthUI();
-  if (currentUser) fetchProfile();
+  if (currentUser) { fetchProfile(); fetchNotifCount(); }
 });
 
 (async () => {
@@ -3854,7 +3912,7 @@ sb.auth.onAuthStateChange((event, session) => {
   currentSession = session;
   currentUser    = session?.user || null;
   syncAuthUI();
-  if (currentUser) fetchProfile();
+  if (currentUser) { fetchProfile(); fetchNotifCount(); }
 })();
 
 function syncAuthUI() {
@@ -3991,6 +4049,7 @@ function goTo(page) {
   if (page === 'browse') initBrowse();
   if (page === 'profile') {
     fetchProfile();
+    fetchNotifCount();
     // If events tab is already active, refresh it
     if (document.getElementById('ptab-events')?.classList.contains('active')) fetchMyEvents();
   }
@@ -4146,6 +4205,22 @@ async function sendOtp() {
   } catch {
     showErr('err-email','Something went wrong. Please try again.');
     btn.disabled=false; btn.innerHTML='Send Verification Code →';
+  }
+}
+
+async function sendMagicLink() {
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
+  if (!email) { showToast('Enter your email first', 'error'); return; }
+  try {
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false, emailRedirectTo: window.location.origin },
+    });
+    if (error) throw error;
+    document.getElementById('magicLinkEmail').textContent = email;
+    showAuthStep('auth-magic-sent');
+  } catch (e) {
+    showToast(e.message || 'Could not send link', 'error');
   }
 }
 
@@ -4537,7 +4612,7 @@ function makeHostedEventCard(ev) {
 
 function makeTicketCard(t) {
   const el = document.createElement('div');
-  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;cursor:pointer';
+  el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;cursor:pointer;position:relative';
   const fmtDate = t.event_start_date
     ? new Date(t.event_start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
     : 'Date TBD';
@@ -4546,8 +4621,9 @@ function makeTicketCard(t) {
   const shortCode = t.code || (t.stripe_payment_intent
     ? t.stripe_payment_intent.replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase()
     : t.id?.replace(/-/g,'').slice(0,8).toUpperCase() || '—');
+  const canRefund = t.status === 'confirmed' && isPaid;
   el.innerHTML = `
-    <div style="display:flex;gap:12px;padding:14px 16px;align-items:center">
+    <div style="display:flex;gap:12px;padding:14px 16px;align-items:center;position:relative">
       <div style="width:56px;height:56px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#1A0E38,#0F0F1A);display:flex;align-items:center;justify-content:center;font-size:24px">
         ${t.event_cover_url ? `<img src="${t.event_cover_url}" style="width:100%;height:100%;object-fit:cover">` : '🎟️'}
       </div>
@@ -4561,6 +4637,27 @@ function makeTicketCard(t) {
         </div>
         ${t.status === 'confirmed' ? `<div style="font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.12em;margin-top:4px;font-family:monospace">CODE: ${shortCode}</div>` : ''}
       </div>
+      ${t.status === 'confirmed' ? `
+      <button class="ticket-menu-btn" aria-label="Options"
+        style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;flex-shrink:0;color:var(--muted2)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      </button>
+      <!-- dropdown -->
+      <div class="ticket-dropdown" style="display:none;position:absolute;top:42px;right:10px;z-index:100;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden">
+        <button class="td-view" style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 16px;background:none;border:none;color:var(--text);font-size:14px;cursor:pointer;text-align:left">
+          🎟 View Ticket
+        </button>
+        <button class="td-share" style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 16px;background:none;border:none;color:var(--text);font-size:14px;cursor:pointer;text-align:left">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share Event
+        </button>
+        ${canRefund ? `
+        <div style="height:1px;background:var(--border);margin:2px 0"></div>
+        <button class="td-refund" style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 16px;background:none;border:none;color:#ef4444;font-size:14px;cursor:pointer;text-align:left">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+          Request Refund
+        </button>` : ''}
+      </div>` : ''}
     </div>
     ${t.status === 'confirmed' ? `
     <div style="padding:0 14px 14px;display:flex;gap:8px">
@@ -4568,28 +4665,44 @@ function makeTicketCard(t) {
         style="flex:1;height:40px;border-radius:var(--r-full);background:var(--gold);color:#000;font-size:13px;font-weight:700;border:none;cursor:pointer;touch-action:manipulation">
         🎟 View Ticket
       </button>
-      <button class="share-event-btn"
-        style="width:40px;height:40px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;flex-shrink:0">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-      </button>
     </div>` : ''}`;
-  // Wire up buttons with closures — avoids global variable lookups and string-encoding issues
+
+  // 3-dot menu toggle
+  const menuBtn = el.querySelector('.ticket-menu-btn');
+  const dropdown = el.querySelector('.ticket-dropdown');
+  if (menuBtn && dropdown) {
+    menuBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = dropdown.style.display !== 'none';
+      // Close all other open dropdowns
+      document.querySelectorAll('.ticket-dropdown').forEach(d => { d.style.display = 'none'; });
+      dropdown.style.display = isOpen ? 'none' : 'block';
+    });
+  }
+
+  const closeDropdown = () => { if (dropdown) dropdown.style.display = 'none'; };
+
+  const tdView = el.querySelector('.td-view');
+  if (tdView) {
+    tdView.addEventListener('click', e => { e.stopPropagation(); closeDropdown(); openTicketViewer(t); });
+  }
+  const tdShare = el.querySelector('.td-share');
+  if (tdShare) {
+    tdShare.addEventListener('click', e => { e.stopPropagation(); closeDropdown(); shareEventById(t.event_id, t.event_name || '', '', tdShare); });
+  }
+  const tdRefund = el.querySelector('.td-refund');
+  if (tdRefund) {
+    tdRefund.addEventListener('click', e => { e.stopPropagation(); closeDropdown(); openRefundRequestSheet(t); });
+  }
+
   const viewBtn = el.querySelector('.view-ticket-btn');
   if (viewBtn) {
-    viewBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      openTicketViewer(t);
-    });
+    viewBtn.addEventListener('click', e => { e.stopPropagation(); openTicketViewer(t); });
   }
-  const shareBtn = el.querySelector('.share-event-btn');
-  if (shareBtn) {
-    shareBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      shareEventById(t.event_id, t.event_name || '', '', shareBtn);
-    });
-  }
+
   // Tapping the card body navigates to the event detail page
-  el.addEventListener('click', () => {
+  el.addEventListener('click', e => {
+    if (dropdown && dropdown.style.display !== 'none') { closeDropdown(); return; }
     if (t.event_id) {
       fetch(`${API_BASE}/api/events/${t.event_id}`)
         .then(r => r.json())
@@ -7641,12 +7754,172 @@ function openTicketViewer(t) {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     document.getElementById('tvWalletWrap').style.display = isIOS ? 'block' : 'none';
 
+    // Refund button — show only to event host for confirmed paid tickets
+    const refundBtn = document.getElementById('tvRefundBtn');
+    if (refundBtn) {
+      const isHost = t.event_host_id && currentUser?.id === t.event_host_id;
+      const isPaid = (t.total_charged_cents || 0) > 0;
+      refundBtn.style.display = (isHost && isPaid && t.status === 'confirmed') ? 'block' : 'none';
+    }
+
     openSheet('ticketViewerSheet');
   } catch (err) {
     console.error('[openTicketViewer]', err);
     showToast('Could not open ticket — please try again', 'error');
   }
 }
+
+async function requestTicketRefund() {
+  if (!currentViewedTicketId) return;
+  if (!confirm('Refund this ticket? The full amount will be returned to the buyer.')) return;
+  const btn = document.getElementById('tvRefundBtn');
+  btn.disabled = true; btn.textContent = 'Processing…';
+  try {
+    const res = await fetch(`${API_BASE}/api/tickets/${currentViewedTicketId}/refund`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Refund failed');
+    showToast('Refund issued successfully', 'success');
+    closeSheet('ticketViewerSheet');
+  } catch (e) {
+    showToast(e.message, 'error');
+    btn.disabled = false; btn.textContent = 'Request Refund';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// REFUND REQUEST FLOW (attendee-initiated)
+// ═══════════════════════════════════════════════════════════
+let _refundTicket = null;
+
+function openRefundRequestSheet(t) {
+  _refundTicket = t;
+  document.getElementById('refundReqEventName').textContent = t.event_name || 'Event';
+  document.getElementById('refundAmountLabel').textContent  = t.total_charged_cents > 0
+    ? `$${(t.total_charged_cents / 100).toFixed(2)}` : 'Free';
+  document.getElementById('refundReasonInput').value = '';
+  document.getElementById('refundReqErr').textContent = '';
+  const btn = document.getElementById('refundReqSubmitBtn');
+  btn.disabled = false; btn.textContent = 'Send Refund Request';
+  openSheet('refundRequestSheet');
+}
+
+async function submitRefundRequest() {
+  if (!_refundTicket) return;
+  const reason = document.getElementById('refundReasonInput').value.trim();
+  const btn = document.getElementById('refundReqSubmitBtn');
+  const errEl = document.getElementById('refundReqErr');
+  errEl.textContent = '';
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const res = await fetch(`${API_BASE}/api/tickets/${_refundTicket.id}/request-refund`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    closeSheet('refundRequestSheet');
+    showToast('Refund request sent to host', 'success');
+  } catch (e) {
+    errEl.textContent = e.message;
+    btn.disabled = false; btn.textContent = 'Send Refund Request';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════
+async function fetchNotifCount() {
+  if (!currentUser) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/notifications`, {
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    if (!res.ok) return;
+    const { notifications } = await res.json();
+    const unread = (notifications || []).filter(n => !n.read).length;
+    const badge = document.getElementById('notifBadge');
+    if (badge) badge.style.display = unread > 0 ? 'block' : 'none';
+  } catch {}
+}
+
+async function openNotifSheet() {
+  const list = document.getElementById('notifList');
+  list.innerHTML = '<div style="color:var(--muted);font-size:14px;text-align:center;padding:24px 0">Loading…</div>';
+  openSheet('notifSheet');
+  try {
+    const res = await fetch(`${API_BASE}/api/notifications`, {
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const { notifications } = await res.json();
+    if (!notifications?.length) {
+      list.innerHTML = '<div style="color:var(--muted);font-size:14px;text-align:center;padding:24px 0">No notifications yet.</div>';
+      return;
+    }
+
+    const typeIcon = { refund_request: '💸', refund_approved: '✅', refund_denied: '❌' };
+    list.innerHTML = notifications.map(n => {
+      const ago = (() => {
+        const d = Math.floor((Date.now() - new Date(n.created_at)) / 60000);
+        if (d < 1) return 'just now';
+        if (d < 60) return `${d}m ago`;
+        if (d < 1440) return `${Math.floor(d/60)}h ago`;
+        return `${Math.floor(d/1440)}d ago`;
+      })();
+      return `<div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);${n.read?'opacity:.6':''}">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${typeIcon[n.type] || '🔔'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:${n.read?'500':'700'};color:var(--text);margin-bottom:3px">${n.title}</div>
+          ${n.body ? `<div style="font-size:13px;color:var(--muted2);line-height:1.5">${n.body}</div>` : ''}
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${ago}</div>
+          ${n.type === 'refund_request' && n.data?.refund_request_id ? `
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button onclick="handleRefundRequest('${n.data.refund_request_id}','approve',this)" style="padding:7px 18px;background:rgba(78,201,140,.1);color:#4EC98C;border:1px solid rgba(78,201,140,.3);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">Approve</button>
+              <button onclick="handleRefundRequest('${n.data.refund_request_id}','deny',this)" style="padding:7px 18px;background:rgba(239,68,68,.07);color:#ef4444;border:1px solid rgba(239,68,68,.2);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">Deny</button>
+            </div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    // Mark all read
+    fetch(`${API_BASE}/api/notifications/read-all`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const badge = document.getElementById('notifBadge');
+    if (badge) badge.style.display = 'none';
+  } catch {
+    list.innerHTML = '<div style="color:var(--muted);font-size:14px;text-align:center;padding:24px 0">Could not load notifications.</div>';
+  }
+}
+
+async function handleRefundRequest(requestId, action, btn) {
+  btn.disabled = true;
+  btn.textContent = action === 'approve' ? 'Processing…' : 'Denying…';
+  try {
+    const res = await fetch(`${API_BASE}/api/refund-requests/${requestId}/${action}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    showToast(action === 'approve' ? 'Refund issued ✓' : 'Request denied', 'success');
+    // Re-render notification list
+    openNotifSheet();
+  } catch (e) {
+    showToast(e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = action === 'approve' ? 'Approve' : 'Deny';
+  }
+}
+
+// Close any open ticket dropdown when clicking elsewhere
+document.addEventListener('click', () => {
+  document.querySelectorAll('.ticket-dropdown').forEach(d => { d.style.display = 'none'; });
+});
 
 // ═══════════════════════════════════════════════════════════
 // TICKET SCANNER — FOR HOSTS
@@ -8866,17 +9139,22 @@ async function openEventSales(eventId) {
           ? new Date(t.confirmed_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})
           : '—';
         return `
-          <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)">
-            <div style="width:36px;height:36px;border-radius:50%;background:${avBg};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0;overflow:hidden">
-              ${t.profiles?.avatar_url ? `<img src="${t.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initial}
+          <div style="padding:11px 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:36px;height:36px;border-radius:50%;background:${avBg};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0;overflow:hidden">
+                ${t.profiles?.avatar_url ? `<img src="${t.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initial}
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(name)}</div>
+                <div style="font-size:11px;color:var(--muted2)">${t.ticket_types?.name || 'Ticket'} · ${t.quantity}x · ${date}</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0">
+                <div style="font-size:14px;font-weight:700;color:var(--gold)">$${((t.total_charged_cents||0)/100).toFixed(2)}</div>
+                <div style="font-size:10px;color:var(--muted);font-family:monospace">${t.code || '—'}</div>
+              </div>
             </div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(name)}</div>
-              <div style="font-size:11px;color:var(--muted2)">${t.ticket_types?.name || 'Ticket'} · ${t.quantity}x · ${date}</div>
-            </div>
-            <div style="text-align:right;flex-shrink:0">
-              <div style="font-size:14px;font-weight:700;color:var(--gold)">$${((t.total_charged_cents||0)/100).toFixed(2)}</div>
-              <div style="font-size:10px;color:var(--muted);font-family:monospace">${t.code || '—'}</div>
+            <div style="margin-top:8px;display:flex;gap:8px">
+              <button onclick="hostIssueRefund('${t.id}',this)" style="padding:5px 14px;background:rgba(239,68,68,.07);color:#ef4444;border:1px solid rgba(239,68,68,.2);border-radius:var(--r-full);font-size:12px;font-weight:600;cursor:pointer">Refund</button>
             </div>
           </div>`;
       }).join('');
@@ -8904,6 +9182,28 @@ async function openEventSales(eventId) {
   } catch(e) {
     document.getElementById('salesTicketList').innerHTML =
       `<div style="color:var(--red);font-size:13px;padding:12px 0">${e.message}</div>`;
+  }
+}
+
+async function hostIssueRefund(ticketId, btn) {
+  if (!confirm('Refund this ticket? The full amount will be returned to the buyer immediately.')) return;
+  btn.disabled = true; btn.textContent = 'Processing…';
+  try {
+    const res = await fetch(`${API_BASE}/api/tickets/${ticketId}/refund`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Refund failed');
+    showToast('Refund issued ✓', 'success');
+    btn.textContent = 'Refunded';
+    btn.style.color = 'var(--muted)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.background = 'none';
+    btn.disabled = true;
+  } catch (e) {
+    showToast(e.message, 'error');
+    btn.disabled = false; btn.textContent = 'Refund';
   }
 }
 
