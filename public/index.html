@@ -9151,14 +9151,21 @@ async function openEventSales(eventId) {
   document.getElementById('salesTicketList').innerHTML =
     '<div style="color:var(--muted);font-size:13px;padding:16px 0">Loading…</div>';
   document.getElementById('salesRsvpSection').style.display = 'none';
+  document.getElementById('salesRefundSection').style.display = 'none';
   document.getElementById('eventSalesSheet').classList.add('open');
   document.body.style.overflow = 'hidden';
   try {
-    const res  = await fetch(`${API_BASE}/api/events/${eventId}/sales`, {
-      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
-    });
+    const [res, refundRes] = await Promise.all([
+      fetch(`${API_BASE}/api/events/${eventId}/sales`, {
+        headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+      }),
+      fetch(`${API_BASE}/api/refund-requests?eventId=${eventId}`, {
+        headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+      }),
+    ]);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to load sales');
+    const { requests: refundRequests = [] } = refundRes.ok ? await refundRes.json() : {};
     const { event: ev, tickets, rsvps, summary } = data;
     document.getElementById('salesEventName').textContent = ev.name;
     const cards = [
@@ -9225,6 +9232,23 @@ async function openEventSales(eventId) {
           </div>`;
       }).join('');
     }
+
+    // Refund requests section
+    const pending = refundRequests.filter(r => r.status === 'pending');
+    const resolved = refundRequests.filter(r => r.status !== 'pending');
+    if (refundRequests.length > 0) {
+      document.getElementById('salesRefundSection').style.display = 'block';
+      if (pending.length > 0) {
+        document.getElementById('salesRefundBadge').textContent = `${pending.length} pending`;
+        document.getElementById('salesRefundBadge').style.display = '';
+      } else {
+        document.getElementById('salesRefundBadge').style.display = 'none';
+      }
+      document.getElementById('salesRefundList').innerHTML = [
+        ...pending.map(r => renderSalesRefundRow(r, false)),
+        ...resolved.map(r => renderSalesRefundRow(r, true)),
+      ].join('');
+    }
   } catch(e) {
     document.getElementById('salesTicketList').innerHTML =
       `<div style="color:var(--red);font-size:13px;padding:12px 0">${e.message}</div>`;
@@ -9250,6 +9274,76 @@ async function hostIssueRefund(ticketId, btn) {
   } catch (e) {
     showToast(e.message, 'error');
     btn.disabled = false; btn.textContent = 'Refund';
+  }
+}
+
+function renderSalesRefundRow(r, isResolved) {
+  const name    = r.profiles?.full_name || r.tickets?.buyer_email || 'Guest';
+  const initial = name.charAt(0).toUpperCase();
+  const avBg    = r.profiles?.avatar_color || 'var(--gold)';
+  const amt     = r.tickets?.total_charged_cents
+    ? `$${(r.tickets.total_charged_cents / 100).toFixed(2)}`
+    : 'Free';
+  const date    = new Date(r.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const statusBadge = isResolved
+    ? `<span style="font-size:11px;font-weight:700;color:${r.status==='approved'?'#4EC98C':'#ef4444'};background:${r.status==='approved'?'rgba(78,201,140,.1)':'rgba(239,68,68,.07)'};border:1px solid ${r.status==='approved'?'rgba(78,201,140,.3)':'rgba(239,68,68,.2)'};border-radius:999px;padding:2px 10px;text-transform:capitalize">${r.status}</span>`
+    : '';
+  return `
+    <div style="padding:12px 0;border-bottom:1px solid var(--border);${isResolved?'opacity:.6':''}">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:36px;height:36px;border-radius:50%;background:${avBg};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0;overflow:hidden">
+          ${r.profiles?.avatar_url ? `<img src="${r.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initial}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600">${escapeHtml(name)}</div>
+          <div style="font-size:11px;color:var(--muted2)">Ticket ${r.tickets?.code || '—'} · ${amt} · ${date}</div>
+          ${r.reason ? `<div style="font-size:12px;color:var(--muted2);margin-top:3px;font-style:italic">"${escapeHtml(r.reason)}"</div>` : ''}
+        </div>
+        ${statusBadge}
+      </div>
+      ${!isResolved ? `
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button onclick="salesHandleRefund('${r.id}','approve',this)"
+          style="padding:6px 18px;background:rgba(78,201,140,.1);color:#4EC98C;border:1px solid rgba(78,201,140,.3);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">
+          Approve
+        </button>
+        <button onclick="salesHandleRefund('${r.id}','deny',this)"
+          style="padding:6px 18px;background:rgba(239,68,68,.07);color:#ef4444;border:1px solid rgba(239,68,68,.2);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">
+          Deny
+        </button>
+      </div>` : ''}
+    </div>`;
+}
+
+async function salesHandleRefund(requestId, action, btn) {
+  btn.disabled = true;
+  btn.textContent = action === 'approve' ? 'Processing…' : 'Denying…';
+  try {
+    const res = await fetch(`${API_BASE}/api/refund-requests/${requestId}/${action}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    showToast(action === 'approve' ? 'Refund issued ✓' : 'Request denied', 'success');
+    // Update row in place
+    const row = btn.closest('div[style*="border-bottom"]');
+    if (row) {
+      const btnRow = btn.parentElement;
+      btnRow.innerHTML = `<span style="font-size:12px;font-weight:700;color:${action==='approve'?'#4EC98C':'#ef4444'}">${action === 'approve' ? '✓ Approved & Refunded' : '✗ Denied'}</span>`;
+      row.style.opacity = '0.6';
+    }
+    // Update pending badge
+    const badge = document.getElementById('salesRefundBadge');
+    if (badge) {
+      const pendingCount = document.querySelectorAll('#salesRefundList [onclick*="salesHandleRefund"]').length;
+      if (pendingCount === 0) badge.style.display = 'none';
+      else badge.textContent = `${Math.ceil(pendingCount/2)} pending`;
+    }
+  } catch (e) {
+    showToast(e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = action === 'approve' ? 'Approve' : 'Deny';
   }
 }
 
@@ -9603,8 +9697,13 @@ async function saveEeeCoupons() {
         </div>
         <div id="salesRsvpList"></div>
       </div>
-    </div>
-  </div>
-</div>
+      <!-- Refund requests -->
+      <div id="salesRefundSection" style="margin-top:24px;display:none">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          Refund Requests
+          <span id="salesRefundBadge" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:1px 7px;letter-spacing:0;text-transform:none"></span>
+        </div>
+        <div id="salesRefundList"></div>
+      </div>
 </body>
 </html>

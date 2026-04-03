@@ -1765,14 +1765,19 @@ app.patch('/api/notifications/read-all', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// GET /api/refund-requests — host fetches pending requests for their events
+// GET /api/refund-requests — host fetches refund requests for their events
+// Optional ?eventId=<uuid> to scope to a single event
 app.get('/api/refund-requests', requireAuth, async (req, res) => {
-  const { data, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from('refund_requests')
     .select('*, tickets(id, quantity, total_charged_cents, code, buyer_email), events(id, name), profiles!refund_requests_requester_id_fkey(full_name, avatar_url, avatar_color)')
     .eq('host_id', req.userId)
     .order('created_at', { ascending: false })
     .limit(50);
+  if (req.query.eventId) {
+    query = query.eq('event_id', req.query.eventId);
+  }
+  const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
   res.json({ requests: data || [] });
 });
