@@ -3900,11 +3900,21 @@ const VERSES = [
 // ═══════════════════════════════════════════════════════════
 // SUPABASE AUTH
 // ═══════════════════════════════════════════════════════════
+let _notifPollTimer = null;
+function startNotifPoll() {
+  if (_notifPollTimer) return;
+  _notifPollTimer = setInterval(() => { if (currentUser) fetchNotifCount(); }, 30000);
+}
+function stopNotifPoll() {
+  if (_notifPollTimer) { clearInterval(_notifPollTimer); _notifPollTimer = null; }
+}
+
 sb.auth.onAuthStateChange((event, session) => {
   currentSession = session;
   currentUser    = session?.user || null;
   syncAuthUI();
-  if (currentUser) { fetchProfile(); fetchNotifCount(); }
+  if (currentUser) { fetchProfile(); fetchNotifCount(); startNotifPoll(); }
+  else stopNotifPoll();
 });
 
 (async () => {
@@ -3912,7 +3922,7 @@ sb.auth.onAuthStateChange((event, session) => {
   currentSession = session;
   currentUser    = session?.user || null;
   syncAuthUI();
-  if (currentUser) { fetchProfile(); fetchNotifCount(); }
+  if (currentUser) { fetchProfile(); fetchNotifCount(); startNotifPoll(); }
 })();
 
 function syncAuthUI() {
@@ -7845,8 +7855,18 @@ async function submitRefundRequest() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Request failed');
-    closeSheet('refundRequestSheet');
-    showToast('Refund request sent to host', 'success');
+    // Show sent confirmation inside the sheet, then auto-close
+    const body = document.querySelector('#refundRequestSheet .sheet-body');
+    if (body) {
+      body.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 0;gap:14px;text-align:center">
+          <div style="width:56px;height:56px;border-radius:50%;background:rgba(78,201,140,.12);border:1.5px solid rgba(78,201,140,.3);display:flex;align-items:center;justify-content:center;font-size:26px">✅</div>
+          <div style="font-size:17px;font-weight:700;color:var(--text)">Request Sent</div>
+          <div style="font-size:14px;color:var(--muted2);line-height:1.6;max-width:280px">Your refund request has been sent to the host. You'll get a notification once they respond.</div>
+          <button class="btn btn-secondary" style="margin-top:8px" onclick="closeSheet('refundRequestSheet')">Close</button>
+        </div>`;
+    }
+    setTimeout(() => closeSheet('refundRequestSheet'), 3000);
   } catch (e) {
     errEl.textContent = e.message;
     btn.disabled = false; btn.textContent = 'Send Refund Request';
@@ -7884,7 +7904,7 @@ async function openNotifSheet() {
       return;
     }
 
-    const typeIcon = { refund_request: '💸', refund_approved: '✅', refund_denied: '❌' };
+    const typeIcon = { ticket_sale: '🎟️', refund_request: '💸', refund_approved: '✅', refund_denied: '❌' };
     list.innerHTML = notifications.map(n => {
       const ago = (() => {
         const d = Math.floor((Date.now() - new Date(n.created_at)) / 60000);

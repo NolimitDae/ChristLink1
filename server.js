@@ -1205,6 +1205,15 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
       }
       await supabaseAdmin.rpc('increment_tickets_sold', { p_ticket_type_id: ticketTypeId, p_qty: Number(qty) });
 
+      // Fire-and-forget host sale notification
+      notifyHostOfSale({
+        event_id:            eventId,
+        user_id:             req.userId,
+        quantity:            Number(qty),
+        total_charged_cents: 0,
+        buyer_email:         buyerEmail || req.user.email,
+      });
+
       return res.json({
         free:       true,
         breakdown:  amounts,
@@ -1394,13 +1403,21 @@ app.post('/api/tickets/confirm-by-intent', requireAuth, async (req, res) => {
       .eq('stripe_payment_intent', paymentIntentId)
       .eq('user_id', req.userId)
       .eq('status', 'pending')
-      .select('id, code, quantity, ticket_type_id, event_id');
+      .select('id, code, quantity, ticket_type_id, event_id, total_charged_cents');
     if (error) throw error;
     // Increment sold count only if we actually updated a pending ticket (prevents double-count with webhook)
     if (tickets?.length > 0 && tickets[0].ticket_type_id) {
       await supabaseAdmin.rpc('increment_tickets_sold', {
         p_ticket_type_id: tickets[0].ticket_type_id,
         p_qty: tickets[0].quantity || 1,
+      });
+      // Notify host of sale (fire-and-forget)
+      notifyHostOfSale({
+        event_id:            tickets[0].event_id,
+        user_id:             req.userId,
+        quantity:            tickets[0].quantity || 1,
+        total_charged_cents: tickets[0].total_charged_cents,
+        buyer_email:         req.user.email,
       });
     }
     res.json({ confirmed: true, tickets: tickets || [] });
@@ -1436,7 +1453,12 @@ app.post('/api/tickets/:ticketId/refund', pmtLimiter, requireAuth, async (req, r
 
     const refund = await stripe.refunds.create({ charge: intent.latest_charge });
 
-    await supabaseAdmin.from('tickets').update({ status: 'refunded' }).eq('id', ticketId);
+    const { data: updatedTicket } = await supabaseAdmin
+      .from('tickets')
+      .update({ status: 'refunded' })
+      .eq('id', ticketId)
+      .select('user_id, total_charged_cents, buyer_email')
+      .single();
 
     // Decrement sold count
     if (ticket.ticket_type_id) {
@@ -1445,6 +1467,33 @@ app.post('/api/tickets/:ticketId/refund', pmtLimiter, requireAuth, async (req, r
         p_qty: -(ticket.quantity || 1),
       });
     }
+
+    // Notify attendee of refund
+    if (updatedTicket?.user_id) {
+      const { data: evData } = await supabaseAdmin
+        .from('events').select('name').eq('id', ticket.event_id).single();
+      const amt = updatedTicket.total_charged_cents
+        ? `$${(updatedTicket.total_charged_cents / 100).toFixed(2)}`
+        : 'your payment';
+      createNotification(updatedTicket.user_id, {
+        type:  'refund_approved',
+        title: 'Refund issued',
+        body:  `The host has issued a refund of ${amt} for "${evData?.name || 'your event'}". It may take 5–10 business days to appear.`,
+        data:  { event_id: ticket.event_id },
+      });
+      const { data: attendeeProfile } = await supabaseAdmin
+        .from('profiles').select('email').eq('id', updatedTicket.user_id).single();
+      sendEmail({
+        to:      attendeeProfile?.email || updatedTicket.buyer_email,
+        subject: `Refund issued for "${evData?.name}"`,
+        html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
+          <h2 style="margin:0 0 16px">Refund Issued ✅</h2>
+          <p style="font-size:15px;margin:0 0 10px">The host has issued a refund of <strong>${amt}</strong> for <strong>"${evData?.name}"</strong>.</p>
+          <p style="font-size:14px;color:#555;margin:0 0 10px">It may take 5–10 business days to appear on your statement.</p>
+        </div>`,
+      });
+    }
+
     res.json({ success: true, refundId: refund.id });
   } catch (e) {
     console.error('[refund]', e.message);
@@ -1476,6 +1525,48 @@ async function sendEmail({ to, subject, html }) {
 async function createNotification(userId, { type, title, body, data }) {
   await supabaseAdmin.from('notifications')
     .insert({ user_id: userId, type, title, body: body || null, data: data || null });
+}
+
+// Helper: notify host when a ticket sale is confirmed
+async function notifyHostOfSale(ticket) {
+  try {
+    const [{ data: ev }, { data: buyer }, { data: host }] = await Promise.all([
+      supabaseAdmin.from('events').select('name, host_id').eq('id', ticket.event_id).single(),
+      supabaseAdmin.from('profiles').select('full_name, email').eq('id', ticket.user_id).single(),
+      null, // fetched after ev
+    ]);
+    if (!ev) return;
+    const { data: hostProfile } = await supabaseAdmin
+      .from('profiles').select('full_name, email').eq('id', ev.host_id).single();
+    if (!hostProfile) return;
+
+    const qty       = ticket.quantity || 1;
+    const amount    = ticket.total_charged_cents
+      ? `$${(ticket.total_charged_cents / 100).toFixed(2)}`
+      : 'Free';
+    const buyerName = buyer?.full_name || ticket.buyer_email || 'A guest';
+
+    await createNotification(ev.host_id, {
+      type:  'ticket_sale',
+      title: `New ticket sale — ${ev.name}`,
+      body:  `${buyerName} purchased ${qty} ticket${qty > 1 ? 's' : ''} (${amount}).`,
+      data:  { event_id: ticket.event_id },
+    });
+
+    await sendEmail({
+      to:      hostProfile.email,
+      subject: `New ticket sale for "${ev.name}"`,
+      html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
+        <h2 style="margin:0 0 16px">New Ticket Sale 🎟️</h2>
+        <p style="margin:0 0 10px;font-size:15px"><strong>${buyerName}</strong> just purchased
+          <strong>${qty} ticket${qty > 1 ? 's' : ''}</strong> to <strong>${ev.name}</strong>.</p>
+        <p style="font-size:15px;margin:0 0 10px">Amount: <strong>${amount}</strong></p>
+        <p style="font-size:13px;color:#888;margin:24px 0 0">View your sales in the ChristLink host dashboard.</p>
+      </div>`,
+    });
+  } catch (e) {
+    console.error('[notifyHostOfSale]', e.message);
+  }
 }
 
 // POST /api/tickets/:ticketId/request-refund
@@ -1721,7 +1812,7 @@ async function handleWebhook(req, res) {
           .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
           .eq('stripe_payment_intent', pi.id)
           .eq('status', 'pending')
-          .select('id');
+          .select('id, event_id, user_id, quantity, total_charged_cents, buyer_email');
         if (ticketErr) console.error('[webhook] ticket update error:', ticketErr.message);
         console.log('[webhook] confirmed tickets:', updatedTickets?.length || 0);
         if (pi.metadata.ticket_type_id && updatedTickets?.length > 0) {
@@ -1729,6 +1820,8 @@ async function handleWebhook(req, res) {
             p_ticket_type_id: pi.metadata.ticket_type_id,
             p_qty: parseInt(pi.metadata.qty) || 1,
           });
+          // Notify host (fire-and-forget — webhook already responded to Stripe)
+          notifyHostOfSale(updatedTickets[0]);
         }
         break;
       }
