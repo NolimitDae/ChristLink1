@@ -255,17 +255,71 @@ app.get('/api/profiles/:id/stats', async (req, res) => {
   });
 });
 
+// GET /api/profile/public/:userId — full profile for authenticated users, name+avatar only otherwise
+app.get('/api/profile/public/:userId', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name, avatar_url, avatar_color, banner_url, bio, city, role, created_at, instagram_url, facebook_url, tiktok_url, bible_verse, bible_verse_reference, bible_version, hot_takes, hobbies, connect_tags')
+      .eq('id', req.params.userId).single();
+    if (error || !data) return res.status(404).json({ error: 'Profile not found.' });
+    // Check auth
+    let isAuthenticated = false;
+    const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+    if (token) {
+      const { data: authData } = await supabase.auth.getUser(token);
+      isAuthenticated = !!authData?.user;
+    }
+    if (!isAuthenticated) {
+      return res.json({ id: data.id, full_name: data.full_name, avatar_url: data.avatar_url, avatar_color: data.avatar_color, banner_url: data.banner_url, restricted: true });
+    }
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/upload-banner — same dataUrl pattern as upload-avatar
+app.post('/api/upload-banner', requireAuth, async (req, res) => {
+  const { dataUrl } = req.body;
+  if (!dataUrl || !dataUrl.startsWith('data:')) return res.status(400).json({ error: 'Invalid image data.' });
+  try {
+    const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
+    const mimeType = matches[1];
+    const buffer   = Buffer.from(matches[2], 'base64');
+    const ext      = mimeType.includes('png') ? 'png' : 'jpg';
+    const path     = `banners/${req.userId}/banner.${ext}`;
+    const { error: upErr } = await supabaseAdmin.storage
+      .from('banner-images')
+      .upload(path, buffer, { upsert: true, contentType: mimeType });
+    if (upErr) return res.status(400).json({ error: upErr.message });
+    const { data: { publicUrl } } = supabaseAdmin.storage.from('banner-images').getPublicUrl(path);
+    res.json({ url: publicUrl });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.patch('/api/profile', requireAuth, async (req, res) => {
-  const { full_name, bio, city, avatar_url, avatar_color, instagram_url, facebook_url, tiktok_url } = req.body;
+  const {
+    full_name, bio, city, avatar_url, avatar_color,
+    instagram_url, facebook_url, tiktok_url,
+    banner_url, bible_verse, bible_verse_reference, bible_version,
+    hot_takes, hobbies, connect_tags,
+  } = req.body;
   const updates = {};
-  if (full_name      !== undefined) updates.full_name      = full_name;
-  if (bio            !== undefined) updates.bio            = bio;
-  if (city           !== undefined) updates.city           = city;
-  if (avatar_url     !== undefined) updates.avatar_url     = avatar_url;
-  if (avatar_color   !== undefined) updates.avatar_color   = avatar_color;
-  if (instagram_url  !== undefined) updates.instagram_url  = instagram_url;
-  if (facebook_url   !== undefined) updates.facebook_url   = facebook_url;
-  if (tiktok_url     !== undefined) updates.tiktok_url     = tiktok_url;
+  if (full_name               !== undefined) updates.full_name               = full_name;
+  if (bio                     !== undefined) updates.bio                     = bio;
+  if (city                    !== undefined) updates.city                    = city;
+  if (avatar_url              !== undefined) updates.avatar_url              = avatar_url;
+  if (avatar_color            !== undefined) updates.avatar_color            = avatar_color;
+  if (instagram_url           !== undefined) updates.instagram_url           = instagram_url;
+  if (facebook_url            !== undefined) updates.facebook_url            = facebook_url;
+  if (tiktok_url              !== undefined) updates.tiktok_url              = tiktok_url;
+  if (banner_url              !== undefined) updates.banner_url              = banner_url;
+  if (bible_verse             !== undefined) updates.bible_verse             = bible_verse;
+  if (bible_verse_reference   !== undefined) updates.bible_verse_reference   = bible_verse_reference;
+  if (bible_version           !== undefined) updates.bible_version           = bible_version;
+  if (hot_takes               !== undefined) updates.hot_takes               = hot_takes;
+  if (hobbies                 !== undefined) updates.hobbies                 = hobbies;
+  if (connect_tags            !== undefined) updates.connect_tags            = Array.isArray(connect_tags) ? connect_tags : [];
   updates.updated_at = new Date().toISOString();
   // Try update first (profile should exist from signup trigger)
   let { data, error } = await supabaseAdmin

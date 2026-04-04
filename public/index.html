@@ -1720,6 +1720,30 @@ input[type="datetime-local"] {
 }
 .tab-item.active svg { animation: tabBounce 0.3s cubic-bezier(.175,.885,.32,1.275) forwards; }
 
+/* ── PROFILE UPGRADE ─────────────────────────────────────── */
+/* Banner upload */
+.banner-upload-area{width:100%;height:130px;border:2px dashed rgba(201,168,76,.35);border-radius:12px;overflow:hidden;position:relative;cursor:pointer;background:rgba(255,255,255,.03)}
+.banner-preview{width:100%;height:100%;position:relative}
+.banner-remove-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+.banner-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none}
+/* Connect tags */
+.connect-tags-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.connect-tag-btn{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:50px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--muted2);font-size:12px;cursor:pointer;transition:all .18s;font-family:inherit;text-align:left}
+.connect-tag-btn.active{border-color:var(--gold);background:rgba(201,168,76,.12);color:var(--gold)}
+/* Public profile sheet extras */
+.pub-banner{width:100%;height:140px;background:linear-gradient(135deg,#1a1a2e,#0f3460);position:relative;overflow:hidden;border-radius:0}
+.pub-banner img{width:100%;height:100%;object-fit:cover}
+.pub-section{background:rgba(255,255,255,.04);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.pub-section-title{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.bible-verse-text{font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--text);line-height:1.65}
+.bible-verse-ref{font-size:12px;color:var(--muted);margin-top:5px}
+.hot-take-bubble{background:rgba(201,168,76,.07);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 14px;font-size:13px;color:var(--text);line-height:1.5}
+.connect-tags-display{display:flex;flex-wrap:wrap;gap:8px}
+.connect-tag-pill{display:flex;align-items:center;gap:5px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);border-radius:50px;padding:5px 12px;font-size:12px;color:var(--gold)}
+/* Clickable user names */
+.clickable-user{cursor:pointer;color:inherit;transition:color .15s}
+.clickable-user:hover{color:var(--gold)}
+
 /* ── BUTTON PRESS MICRO-FEEDBACK ────────────────────────── */
 .btn-gold:active,
 .detail-rsvp-btn:active {
@@ -3231,8 +3255,43 @@ button, a, [onclick],
         <span style="font-size:18px">🎵</span>
         <input type="url" id="epTikTok" class="field" placeholder="tiktok.com/@yourhandle" style="margin:0;flex:1">
       </div>
+      <!-- BANNER PHOTO -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">Banner Photo</div>
+      <div class="banner-upload-area" onclick="document.getElementById('epBannerInput').click()">
+        <div id="epBannerPreview" class="banner-preview" style="display:none">
+          <img id="epBannerImg" src="" alt="" style="width:100%;height:100%;object-fit:cover">
+          <button type="button" class="banner-remove-btn" onclick="event.stopPropagation();epRemoveBanner()">×</button>
+        </div>
+        <div id="epBannerPlaceholder" class="banner-placeholder">
+          <span style="font-size:28px;opacity:.3">🖼️</span>
+          <span style="font-size:12px;color:var(--muted)">Tap to add banner photo</span>
+        </div>
+        <input type="file" id="epBannerInput" accept="image/*" style="display:none" onchange="epHandleBanner(this)">
+      </div>
+
+      <!-- FAVORITE BIBLE VERSE -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">✝ Favorite Bible Verse</div>
+      <textarea id="epBibleVerse" class="field" rows="3" placeholder="e.g. For God so loved the world…" maxlength="500" style="resize:none"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input type="text" id="epBibleRef" class="field" style="flex:1;margin:0" placeholder="Reference (e.g. John 3:16)" maxlength="60">
+        <select id="epBibleVersion" class="field" style="width:80px;margin:0;padding:10px 6px"></select>
+      </div>
+
+      <!-- HOT TAKES -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">🔥 Hot Takes</div>
+      <textarea id="epHotTakes" class="field" rows="3" placeholder="Share your spicy (but respectful) Christian hot takes…" maxlength="300" oninput="document.getElementById('epHotTakesCount').textContent=this.value.length+'/300'" style="resize:none"></textarea>
+      <div style="text-align:right;font-size:11px;color:var(--muted);margin-top:2px" id="epHotTakesCount">0/300</div>
+
+      <!-- HOBBIES -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">🎯 Hobbies & Interests</div>
+      <input type="text" id="epHobbies" class="field" placeholder="e.g. Hiking, guitar, cooking, photography…" maxlength="200">
+
+      <!-- OPEN TO CONNECT -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">🤝 Open to Connect</div>
+      <div class="connect-tags-grid" id="epConnectTags"></div>
+
       <div class="error-msg" id="epErr"></div>
-      <button class="btn btn-gold" id="epSaveBtn" onclick="saveProfile()">Save Changes</button>
+      <button class="btn btn-gold" id="epSaveBtn" onclick="saveProfile()" style="margin-top:18px">Save Changes</button>
     </div>
   </div>
 </div>
@@ -3527,32 +3586,63 @@ button, a, [onclick],
 
 <!-- PUBLIC PROFILE SHEET -->
 <div class="overlay" id="publicProfileSheet">
-  <div class="sheet" style="max-height:88dvh">
-    <div class="sheet-handle"></div>
-    <div class="sheet-head">
-      <div class="sheet-title">Profile</div>
-      <button class="sheet-close" onclick="closeSheet('publicProfileSheet')">×</button>
+  <div class="sheet" style="max-height:92dvh;overflow-y:auto;padding:0">
+    <div class="sheet-handle" style="margin:10px auto 0"></div>
+    <button class="sheet-close" onclick="closeSheet('publicProfileSheet')" style="position:absolute;top:14px;right:14px;z-index:20">×</button>
+
+    <!-- Banner + avatar -->
+    <div class="pub-banner" id="pubProfBanner">
+      <img id="pubProfBannerImg" src="" alt="" style="display:none">
     </div>
-    <div class="sheet-body">
-      <div id="pubProfLoading" style="text-align:center;padding:32px 0"><div class="spinner spinner-gold" style="margin:0 auto"></div></div>
-      <div id="pubProfContent" style="display:none">
-        <div style="display:flex;gap:14px;align-items:center;margin-bottom:16px">
-          <div id="pubProfAv" style="width:64px;height:64px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#000;flex-shrink:0;overflow:hidden"></div>
-          <div>
-            <div style="font-family:var(--font-display);font-size:18px;font-weight:700" id="pubProfName">—</div>
-            <div style="font-size:13px;color:var(--muted2)" id="pubProfCity">—</div>
-            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px" id="pubProfRole">—</div>
-          </div>
-        </div>
-        <div style="font-size:14px;line-height:1.7;color:var(--muted2);margin-bottom:16px" id="pubProfBio">—</div>
-        <div id="pubProfSocial" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
-        <div id="pubProfEvents">
-          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">Hosted Events</div>
-          <div id="pubProfEventsList"></div>
+    <div style="position:relative;padding:0 16px 0">
+      <!-- Avatar overlapping banner -->
+      <div id="pubProfAv" style="width:72px;height:72px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#000;flex-shrink:0;overflow:hidden;border:3px solid var(--bg);margin-top:-36px;margin-bottom:10px"></div>
+    </div>
+
+    <div id="pubProfLoading" style="text-align:center;padding:32px 0"><div class="spinner spinner-gold" style="margin:0 auto"></div></div>
+    <div id="pubProfContent" style="display:none;padding:0 16px 28px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">
+        <div>
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:800" id="pubProfName">—</div>
+          <div style="font-size:13px;color:var(--muted2);margin-top:2px" id="pubProfCity"></div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:3px" id="pubProfRole"></div>
         </div>
       </div>
-      <div id="pubProfErr" style="display:none;text-align:center;padding:32px 0;color:var(--muted2)">Could not load profile.</div>
+      <div style="font-size:14px;line-height:1.7;color:var(--muted2);margin:10px 0 14px" id="pubProfBio"></div>
+      <div id="pubProfSocial" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px"></div>
+
+      <!-- Bible Verse -->
+      <div class="pub-section" id="pubBibleSection" style="display:none">
+        <div class="pub-section-title">✝ Favorite Verse</div>
+        <div class="bible-verse-text" id="pubBibleVerse"></div>
+        <div class="bible-verse-ref" id="pubBibleRef"></div>
+      </div>
+
+      <!-- Hot Takes -->
+      <div class="pub-section" id="pubHotTakesSection" style="display:none">
+        <div class="pub-section-title">🔥 Hot Takes</div>
+        <div class="hot-take-bubble" id="pubHotTakes"></div>
+      </div>
+
+      <!-- Hobbies -->
+      <div class="pub-section" id="pubHobbiesSection" style="display:none">
+        <div class="pub-section-title">🎯 Hobbies & Interests</div>
+        <div style="font-size:13px;color:var(--text)" id="pubHobbies"></div>
+      </div>
+
+      <!-- Connect Tags -->
+      <div class="pub-section" id="pubConnectSection" style="display:none">
+        <div class="pub-section-title">🤝 Open to Connect</div>
+        <div class="connect-tags-display" id="pubConnectTags"></div>
+      </div>
+
+      <!-- Hosted Events -->
+      <div id="pubProfEvents">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">Hosted Events</div>
+        <div id="pubProfEventsList"></div>
+      </div>
     </div>
+    <div id="pubProfErr" style="display:none;text-align:center;padding:32px 0;color:var(--muted2);padding:32px 16px">Could not load profile.</div>
   </div>
 </div>
 
@@ -3947,6 +4037,31 @@ let userLocation   = null;
 let activeFilters  = { type:[], price:[], format:[] };
 let obAvatarColor  = null, obAvatarUrl = null;
 let epAvatarColor  = null, epAvatarUrl = null;
+
+const BIBLE_VERSIONS = [
+  { code: 'KJV',  name: 'King James Version (KJV)' },
+  { code: 'NKJV', name: 'New King James Version (NKJV)' },
+  { code: 'NIV',  name: 'New International Version (NIV)' },
+  { code: 'ESV',  name: 'English Standard Version (ESV)' },
+  { code: 'NLT',  name: 'New Living Translation (NLT)' },
+  { code: 'AMP',  name: 'Amplified Bible (AMP)' },
+  { code: 'CSB',  name: 'Christian Standard Bible (CSB)' },
+  { code: 'NASB', name: 'New American Standard Bible (NASB)' },
+  { code: 'MSG',  name: 'The Message (MSG)' },
+  { code: 'NET',  name: 'New English Translation (NET)' },
+  { code: 'GNT',  name: 'Good News Translation (GNT)' },
+  { code: 'TLB',  name: 'The Living Bible (TLB)' },
+];
+const CONNECT_TAGS = [
+  { id: 'prayer',     emoji: '🙏', label: 'Prayer Partner' },
+  { id: 'bible',      emoji: '📖', label: 'Bible Study Buddy' },
+  { id: 'meetup',     emoji: '☕', label: 'Meet Up at Events' },
+  { id: 'worship',    emoji: '🎵', label: 'Worship Team' },
+  { id: 'volunteer',  emoji: '🤝', label: 'Volunteering' },
+  { id: 'chat',       emoji: '💬', label: 'Just Chatting' },
+  { id: 'mentorship', emoji: '🌱', label: 'Mentorship' },
+  { id: 'family',     emoji: '👨‍👩‍👧', label: 'Family & Parenting' },
+];
 
 const AVATAR_COLORS = [
   'linear-gradient(135deg,#C9A84C,#6B4A00)',
@@ -5383,24 +5498,33 @@ function renderSocialLinks(containerId, profile) {
 // ─── PUBLIC PROFILE VIEWER ───────────────────────────────────
 async function openPublicProfile(userId) {
   if (!userId) return;
-  // If it's the current user, go to profile page instead
   if (userId === currentUser?.id) { goTo('profile'); return; }
   const loading = document.getElementById('pubProfLoading');
   const content = document.getElementById('pubProfContent');
   const errEl   = document.getElementById('pubProfErr');
   loading.style.display = 'block'; content.style.display = 'none'; errEl.style.display = 'none';
-  document.getElementById('publicProfileSheet').classList.add('open');
-  document.body.style.overflow = 'hidden';
+  // Reset sections
+  ['pubBibleSection','pubHotTakesSection','pubHobbiesSection','pubConnectSection'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  document.getElementById('pubProfBannerImg').style.display = 'none';
+  openSheet('publicProfileSheet');
   try {
+    const headers = currentSession?.access_token ? { 'Authorization': `Bearer ${currentSession.access_token}` } : {};
     const [profRes, evRes] = await Promise.all([
-      fetch(`${API_BASE}/api/profiles/${userId}`),
+      fetch(`${API_BASE}/api/profile/public/${userId}`, { headers }),
       fetch(`${API_BASE}/api/events?host_id=${encodeURIComponent(userId)}&limit=20`),
     ]);
     if (!profRes.ok) throw new Error('Not found');
-    const prof = await profRes.json();
-    const evData = await evRes.json();
+    const prof    = await profRes.json();
+    const evData  = await evRes.json();
     const hostEvents = evData.events || [];
-    // Render avatar
+
+    // Banner
+    const bannerImg = document.getElementById('pubProfBannerImg');
+    if (prof.banner_url) { bannerImg.src = prof.banner_url; bannerImg.style.display = 'block'; }
+
+    // Avatar
     const avEl = document.getElementById('pubProfAv');
     avEl.innerHTML = '';
     if (prof.avatar_url) {
@@ -5413,12 +5537,45 @@ async function openPublicProfile(userId) {
       avEl.textContent = (prof.full_name||'?').charAt(0).toUpperCase();
       avEl.style.background = prof.avatar_color || 'var(--gold)';
     }
-    document.getElementById('pubProfName').textContent = prof.full_name || 'Anonymous';
+
+    document.getElementById('pubProfName').textContent = prof.full_name || 'ChristLink Member';
     document.getElementById('pubProfCity').textContent = prof.city || '';
-    document.getElementById('pubProfRole').textContent = prof.role === 'host' ? 'Event Host' : 'Member';
-    document.getElementById('pubProfBio').textContent  = prof.bio  || 'No bio yet.';
+    const roleLabels = { admin:'Admin', verified:'Verified Host', host:'Event Host' };
+    document.getElementById('pubProfRole').textContent = roleLabels[prof.role] || 'Member';
+    document.getElementById('pubProfBio').textContent  = prof.bio || '';
     renderSocialLinks('pubProfSocial', prof);
-    // Hosted events mini-list
+
+    if (!prof.restricted) {
+      // Bible verse
+      if (prof.bible_verse) {
+        document.getElementById('pubBibleVerse').textContent = prof.bible_verse;
+        const refParts = [prof.bible_verse_reference, prof.bible_version].filter(Boolean);
+        document.getElementById('pubBibleRef').textContent = refParts.join(' · ');
+        document.getElementById('pubBibleSection').style.display = 'block';
+      }
+      // Hot takes
+      if (prof.hot_takes) {
+        document.getElementById('pubHotTakes').textContent = prof.hot_takes;
+        document.getElementById('pubHotTakesSection').style.display = 'block';
+      }
+      // Hobbies
+      if (prof.hobbies) {
+        document.getElementById('pubHobbies').textContent = prof.hobbies;
+        document.getElementById('pubHobbiesSection').style.display = 'block';
+      }
+      // Connect tags
+      const tags = prof.connect_tags || [];
+      if (tags.length) {
+        const tagMap = Object.fromEntries(CONNECT_TAGS.map(t => [t.id, t]));
+        document.getElementById('pubConnectTags').innerHTML = tags
+          .filter(id => tagMap[id])
+          .map(id => `<div class="connect-tag-pill"><span>${tagMap[id].emoji}</span><span>${tagMap[id].label}</span></div>`)
+          .join('');
+        document.getElementById('pubConnectSection').style.display = 'block';
+      }
+    }
+
+    // Hosted events
     const listEl = document.getElementById('pubProfEventsList');
     listEl.innerHTML = '';
     if (hostEvents.length === 0) {
@@ -5432,7 +5589,7 @@ async function openPublicProfile(userId) {
         listEl.appendChild(d);
       });
     }
-    document.getElementById('pubProfEvents').style.display = hostEvents.length === 0 && prof.role !== 'host' ? 'none' : 'block';
+    document.getElementById('pubProfEvents').style.display = (hostEvents.length === 0 && !['host','admin','verified'].includes(prof.role)) ? 'none' : 'block';
     loading.style.display = 'none'; content.style.display = 'block';
   } catch {
     loading.style.display = 'none'; errEl.style.display = 'block';
@@ -5824,6 +5981,70 @@ function switchPTab(el, tab) {
   if (tab === 'tickets') fetchMyTickets();
 }
 
+// ─── PROFILE HELPERS ────────────────────────────────────────
+function populateBibleVersions() {
+  const sel = document.getElementById('epBibleVersion');
+  if (!sel || sel.options.length > 0) return;
+  sel.innerHTML = BIBLE_VERSIONS.map(v => `<option value="${v.code}">${v.code}</option>`).join('');
+}
+
+function renderConnectTagsEdit(selectedTags = []) {
+  const container = document.getElementById('epConnectTags');
+  if (!container) return;
+  container.innerHTML = CONNECT_TAGS.map(tag => `
+    <button type="button" class="connect-tag-btn ${selectedTags.includes(tag.id) ? 'active' : ''}"
+      data-tag="${tag.id}" onclick="this.classList.toggle('active')">
+      <span>${tag.emoji}</span><span>${tag.label}</span>
+    </button>`).join('');
+}
+
+function getSelectedConnectTags() {
+  return [...document.querySelectorAll('#epConnectTags .connect-tag-btn.active')].map(b => b.dataset.tag);
+}
+
+function epHandleBanner(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Compress banner via canvas (max 1200px wide, jpeg 85%)
+    const srcImg = new Image();
+    srcImg.onload = () => {
+      const MAX = 1200;
+      const scale = Math.min(1, MAX / srcImg.width);
+      const w = Math.round(srcImg.width * scale);
+      const h = Math.round(srcImg.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(srcImg, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      // Show preview immediately
+      document.getElementById('epBannerImg').src = dataUrl;
+      document.getElementById('epBannerPreview').style.display = 'block';
+      document.getElementById('epBannerPlaceholder').style.display = 'none';
+      // Upload async — store URL when done
+      fetch(`${API_BASE}/api/upload-banner`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+        body: JSON.stringify({ dataUrl }),
+      }).then(r => r.json()).then(d => {
+        if (d.url) {
+          window._epBannerUrl = d.url;
+          document.getElementById('epBannerImg').src = d.url;
+        }
+      }).catch(() => showToast('Banner upload failed', 'error'));
+    };
+    srcImg.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function epRemoveBanner() {
+  document.getElementById('epBannerPreview').style.display = 'none';
+  document.getElementById('epBannerPlaceholder').style.display = 'flex';
+  document.getElementById('epBannerInput').value = '';
+  window._epBannerUrl = null;
+}
+
 // ─── EDIT PROFILE ───────────────────────────────────────────
 async function openEditProfile() {
   openSheet('editProfileSheet');
@@ -5839,6 +6060,28 @@ function populateEditProfile() {
   document.getElementById('epInstagram').value = profileData?.instagram_url || '';
   document.getElementById('epFacebook').value  = profileData?.facebook_url  || '';
   document.getElementById('epTikTok').value    = profileData?.tiktok_url    || '';
+  // New profile fields
+  populateBibleVersions();
+  document.getElementById('epBibleVerse').value   = profileData?.bible_verse           || '';
+  document.getElementById('epBibleRef').value     = profileData?.bible_verse_reference || '';
+  const verSel = document.getElementById('epBibleVersion');
+  if (verSel) verSel.value = profileData?.bible_version || 'NIV';
+  const hotTakes = profileData?.hot_takes || '';
+  document.getElementById('epHotTakes').value     = hotTakes;
+  document.getElementById('epHotTakesCount').textContent = hotTakes.length + '/300';
+  document.getElementById('epHobbies').value      = profileData?.hobbies || '';
+  renderConnectTagsEdit(profileData?.connect_tags || []);
+  // Banner
+  const bannerUrl = profileData?.banner_url || null;
+  window._epBannerUrl = bannerUrl;
+  if (bannerUrl) {
+    document.getElementById('epBannerImg').src = bannerUrl;
+    document.getElementById('epBannerPreview').style.display = 'block';
+    document.getElementById('epBannerPlaceholder').style.display = 'none';
+  } else {
+    document.getElementById('epBannerPreview').style.display = 'none';
+    document.getElementById('epBannerPlaceholder').style.display = 'flex';
+  }
   // preview
   const prev = document.getElementById('epPreview');
   prev.innerHTML = '';
@@ -5946,14 +6189,21 @@ async function saveProfile() {
   }
 
   const updates = {
-    full_name:     name,
-    bio:           document.getElementById('epBio').value.trim(),
-    city:          document.getElementById('epCity').value.trim(),
-    avatar_url:    avatarUrl,
-    avatar_color:  epAvatarColor || profileData?.avatar_color || null,
-    instagram_url: document.getElementById('epInstagram').value.trim() || null,
-    facebook_url:  document.getElementById('epFacebook').value.trim()  || null,
-    tiktok_url:    document.getElementById('epTikTok').value.trim()    || null,
+    full_name:             name,
+    bio:                   document.getElementById('epBio').value.trim(),
+    city:                  document.getElementById('epCity').value.trim(),
+    avatar_url:            avatarUrl,
+    avatar_color:          epAvatarColor || profileData?.avatar_color || null,
+    instagram_url:         document.getElementById('epInstagram').value.trim() || null,
+    facebook_url:          document.getElementById('epFacebook').value.trim()  || null,
+    tiktok_url:            document.getElementById('epTikTok').value.trim()    || null,
+    banner_url:            window._epBannerUrl || null,
+    bible_verse:           document.getElementById('epBibleVerse').value.trim() || null,
+    bible_verse_reference: document.getElementById('epBibleRef').value.trim()   || null,
+    bible_version:         document.getElementById('epBibleVersion')?.value     || 'NIV',
+    hot_takes:             document.getElementById('epHotTakes').value.trim()   || null,
+    hobbies:               document.getElementById('epHobbies').value.trim()    || null,
+    connect_tags:          getSelectedConnectTags(),
   };
 
   try {
