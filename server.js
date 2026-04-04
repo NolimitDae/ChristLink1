@@ -23,7 +23,8 @@ app.set('trust proxy', 1);
 // ─── CLIENTS ────────────────────────────────────────────────
 // Validate required env vars — warn but don't crash so /health still responds
 const REQUIRED_VARS = [
-  'SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','STRIPE_SECRET_KEY'
+  'SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY',
+  'STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','APP_URL',
 ];
 const missingVars = REQUIRED_VARS.filter(v => !process.env[v]);
 if (missingVars.length) {
@@ -328,7 +329,9 @@ async function geocodeAddress(parts) {
 }
 
 app.get('/api/events', async (req, res) => {
-  const { city, type, is_paid, q, format, host_id, lat, lng, radius = 100, limit = 50, offset = 0 } = req.query;
+  const { city, type, is_paid, q, format, host_id, lat, lng, radius = 100 } = req.query;
+  const limit  = Math.min(Math.max(parseInt(req.query.limit)  || 50,  1), 200);
+  const offset = Math.max(parseInt(req.query.offset) || 0, 0);
   const useRadius = lat && lng;
   let query = supabaseAdmin
     .from('events_with_details').select('*')
@@ -2061,7 +2064,8 @@ app.get('/api/tickets/:ticketId/wallet', requireAuth, async (req, res) => {
 // COMMUNITY POSTS
 // ════════════════════════════════════════════════════════════
 app.get('/api/community-posts', async (req, res) => {
-  const { limit = 30, offset = 0 } = req.query;
+  const limit  = Math.min(Math.max(parseInt(req.query.limit)  || 30, 1), 100);
+  const offset = Math.max(parseInt(req.query.offset) || 0, 0);
   const { data: posts, error } = await supabaseAdmin
     .from('community_posts')
     .select('*')
@@ -2085,7 +2089,7 @@ app.post('/api/community-posts', requireAuth, async (req, res) => {
   if (!safeBody) return res.status(400).json({ error: 'Post body required.' });
   const { data: post, error } = await supabaseAdmin
     .from('community_posts')
-    .insert({ author_id: req.userId, user_id: req.userId, body: safeBody })
+    .insert({ author_id: req.userId, body: safeBody })
     .select('*')
     .single();
   if (error) return res.status(400).json({ error: error.message });
@@ -2364,7 +2368,9 @@ app.get('/api/admin/activity', requireAdmin, async (req, res) => {
 
 // User search + management
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
-  const { q, role, limit = 30, offset = 0 } = req.query;
+  const { q, role } = req.query;
+  const limit  = Math.min(Math.max(parseInt(req.query.limit)  || 30, 1), 200);
+  const offset = Math.max(parseInt(req.query.offset) || 0, 0);
   try {
     let query = supabaseAdmin
       .from('profiles')
@@ -2463,6 +2469,18 @@ setInterval(async () => {
 
 // ─── SPA FALLBACK ───────────────────────────────────────────
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+// ─── GLOBAL ERROR HANDLER ────────────────────────────────────
+// Must be defined after all routes. Catches any unhandled errors
+// thrown or passed via next(err) so API routes never return HTML.
+app.use((err, req, res, next) => {
+  console.error('[unhandled error]', err.message, err.stack);
+  if (res.headersSent) return next(err);
+  if (req.path.startsWith('/api/') || req.path === '/webhook') {
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+  res.status(500).sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // ─── START ──────────────────────────────────────────────────
 app.listen(PORT, () => {
