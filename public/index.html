@@ -1730,6 +1730,18 @@ input[type="datetime-local"] {
 .pill:active, .near-toggle:active { transform: scale(0.94); transition: transform 0.1s ease !important; }
 .tab-item:active > svg { transform: scale(0.88) !important; transition: transform 0.08s ease !important; }
 
+/* ── TICKET VIEWER ───────────────────────────────────────── */
+@keyframes ticketShimmer {
+  0%   { transform: translateX(-100%) skewX(-12deg); }
+  60%  { transform: translateX(250%)  skewX(-12deg); }
+  100% { transform: translateX(250%)  skewX(-12deg); }
+}
+@keyframes ticketIn {
+  from { opacity:0; transform: scale(.94) translateY(12px); }
+  to   { opacity:1; transform: scale(1)   translateY(0); }
+}
+#tvTicketCard { animation: ticketIn .4s var(--spring) both; }
+
 /* ── RSVP SUCCESS BADGE ──────────────────────────────────── */
 @keyframes badgePop {
   0%   { transform: scale(0) rotate(-10deg); opacity: 0; }
@@ -3327,112 +3339,124 @@ button, a, [onclick],
 
 <!-- TICKET VIEWER SHEET -->
 <div class="overlay" id="ticketViewerSheet">
-  <div class="sheet" style="max-height:92dvh;overflow-y:auto">
-    <div class="sheet-handle"></div>
-    <div class="sheet-head" style="position:sticky;top:0;background:var(--surface);z-index:10;padding-bottom:12px">
-      <div>
-        <div class="sheet-title">Your Ticket</div>
-        <div style="font-size:13px;color:var(--muted)" id="tvEventName">—</div>
-      </div>
-      <button class="sheet-close" onclick="closeSheet('ticketViewerSheet')">×</button>
-    </div>
-    <div class="sheet-body" style="padding-bottom:24px">
+  <div class="sheet" style="max-height:96dvh;overflow-y:auto;padding:0">
+    <div class="sheet-handle" style="margin:10px auto 0"></div>
 
-      <!-- TICKET CARD -->
-      <div style="background:linear-gradient(160deg,#1C0E3C,#0F0F1A);border:1px solid rgba(201,168,76,.25);border-radius:20px;overflow:hidden;margin-bottom:16px;box-shadow:0 8px 32px rgba(0,0,0,.4)">
+    <!-- Close button floating -->
+    <button onclick="closeSheet('ticketViewerSheet')" style="position:absolute;top:14px;right:14px;z-index:20;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">×</button>
 
-        <!-- Cover strip with overlay -->
-        <div style="height:100px;background:linear-gradient(135deg,#1A0E38,#252533);position:relative;overflow:hidden">
-          <img id="tvCoverImg" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.5">
-          <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(28,14,60,.95));z-index:1"></div>
-          <div style="position:absolute;bottom:12px;left:16px;right:16px;z-index:2">
-            <div style="font-family:var(--font-display);font-size:17px;font-weight:800;color:#fff;line-height:1.2;text-shadow:0 1px 4px rgba(0,0,0,.5)" id="tvTitle">—</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px" id="tvDate">—</div>
-          </div>
-          <span id="tvCoverEmoji" style="position:absolute;top:12px;right:16px;font-size:28px;z-index:2;opacity:.4">✝</span>
+    <div style="padding:12px 16px 32px">
+
+      <!-- ══ TICKET CARD ══ -->
+      <div id="tvTicketCard" style="background:linear-gradient(170deg,#1C1030 0%,#0D0D1A 100%);border:1px solid rgba(201,168,76,.3);border-radius:22px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.6),0 0 0 1px rgba(201,168,76,.08) inset;position:relative">
+
+        <!-- SHIMMER — only when confirmed -->
+        <div id="tvShimmer" style="position:absolute;inset:0;pointer-events:none;z-index:0;border-radius:22px;overflow:hidden">
+          <div style="position:absolute;inset:-100%;width:60%;height:300%;background:linear-gradient(105deg,transparent 40%,rgba(201,168,76,.07) 50%,transparent 60%);animation:ticketShimmer 3.5s ease-in-out infinite"></div>
         </div>
 
-        <!-- Tear line -->
-        <div style="height:1px;background:repeating-linear-gradient(90deg,rgba(201,168,76,.3) 0,rgba(201,168,76,.3) 8px,transparent 8px,transparent 14px);margin:0 16px"></div>
-
-        <!-- Info row -->
-        <div style="display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.06)">
-          <div style="flex:1;padding:12px 14px;border-right:1px solid rgba(255,255,255,.06)">
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Location</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text)" id="tvLocation">—</div>
-          </div>
-          <div style="flex:1;padding:12px 14px;border-right:1px solid rgba(255,255,255,.06)">
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Ticket</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text)" id="tvType">—</div>
-          </div>
-          <div style="flex:1;padding:12px 14px">
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Qty · Paid</div>
-            <div style="font-size:13px;font-weight:600;color:var(--gold)"><span id="tvQty">1</span> · <span id="tvAmount">—</span></div>
+        <!-- COVER HERO -->
+        <div style="height:160px;position:relative;overflow:hidden;background:linear-gradient(135deg,#1A0E38,#252533)">
+          <img id="tvCoverImg" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+          <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.1) 0%,rgba(13,13,26,.85) 100%)"></div>
+          <span id="tvCoverEmoji" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:52px;opacity:.2;z-index:1">✝</span>
+          <!-- Top-right: admit badge -->
+          <div style="position:absolute;top:14px;left:16px;z-index:2;font-size:9px;font-weight:800;letter-spacing:.14em;color:rgba(201,168,76,.7);text-transform:uppercase">✦ ChristLink</div>
+          <div style="position:absolute;top:14px;right:16px;z-index:2;font-size:9px;font-weight:800;letter-spacing:.12em;color:rgba(255,255,255,.35);text-transform:uppercase;border:1px solid rgba(255,255,255,.15);padding:3px 8px;border-radius:4px">ADMIT <span id="tvAdmit">1</span></div>
+          <!-- Event name over cover -->
+          <div style="position:absolute;bottom:14px;left:16px;right:16px;z-index:2">
+            <div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:#fff;line-height:1.2;text-shadow:0 2px 8px rgba(0,0,0,.7)" id="tvTitle">—</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:4px;display:flex;align-items:center;gap:5px" id="tvDate">—</div>
           </div>
         </div>
 
-        <!-- QR Code block -->
-        <div style="padding:20px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:14px">
-          <div style="background:#fff;border-radius:14px;padding:14px;display:inline-flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.3)">
+        <!-- INFO GRID -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid rgba(255,255,255,.06)">
+          <div style="padding:12px 16px;border-right:1px solid rgba(255,255,255,.06)">
+            <div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px">Location</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="tvLocation">—</div>
+          </div>
+          <div style="padding:12px 16px">
+            <div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px">Ticket Type</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)" id="tvType">General</div>
+          </div>
+          <div style="padding:12px 16px;border-right:1px solid rgba(255,255,255,.06);border-top:1px solid rgba(255,255,255,.06)">
+            <div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px">Quantity</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)" id="tvQty">1</div>
+          </div>
+          <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)">
+            <div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px">Amount Paid</div>
+            <div style="font-size:13px;font-weight:600;color:var(--gold)" id="tvAmount">—</div>
+          </div>
+        </div>
+
+        <!-- TEAR / PERFORATION LINE -->
+        <div style="position:relative;height:24px;background:var(--bg);display:flex;align-items:center">
+          <!-- left notch -->
+          <div style="position:absolute;left:-1px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid rgba(201,168,76,.18);border-left:none"></div>
+          <!-- dashed line -->
+          <div style="flex:1;margin:0 20px;height:1px;background:repeating-linear-gradient(90deg,rgba(201,168,76,.4) 0,rgba(201,168,76,.4) 6px,transparent 6px,transparent 12px)"></div>
+          <!-- right notch -->
+          <div style="position:absolute;right:-1px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid rgba(201,168,76,.18);border-right:none"></div>
+        </div>
+
+        <!-- QR STUB -->
+        <div style="padding:20px 16px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;background:linear-gradient(170deg,#0D0D1A,#130B28)">
+          <!-- Status badge -->
+          <span id="tvStatusBadge" style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:4px 16px;border-radius:999px;background:rgba(78,201,140,.12);color:#4EC98C;border:1px solid rgba(78,201,140,.3)">✓ Confirmed</span>
+
+          <!-- QR block -->
+          <div style="background:#fff;border-radius:16px;padding:16px;display:inline-flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(0,0,0,.4)">
             <canvas id="tvQrCanvas"></canvas>
-            <div style="font-size:13px;color:#111;font-weight:700;letter-spacing:.18em;font-family:monospace" id="tvTicketCode">—</div>
+            <!-- Barcode-style divider -->
+            <div style="width:100%;display:flex;gap:1px;align-items:flex-end;height:20px;padding:0 4px">
+              <div id="tvBarcodeStrips"></div>
+            </div>
+            <div style="font-size:12px;color:#111;font-weight:800;letter-spacing:.22em;font-family:monospace" id="tvTicketCode">—</div>
           </div>
-          <span id="tvStatusBadge" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 16px;border-radius:999px;background:rgba(78,201,140,.12);color:#4EC98C;border:1px solid rgba(78,201,140,.3)">✓ Confirmed</span>
-          <div style="font-size:11px;color:var(--muted);text-align:center;line-height:1.5;max-width:240px">Present this QR code at the event entrance for check-in</div>
+
+          <div style="font-size:11px;color:var(--muted);text-align:center;line-height:1.6;max-width:220px">Present this QR code at the entrance for check-in</div>
         </div>
+
       </div>
+      <!-- ══ END TICKET CARD ══ -->
 
       <!-- Apple Wallet button (iOS only) -->
-      <div id="tvWalletWrap" style="display:none;margin-bottom:10px">
-        <!-- Pass preview card -->
+      <div id="tvWalletWrap" style="display:none;margin-top:14px">
         <div style="background:linear-gradient(135deg,#1a1200,#2a1e00,#1a1200);border:1.5px solid rgba(201,168,76,.45);border-radius:16px;overflow:hidden;margin-bottom:10px;box-shadow:0 4px 20px rgba(201,168,76,.15)">
           <div style="display:flex;align-items:center;padding:12px 14px;gap:12px">
-            <!-- Golden ticket illustration -->
             <div style="flex-shrink:0;width:48px;height:48px;display:flex;align-items:center;justify-content:center">
               <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- ticket base -->
-                <rect x="2" y="12" width="44" height="24" rx="5" fill="url(#goldGrad)" stroke="rgba(201,168,76,.6)" stroke-width="1"/>
-                <!-- left notch -->
+                <rect x="2" y="12" width="44" height="24" rx="5" fill="url(#goldGrad2)" stroke="rgba(201,168,76,.6)" stroke-width="1"/>
                 <circle cx="2" cy="24" r="5" fill="#0F0F1A"/>
-                <!-- right notch -->
                 <circle cx="46" cy="24" r="5" fill="#0F0F1A"/>
-                <!-- perforation line -->
                 <line x1="14" y1="13" x2="14" y2="35" stroke="rgba(0,0,0,.25)" stroke-width="1.5" stroke-dasharray="2 2"/>
-                <!-- cross symbol -->
                 <rect x="18" y="20" width="14" height="3" rx="1.5" fill="rgba(0,0,0,.35)"/>
                 <rect x="23" y="15" width="3" height="13" rx="1.5" fill="rgba(0,0,0,.35)"/>
-                <!-- shine -->
                 <rect x="3" y="13" width="41" height="5" rx="2" fill="rgba(255,255,255,.18)"/>
-                <defs>
-                  <linearGradient id="goldGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stop-color="#F5D060"/>
-                    <stop offset="40%" stop-color="#C9A84C"/>
-                    <stop offset="70%" stop-color="#E8C84A"/>
-                    <stop offset="100%" stop-color="#A07820"/>
-                  </linearGradient>
-                </defs>
+                <defs><linearGradient id="goldGrad2" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#F5D060"/><stop offset="40%" stop-color="#C9A84C"/><stop offset="70%" stop-color="#E8C84A"/><stop offset="100%" stop-color="#A07820"/></linearGradient></defs>
               </svg>
             </div>
-            <!-- ChristLink branding -->
             <div>
               <div style="font-family:var(--font-display);font-size:16px;font-weight:800;color:#C9A84C;letter-spacing:.02em;line-height:1.1">ChristLink</div>
               <div style="font-size:11px;color:rgba(201,168,76,.6);margin-top:2px;font-weight:500">Event Ticket Pass</div>
             </div>
-            <!-- Wallet logo right side -->
             <div style="margin-left:auto;opacity:.5">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="#C9A84C"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
             </div>
           </div>
         </div>
-        <!-- Add to Wallet button -->
         <button id="tvWalletBtn" onclick="addToAppleWallet()" style="width:100%;height:52px;border-radius:var(--r-full);background:#000;border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
           <span style="color:#fff;font-size:15px;font-weight:700">Add to Apple Wallet</span>
         </button>
       </div>
 
-      <button id="tvRefundBtn" onclick="requestTicketRefund()" style="display:none;width:100%;height:44px;background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.25);border-radius:var(--r-full);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">Request Refund</button>
-      <button class="btn btn-outline" onclick="closeSheet('ticketViewerSheet')">Close</button>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+        <button id="tvRefundBtn" onclick="requestTicketRefund()" style="display:none;width:100%;height:44px;background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.25);border-radius:var(--r-full);font-size:14px;font-weight:600;cursor:pointer">Request Refund</button>
+        <button class="btn btn-outline" onclick="closeSheet('ticketViewerSheet')">Close</button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -7851,17 +7875,31 @@ function openTicketViewer(t) {
     currentViewedTicketId = t.id || null;
 
     // Header + cover
-    document.getElementById('tvEventName').textContent = t.event_name || 'Event';
     document.getElementById('tvTitle').textContent     = t.event_name || 'Event';
     document.getElementById('tvDate').textContent      = t.event_start_date
       ? new Date(t.event_start_date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})
       : 'Date TBD';
     document.getElementById('tvLocation').textContent  = t.event_city || '—';
     document.getElementById('tvQty').textContent       = t.quantity || 1;
+    const admitEl = document.getElementById('tvAdmit');
+    if (admitEl) admitEl.textContent = t.quantity || 1;
     document.getElementById('tvType').textContent      = t.ticket_type_name || 'General';
     document.getElementById('tvAmount').textContent    = t.total_charged_cents > 0
       ? `$${(t.total_charged_cents/100).toFixed(2)}`
       : 'Free';
+
+    // Decorative barcode strips (deterministic from ticket code)
+    const barcodeEl = document.getElementById('tvBarcodeStrips');
+    if (barcodeEl) {
+      const seed = (t.code || t.id || 'TICKET').split('').reduce((a,c) => a + c.charCodeAt(0), 0);
+      const strips = Array.from({length: 36}, (_, i) => {
+        const h = 6 + ((seed * (i + 7) * 13) % 14);
+        const w = (i % 5 === 0) ? 3 : (i % 3 === 0) ? 2 : 1;
+        return `<div style="width:${w}px;height:${h}px;background:#111;border-radius:1px;flex-shrink:0"></div>`;
+      }).join('');
+      barcodeEl.style.cssText = 'display:flex;gap:1.5px;align-items:flex-end;width:100%;padding:0 2px';
+      barcodeEl.innerHTML = strips;
+    }
 
     // Cover image — clear src when hiding to prevent ghost network requests
     const coverImg = document.getElementById('tvCoverImg');
@@ -7875,17 +7913,25 @@ function openTicketViewer(t) {
       document.getElementById('tvCoverEmoji').style.opacity = '0.4';
     }
 
-    // Status badge
-    const badge = document.getElementById('tvStatusBadge');
+    // Status badge + shimmer
+    const badge   = document.getElementById('tvStatusBadge');
+    const shimmer = document.getElementById('tvShimmer');
     if (t.status === 'confirmed') {
       badge.textContent = '✓ Confirmed';
-      badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 16px;border-radius:999px;background:rgba(78,201,140,.12);color:#4EC98C;border:1px solid rgba(78,201,140,.3)';
+      badge.style.cssText = 'font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:4px 16px;border-radius:999px;background:rgba(78,201,140,.12);color:#4EC98C;border:1px solid rgba(78,201,140,.3)';
+      if (shimmer) shimmer.style.display = 'block';
+    } else if (t.status === 'refunded') {
+      badge.textContent = '↩ Refunded';
+      badge.style.cssText = 'font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:4px 16px;border-radius:999px;background:rgba(148,163,184,.08);color:#94a3b8;border:1px solid rgba(148,163,184,.2)';
+      if (shimmer) shimmer.style.display = 'none';
     } else if (t.status === 'pending') {
       badge.textContent = '⏳ Pending';
-      badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 16px;border-radius:999px;background:rgba(201,168,76,.12);color:#C9A84C;border:1px solid rgba(201,168,76,.3)';
+      badge.style.cssText = 'font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:4px 16px;border-radius:999px;background:rgba(201,168,76,.12);color:#C9A84C;border:1px solid rgba(201,168,76,.3)';
+      if (shimmer) shimmer.style.display = 'none';
     } else {
       badge.textContent = t.status || 'Unknown';
-      badge.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 16px;border-radius:999px;background:rgba(255,255,255,.05);color:#888;border:1px solid rgba(255,255,255,.1)';
+      badge.style.cssText = 'font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:4px 16px;border-radius:999px;background:rgba(255,255,255,.05);color:#888;border:1px solid rgba(255,255,255,.1)';
+      if (shimmer) shimmer.style.display = 'none';
     }
 
     // Ticket code — always show something scannable
@@ -7947,6 +7993,10 @@ function openTicketViewer(t) {
       const isPaid = (t.total_charged_cents || 0) > 0;
       refundBtn.style.display = (isHost && isPaid && t.status === 'confirmed') ? 'block' : 'none';
     }
+
+    // Re-trigger ticket card entrance animation
+    const card = document.getElementById('tvTicketCard');
+    if (card) { card.style.animation = 'none'; void card.offsetWidth; card.style.animation = ''; }
 
     openSheet('ticketViewerSheet');
   } catch (err) {
