@@ -188,10 +188,14 @@ img{display:block;max-width:100%}
   display:none;
   min-height:100vh;
   padding-top:calc(var(--nav-h) + var(--safe-t));
-  animation:pageIn .3s var(--ease) both;
+  animation:pageIn .28s var(--ease) both;
 }
 .page.active{display:block}
-@keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.page.slide-in{animation:pageSlideIn .3s var(--ease) both}
+.page.slide-out{animation:pageSlideOut .22s var(--ease) both}
+@keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pageSlideIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes pageSlideOut{from{opacity:1;transform:none}to{opacity:0;transform:translateX(-18px)}}
 
 /* ═══════════════════════════════════════════════════════════
    HERO (Home)
@@ -280,37 +284,47 @@ img{display:block;max-width:100%}
 }
 @media(min-width:600px){.events-grid{grid-template-columns:1fr 1fr}}
 
+/* ── FULL-BLEED EVENT CARDS ── */
 .event-card{
-  background:var(--surface);border:1px solid var(--border);
+  border:1px solid rgba(255,255,255,.08);
   border-radius:var(--r-lg);overflow:hidden;
-  transition:transform .2s var(--ease),border-color .2s;
+  transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .2s;
   cursor:pointer;flex-shrink:0;width:260px;
+  height:310px;position:relative;
+  box-shadow:0 4px 20px rgba(0,0,0,.3);
+  background:var(--surface2);
 }
-.events-grid .event-card{width:auto}
-.event-card:active{transform:scale(.98)}
-.event-card:hover{border-color:rgba(201,168,76,.25)}
+.events-grid .event-card{width:auto;height:280px}
+.event-card:active{transform:scale(.97)!important;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.event-card:hover{transform:translateY(-3px);box-shadow:0 14px 44px rgba(0,0,0,.5);border-color:rgba(201,168,76,.22)}
 
 .card-img{
-  height:200px;display:flex;align-items:center;justify-content:center;
-  font-size:64px;position:relative;
-  background:linear-gradient(135deg,#1E1E2A,#252533);
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;
+}
+.card-img-emoji{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:72px;opacity:.35;pointer-events:none;
 }
 .card-badges{
   position:absolute;top:10px;left:10px;right:10px;
-  display:flex;justify-content:space-between;align-items:flex-start;
+  display:flex;justify-content:space-between;align-items:flex-start;z-index:2;
 }
 .badge{
   padding:3px 10px;border-radius:var(--r-full);font-size:11px;font-weight:700;
-  letter-spacing:.03em;backdrop-filter:blur(8px);
+  letter-spacing:.03em;backdrop-filter:blur(10px);
 }
-.badge-type{background:rgba(22,22,31,.85);color:var(--muted2);border:1px solid var(--border)}
-.badge-free{background:rgba(78,201,140,.15);color:#4EC98C;border:1px solid rgba(78,201,140,.25)}
-.badge-paid{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.25)}
+.badge-type{background:rgba(10,10,15,.72);color:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.12)}
+.badge-free{background:rgba(78,201,140,.2);color:#4EC98C;border:1px solid rgba(78,201,140,.32)}
+.badge-paid{background:rgba(201,168,76,.2);color:var(--gold);border:1px solid rgba(201,168,76,.32)}
 
-.card-body{padding:14px 16px 16px}
-.card-date{font-size:11px;color:var(--gold);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
-.card-name{font-family:var(--font-display);font-size:18px;font-weight:700;line-height:1.3;margin-bottom:6px;color:var(--text)}
-.card-loc{font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:4px;margin-bottom:12px}
+.card-overlay{
+  position:absolute;bottom:0;left:0;right:0;padding:14px;z-index:2;
+  background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.55) 55%,transparent 100%);
+}
+.card-date{font-size:10px;color:rgba(201,168,76,.92);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.card-name{font-family:var(--font-display);font-size:17px;font-weight:700;line-height:1.25;margin-bottom:4px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-loc{font-size:11px;color:rgba(255,255,255,.58);display:flex;align-items:center;gap:4px;margin-bottom:8px}
 .card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .card-btn{
   height:32px;padding:0 14px;border-radius:var(--r-full);
@@ -318,6 +332,12 @@ img{display:block;max-width:100%}
   border:1px solid rgba(201,168,76,.3);transition:all .18s;
 }
 .card-btn:active,.card-btn:hover{background:var(--gold);color:#000}
+
+/* Discovery row section headers */
+.disc-section{margin-bottom:8px}
+.disc-section-head{display:flex;align-items:center;justify-content:space-between;padding:0 20px;margin-bottom:12px}
+.disc-section-title{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text)}
+.disc-see-all{font-size:12px;font-weight:600;color:var(--gold);background:none;border:none;cursor:pointer;padding:4px 0;touch-action:manipulation}
 
 /* ═══════════════════════════════════════════════════════════
    VERSE BANNER
@@ -929,26 +949,23 @@ select.field {
 
 /* ── Share button on event card ── */
 .card-share-btn {
-  width: 28px;
-  height: 28px;
+  width: 30px; height: 30px;
   border-radius: 50%;
-  background: var(--surface3);
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted2);
-  cursor: pointer;
-  flex-shrink: 0;
+  background: rgba(255,255,255,.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.18);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.85);
+  cursor: pointer; flex-shrink: 0;
   transition: all .18s var(--ease);
   touch-action: manipulation;
 }
 .card-share-btn:hover,
 .card-share-btn:active {
-  background: var(--gold-dim);
-  border-color: var(--gold);
+  background: rgba(201,168,76,.3);
+  border-color: rgba(201,168,76,.5);
   color: var(--gold);
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
 /* ── Custom share popover (desktop fallback) ── */
@@ -1522,8 +1539,11 @@ select.field {
 .empty-state{
   text-align:center;padding:64px 32px;
   display:flex;flex-direction:column;align-items:center;gap:12px;
+  animation:emptyIn .4s var(--ease) both;
 }
+@keyframes emptyIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .empty-icon{font-size:48px;opacity:.3}
+.empty-svg{width:96px;height:96px;opacity:.55;margin-bottom:4px}
 .empty-title{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--muted2)}
 .empty-sub{font-size:14px;color:var(--muted);line-height:1.6}
 .divider{height:1px;background:var(--border);margin:0 20px}
@@ -2217,13 +2237,39 @@ button, a, [onclick],
     </div>
   </div>
   <div class="events-scroll" id="homeScroll">
-    <!-- injected -->
     <div class="empty-state" style="width:100%;padding:40px 20px">
       <div class="empty-icon">✝</div>
       <div class="empty-title">No events yet</div>
       <div class="empty-sub">Be the first to host a gathering.</div>
       <button class="btn btn-gold btn-sm mt-4" onclick="goTo('host')">Host an Event →</button>
     </div>
+  </div>
+
+  <!-- Trending This Week -->
+  <div class="disc-section reveal" id="discTrending" style="display:none;margin-top:8px">
+    <div class="disc-section-head">
+      <div class="disc-section-title">🔥 Trending This Week</div>
+      <button class="disc-see-all" onclick="goTo('browse')">See All →</button>
+    </div>
+    <div class="events-scroll" id="trendingScroll"></div>
+  </div>
+
+  <!-- Worship Nights -->
+  <div class="disc-section reveal" id="discWorship" style="display:none;margin-top:8px">
+    <div class="disc-section-head">
+      <div class="disc-section-title">🎵 Worship Nights</div>
+      <button class="disc-see-all" onclick="browseTo('worship')">See All →</button>
+    </div>
+    <div class="events-scroll" id="worshipScroll"></div>
+  </div>
+
+  <!-- Free Events -->
+  <div class="disc-section reveal" id="discFree" style="display:none;margin-top:8px">
+    <div class="disc-section-head">
+      <div class="disc-section-title">🎁 Free to Attend</div>
+      <button class="disc-see-all" onclick="browseTo(null,false)">See All →</button>
+    </div>
+    <div class="events-scroll" id="freeScroll"></div>
   </div>
 
   <!-- Verse -->
@@ -2293,11 +2339,7 @@ button, a, [onclick],
   </div>
 
   <div class="events-grid" id="browseGrid">
-    <div class="empty-state" style="grid-column:1/-1">
-      <div class="empty-icon">🔍</div>
-      <div class="empty-title">No events yet</div>
-      <div class="empty-sub">Events you host or discover will appear here.</div>
-    </div>
+    <div style="grid-column:1/-1" id="browseGridEmpty"></div>
   </div>
 
   <div class="footer" style="margin-top:0">
@@ -2780,9 +2822,12 @@ button, a, [onclick],
     <h1 class="font-serif" style="font-size:24px;font-weight:700;margin-bottom:6px" id="detailTitle">—</h1>
     <div class="detail-host-row" id="detailHostRow" style="cursor:pointer" onclick="openPublicProfile(selectedEvent?.host_id)">
       <div class="detail-host-av" id="detailHostAv">?</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600" id="detailHostName">—</div>
-        <div style="font-size:11px;color:var(--muted)">Hosted by</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="font-size:13px;font-weight:700" id="detailHostName">—</div>
+          <span id="detailHostVerified" style="display:none;font-size:10px;font-weight:700;color:var(--gold);background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);border-radius:4px;padding:1px 6px;letter-spacing:.04em">✓ VERIFIED</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted)" id="detailHostSub">Hosted by</div>
       </div>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
@@ -4035,6 +4080,11 @@ function goTo(page) {
   // Stop forum polling when leaving the forum page
   if (curr?.id === 'page-forum') { clearInterval(forumPolling); forumPolling = null; }
   curr.classList.remove('active');
+  // Slide-in for drill-down pages, fade-up for top-level
+  const slidePages = ['event-detail', 'forum'];
+  next.classList.remove('slide-in');
+  void next.offsetWidth; // force reflow so animation restarts
+  if (slidePages.includes(page)) next.classList.add('slide-in');
   next.classList.add('active');
 
   // update tab bar — hide on full-screen pages
@@ -4058,7 +4108,7 @@ function goTo(page) {
   }
 
   window.scrollTo(0,0);
-  if (page === 'home') fetchHomeEvents();
+  if (page === 'home') { fetchHomeEvents(); fetchDiscoveryRows(); }
   if (page === 'browse') initBrowse();
   if (page === 'profile') {
     fetchProfile();
@@ -4488,6 +4538,35 @@ async function fetchProfile() {
   fetchMyTickets(true);
 }
 
+/* ── EMPTY STATE HELPERS ─────────────────────────────────── */
+const EMPTY_SVGS = {
+  events: `<svg class="empty-svg" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="12" y="22" width="72" height="58" rx="10" stroke="currentColor" stroke-width="3" fill="none" opacity=".4"/>
+    <rect x="12" y="22" width="72" height="18" rx="10" fill="currentColor" opacity=".15"/>
+    <line x1="28" y1="14" x2="28" y2="30" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+    <line x1="68" y1="14" x2="68" y2="30" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+    <rect x="30" y="54" width="16" height="16" rx="4" fill="currentColor" opacity=".3"/>
+    <rect x="50" y="54" width="16" height="16" rx="4" fill="currentColor" opacity=".15"/>
+  </svg>`,
+  tickets: `<svg class="empty-svg" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 38 C10 30 16 24 24 24 L72 24 C80 24 86 30 86 38 L86 44 C82 44 79 47 79 51 C79 55 82 58 86 58 L86 64 C86 72 80 78 72 78 L24 78 C16 78 10 72 10 64 L10 58 C14 58 17 55 17 51 C17 47 14 44 10 44 Z" stroke="currentColor" stroke-width="3" fill="none" opacity=".4"/>
+    <line x1="38" y1="24" x2="38" y2="78" stroke="currentColor" stroke-width="2" stroke-dasharray="5 4" opacity=".3"/>
+    <line x1="50" y1="45" x2="70" y2="45" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity=".35"/>
+    <line x1="50" y1="53" x2="62" y2="53" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity=".25"/>
+  </svg>`,
+  search: `<svg class="empty-svg" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="42" cy="42" r="26" stroke="currentColor" stroke-width="3" fill="none" opacity=".4"/>
+    <line x1="61" y1="61" x2="82" y2="82" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+    <line x1="33" y1="42" x2="51" y2="42" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity=".3"/>
+    <line x1="42" y1="33" x2="42" y2="51" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity=".3"/>
+  </svg>`,
+};
+function emptyStateHTML(type, title, sub, btnLabel, btnAction) {
+  const icon = EMPTY_SVGS[type] || `<div class="empty-icon">📋</div>`;
+  const btn  = btnLabel ? `<button class="btn btn-gold btn-sm" style="margin-top:8px" onclick="${btnAction}">${btnLabel}</button>` : '';
+  return `<div class="empty-state" style="color:var(--muted2)">${icon}<div class="empty-title">${title}</div><div class="empty-sub">${sub}</div>${btn}</div>`;
+}
+
 async function fetchMyEvents(countOnly = false) {
   if (!currentUser) return;
   try {
@@ -4504,12 +4583,7 @@ async function fetchMyEvents(countOnly = false) {
     const container = document.getElementById('myEventsContainer');
     if (!container) return;
     if (events.length === 0) {
-      container.innerHTML = `<div class="empty-state">
-        <div class="empty-icon">📋</div>
-        <div class="empty-title">No events yet</div>
-        <div class="empty-sub">Events you host will appear here.</div>
-        <button class="btn btn-gold btn-sm mt-4" onclick="goTo('host')">Host an Event →</button>
-      </div>`;
+      container.innerHTML = emptyStateHTML('events', 'No events yet', 'Events you host will appear here.', 'Host an Event →', "goTo('host')");
       return;
     }
     container.innerHTML = '';
@@ -4520,12 +4594,7 @@ async function fetchMyEvents(countOnly = false) {
   } catch {
     if (countOnly) return;
     const container = document.getElementById('myEventsContainer');
-    if (container) container.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">📋</div>
-      <div class="empty-title">No events yet</div>
-      <div class="empty-sub">Events you host will appear here.</div>
-      <button class="btn btn-gold btn-sm mt-4" onclick="goTo('host')">Host an Event →</button>
-    </div>`;
+    if (container) container.innerHTML = emptyStateHTML('events', 'No events yet', 'Events you host will appear here.', 'Host an Event →', "goTo('host')");
   }
 }
 
@@ -4548,12 +4617,7 @@ async function fetchMyTickets(countOnly = false) {
     const container = document.getElementById('myTicketsContainer');
     if (!container) return;
     if (total === 0) {
-      container.innerHTML = `<div class="empty-state">
-        <div class="empty-icon">🎟️</div>
-        <div class="empty-title">No tickets yet</div>
-        <div class="empty-sub">Tickets and RSVPs you register for will appear here.</div>
-        <button class="btn btn-gold btn-sm mt-4" onclick="goTo('browse')">Explore Events →</button>
-      </div>`;
+      container.innerHTML = emptyStateHTML('tickets', 'No tickets yet', 'Tickets and RSVPs you register for will appear here.', 'Explore Events →', "goTo('browse')");
       return;
     }
     container.innerHTML = '';
@@ -5915,6 +5979,7 @@ const BG_GRADIENTS = [
   'linear-gradient(135deg,#2A1800,#1A1000)',
 ];
 
+const AVATAR_COLORS_CARD = ['#C9A84C','#4E7CFF','#4EC98C','#FF6B6B','#A882FF','#FF9F43'];
 function makeCardHTML(ev, scrollMode) {
   const fmtDate = ev.start_date
     ? new Date(ev.start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
@@ -5922,31 +5987,45 @@ function makeCardHTML(ev, scrollMode) {
   const isPaid = ev.is_paid;
   const price  = isPaid && ev.ticket_types?.[0] ? `$${(ev.ticket_types[0].price_cents/100).toFixed(2)}` : null;
   const bg = BG_GRADIENTS[Math.abs((ev.name||'').charCodeAt(0)) % BG_GRADIENTS.length];
+  const going = Number(ev.confirmed_rsvps) || 0;
+
+  // Stacked avatar circles for social proof
+  const avatarStack = going > 0
+    ? `<div style="display:flex;align-items:center;gap:6px">
+        <div style="display:flex">
+          ${[...Array(Math.min(3, going))].map((_, i) => {
+            const c = AVATAR_COLORS_CARD[(Math.abs((ev.name||'x').charCodeAt(i*2)) + i) % AVATAR_COLORS_CARD.length];
+            return `<div style="width:22px;height:22px;border-radius:50%;background:${c};border:2px solid rgba(0,0,0,.6);margin-left:${i>0?'-7px':'0'};flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700">${['✝','★','♡'][i]}</div>`;
+          }).join('')}
+        </div>
+        <span style="font-size:11px;color:rgba(255,255,255,.8);font-weight:600">${going > 99 ? '99+' : going} going</span>
+      </div>`
+    : `<span></span>`;
+
   const card = document.createElement('div');
   card.className = 'event-card';
   card.innerHTML = `
-    <div class="card-img" style="background:${bg}${ev.cover_url ? ';padding:0' : ''}">
-      ${ev.cover_url
-        ? `<img src="${ev.cover_url}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">`
-        : `<span>${ev.emoji || '✝'}</span>`}
-      <div class="card-badges">
-        <span class="badge badge-type">${ev.event_type || 'Event'}</span>
-        <span class="badge ${isPaid ? 'badge-paid' : 'badge-free'}">${isPaid ? (price || 'Paid') : 'Free'}</span>
-      </div>
+    <div style="position:absolute;inset:0;background:${bg}"></div>
+    ${ev.cover_url
+      ? `<img class="card-img" src="${ev.cover_url}" alt="${escapeAttr(ev.name||'')}" loading="lazy">`
+      : `<div class="card-img-emoji">${ev.emoji || '✝'}</div>`}
+    <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.4) 50%,rgba(0,0,0,.08) 100%)"></div>
+    <div class="card-badges">
+      <span class="badge badge-type">${ev.event_type || 'Event'}</span>
+      <span class="badge ${isPaid ? 'badge-paid' : 'badge-free'}">${isPaid ? (price || 'Paid') : 'Free'}</span>
     </div>
-    <div class="card-body">
+    <div class="card-overlay">
       <div class="card-date">${fmtDate}</div>
-      <div class="card-name">${ev.name || 'Untitled'}</div>
+      <div class="card-name">${escapeHtml(ev.name || 'Untitled')}</div>
       <div class="card-loc">
-        <svg width="10" height="13" viewBox="0 0 10 13" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg>
-        ${ev.city ? `${ev.city}${ev.state ? ', '+ev.state : ''}` : (ev.format==='online'?'Online':'TBD')}
+        <svg width="8" height="10" viewBox="0 0 10 13" fill="rgba(255,255,255,.55)"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z"/></svg>
+        ${ev.city ? `${escapeHtml(ev.city)}${ev.state ? ', '+ev.state : ''}` : (ev.format==='online'?'Online':'TBD')}
       </div>
       <div class="card-footer">
-        ${price ? `<span style="font-size:13px;font-weight:700;color:var(--gold)">${price}</span>` : `<span style="font-size:12px;color:var(--green);font-weight:600">Free</span>`}
-        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
-          ${Number(ev.confirmed_rsvps) > 0 ? `<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted2)"><div style="display:flex">${[...Array(Math.min(3,Number(ev.confirmed_rsvps)))].map((_,i)=>`<div style="width:16px;height:16px;border-radius:50%;background:${['#C9A84C','#4E7CFF','#4EC98C'][i]};border:1.5px solid var(--bg);margin-left:${i>0?'-5px':'0'};font-size:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">${['★','✝','♡'][i]}</div>`).join('')}</div><span>${ev.confirmed_rsvps} going</span></div>` : `<span style="font-size:11px;color:var(--muted)">View →</span>`}
-          <button class="card-share-btn" aria-label="Share event" onclick="event.stopPropagation();shareEventById('${ev.id}','${escapeAttr(ev.name)}','${escapeAttr(ev.description||'')}',this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
-        </div>
+        ${avatarStack}
+        <button class="card-share-btn" aria-label="Share event" onclick="event.stopPropagation();shareEventById('${ev.id}','${escapeAttr(ev.name||'')}','${escapeAttr(ev.description||'')}',this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
       </div>
     </div>`;
   card.onclick = () => viewDetail(ev);
@@ -5956,12 +6035,10 @@ function makeCardHTML(ev, scrollMode) {
 function renderInto(container, events, scrollMode) {
   container.innerHTML = '';
   if (!events || events.length === 0) {
-    container.innerHTML = `<div class="empty-state" style="${scrollMode?'width:100%;padding:40px 20px':'grid-column:1/-1'}">
-      <div class="empty-icon">✝</div>
-      <div class="empty-title">No events yet</div>
-      <div class="empty-sub">Be the first to host in your city.</div>
-      <button class="btn btn-gold btn-sm mt-4" onclick="goTo('host')">Host an Event →</button>
-    </div>`;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = scrollMode ? 'width:100%;padding:40px 20px' : 'grid-column:1/-1';
+    wrap.innerHTML = emptyStateHTML('search', 'No events yet', 'Be the first to host in your city.', 'Host an Event →', "goTo('host')");
+    container.appendChild(wrap);
     return;
   }
   events.forEach(ev => {
@@ -5999,6 +6076,59 @@ async function fetchHomeEvents(params = {}) {
     renderInto(scroll, data.events, true);
   } catch {
     renderInto(scroll, [], true);
+  }
+}
+
+// Navigate to browse page with a pre-applied filter
+function browseTo(type, isPaid) {
+  goTo('browse');
+  setTimeout(() => {
+    if (type) { document.getElementById('browseSearch').value = type; }
+    runBrowse();
+  }, 300);
+}
+
+async function fetchDiscoveryRows() {
+  try {
+    const [trendingRes, worshipRes, freeRes] = await Promise.all([
+      fetch(`${API_BASE}/api/events?limit=12`),
+      fetch(`${API_BASE}/api/events?type=worship&limit=10`),
+      fetch(`${API_BASE}/api/events?is_paid=false&limit=10`),
+    ]);
+    const [allEvents, worship, free] = await Promise.all([
+      trendingRes.ok ? (await trendingRes.json()).events || [] : [],
+      worshipRes.ok  ? (await worshipRes.json()).events  || [] : [],
+      freeRes.ok     ? (await freeRes.json()).events     || [] : [],
+    ]);
+
+    // Trending = sorted by attendance, skip events already in "Upcoming"
+    const trending = [...allEvents]
+      .sort((a,b) => (Number(b.confirmed_rsvps)||0) - (Number(a.confirmed_rsvps)||0))
+      .filter(e => (Number(e.confirmed_rsvps)||0) > 0)
+      .slice(0, 8);
+    const tEl = document.getElementById('discTrending');
+    if (trending.length > 0) {
+      renderInto(document.getElementById('trendingScroll'), trending, true);
+      tEl.style.display = '';
+    }
+
+    // Worship Nights
+    const wEl = document.getElementById('discWorship');
+    if (worship.length > 0) {
+      renderInto(document.getElementById('worshipScroll'), worship, true);
+      wEl.style.display = '';
+    }
+
+    // Free Events — exclude anything already shown
+    const shown = new Set([...trending, ...worship].map(e => e.id));
+    const freeUniq = free.filter(e => !shown.has(e.id));
+    const fEl = document.getElementById('discFree');
+    if (freeUniq.length > 0) {
+      renderInto(document.getElementById('freeScroll'), freeUniq, true);
+      fEl.style.display = '';
+    }
+  } catch(e) {
+    console.warn('[discovery rows]', e.message);
   }
 }
 
@@ -6177,6 +6307,23 @@ function viewDetail(ev) {
   } else {
     dhAv.textContent = (ev.host_name||'H').charAt(0).toUpperCase();
     if (ev.host_avatar_color) dhAv.style.background = ev.host_avatar_color;
+  }
+  // Host credibility bar — reset then async fetch
+  const detailHostSub = document.getElementById('detailHostSub');
+  const detailHostVerified = document.getElementById('detailHostVerified');
+  detailHostSub.textContent = 'Hosted by';
+  detailHostVerified.style.display = 'none';
+  if (ev.host_id) {
+    fetch(`/api/profiles/${ev.host_id}/stats`)
+      .then(r => r.ok ? r.json() : null)
+      .then(stats => {
+        if (!stats) return;
+        const parts = [];
+        if (stats.eventsHosted > 0) parts.push(`${stats.eventsHosted} event${stats.eventsHosted !== 1 ? 's' : ''}`);
+        if (stats.totalAttendees > 0) parts.push(`${stats.totalAttendees.toLocaleString()} attendees`);
+        detailHostSub.textContent = parts.length ? parts.join(' · ') : 'Hosted by';
+        if (stats.isVerified) detailHostVerified.style.display = 'inline';
+      }).catch(() => {});
   }
   // Only show forum section if host has explicitly enabled it
   const forumSection = document.getElementById('detailForumSection');

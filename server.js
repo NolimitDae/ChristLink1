@@ -234,6 +234,27 @@ app.get('/api/profiles/:id', async (req, res) => {
   res.json(data);
 });
 
+app.get('/api/profiles/:id/stats', async (req, res) => {
+  const hostId = req.params.id;
+  const [{ data: profile }, { data: events }] = await Promise.all([
+    supabaseAdmin.from('profiles').select('role').eq('id', hostId).single(),
+    supabaseAdmin.from('events').select('id').eq('host_id', hostId).eq('status', 'published'),
+  ]);
+  const eventIds = (events || []).map(e => e.id);
+  let totalAttendees = 0;
+  if (eventIds.length) {
+    const { count } = await supabaseAdmin
+      .from('tickets').select('*', { count: 'exact', head: true })
+      .in('event_id', eventIds).eq('status', 'confirmed');
+    totalAttendees = count || 0;
+  }
+  res.json({
+    eventsHosted:   (events || []).length,
+    totalAttendees,
+    isVerified:     profile?.role === 'verified' || profile?.role === 'admin',
+  });
+});
+
 app.patch('/api/profile', requireAuth, async (req, res) => {
   const { full_name, bio, city, avatar_url, avatar_color, instagram_url, facebook_url, tiktok_url } = req.body;
   const updates = {};
