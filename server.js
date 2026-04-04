@@ -1789,7 +1789,18 @@ async function handleWebhook(req, res) {
   const sig = req.headers['stripe-signature'];
   let event;
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    // Try platform webhook secret first, fall back to Connect secret
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    const connectSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, secret);
+    } catch (e) {
+      if (connectSecret) {
+        event = stripe.webhooks.constructEvent(req.body, sig, connectSecret);
+      } else {
+        throw e;
+      }
+    }
   } catch (e) {
     console.error('Webhook sig failed:', e.message);
     return res.status(400).send(`Webhook Error: ${e.message}`);
