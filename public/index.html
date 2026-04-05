@@ -1325,28 +1325,26 @@ select.field {
 .prof-banner{
   width:100%;height:160px;
   background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
-  position:relative;overflow:hidden;
+  position:relative;
 }
-.prof-banner img{width:100%;height:100%;object-fit:cover}
+.prof-banner img.prof-banner-img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+}
 .prof-banner-actions{
-  position:absolute;top:12px;right:12px;display:flex;gap:8px;z-index:2
+  position:absolute;top:12px;right:12px;display:flex;gap:8px;z-index:3
 }
-.prof-action-btn{
-  width:36px;height:36px;border-radius:50%;
-  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;color:var(--text);transition:background .18s;
+.prof-av-anchor{
+  position:absolute;bottom:-43px;left:20px;z-index:4;
 }
-.prof-action-btn:active{background:rgba(201,168,76,.25)}
-.prof-identity{padding:0 20px 20px;border-bottom:1px solid var(--border)}
 .prof-av{
   width:86px;height:86px;border-radius:50%;
   border:3px solid var(--bg);
   background:linear-gradient(135deg,var(--gold),#6B4A00);
   display:flex;align-items:center;justify-content:center;
   font-family:var(--font-display);font-size:32px;font-weight:700;color:#000;
-  overflow:hidden;margin-top:-43px;box-shadow:0 4px 20px rgba(0,0,0,.5);
+  overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.5);
 }
+.prof-identity{padding:55px 20px 20px;border-bottom:1px solid var(--border)}
 .prof-av img{width:100%;height:100%;object-fit:cover}
 .prof-name{font-family:var(--font-display);font-size:24px;font-weight:800;margin:10px 0 2px;line-height:1.2}
 .prof-handle{font-size:13px;color:var(--muted2)}
@@ -2857,7 +2855,7 @@ button, a, [onclick],
 
     <!-- BANNER -->
     <div class="prof-banner" id="profBanner">
-      <img id="profBannerImg" src="" alt="" style="display:none">
+      <img id="profBannerImg" class="prof-banner-img" src="" alt="" style="display:none">
       <!-- Action buttons float over banner -->
       <div class="prof-banner-actions">
         <button id="notifBellBtn" class="prof-action-btn" onclick="openNotifSheet()" style="position:relative">
@@ -2868,11 +2866,14 @@ button, a, [onclick],
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
       </div>
+      <!-- Avatar anchored to bottom-left, overlapping banner edge -->
+      <div class="prof-av-anchor">
+        <div class="prof-av" id="profAv">?</div>
+      </div>
     </div>
 
     <!-- IDENTITY -->
     <div class="prof-identity">
-      <div class="prof-av" id="profAv">?</div>
       <div class="prof-name" id="profName">—</div>
       <div class="prof-handle" id="profHandle">—</div>
       <div class="prof-meta">
