@@ -1321,41 +1321,133 @@ select.field {
 /* ═══════════════════════════════════════════════════════════
    PROFILE PAGE
 ═══════════════════════════════════════════════════════════ */
-.profile-hero{
-  background:linear-gradient(160deg,rgba(201,168,76,.07),transparent);
-  border-bottom:1px solid var(--border);
-  padding:28px 20px 24px;
+/* ── PROFILE PAGE REDESIGN ───────────────────────────────── */
+.prof-banner{
+  width:100%;height:160px;
+  background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+  position:relative;overflow:hidden;
 }
-.profile-top{display:flex;align-items:flex-start;gap:16px;margin-bottom:16px}
-.profile-av{
-  width:72px;height:72px;border-radius:50%;flex-shrink:0;
+.prof-banner img{width:100%;height:100%;object-fit:cover}
+.prof-banner-actions{
+  position:absolute;top:12px;right:12px;display:flex;gap:8px;z-index:2
+}
+.prof-action-btn{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text);transition:background .18s;
+}
+.prof-action-btn:active{background:rgba(201,168,76,.25)}
+.prof-identity{padding:0 20px 20px;border-bottom:1px solid var(--border)}
+.prof-av{
+  width:86px;height:86px;border-radius:50%;
+  border:3px solid var(--bg);
   background:linear-gradient(135deg,var(--gold),#6B4A00);
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--font-display);font-size:28px;font-weight:700;color:#000;
-  border:3px solid rgba(201,168,76,.25);overflow:hidden;
+  font-family:var(--font-display);font-size:32px;font-weight:700;color:#000;
+  overflow:hidden;margin-top:-43px;box-shadow:0 4px 20px rgba(0,0,0,.5);
 }
-.profile-av img{width:100%;height:100%;object-fit:cover}
-.profile-info{flex:1;min-width:0}
-.profile-name{font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:3px}
-.profile-handle{font-size:13px;color:var(--muted2);margin-bottom:8px}
-.profile-joined{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
-.profile-bio{font-size:14px;color:var(--muted2);line-height:1.6;margin-bottom:14px}
+.prof-av img{width:100%;height:100%;object-fit:cover}
+.prof-name{font-family:var(--font-display);font-size:24px;font-weight:800;margin:10px 0 2px;line-height:1.2}
+.prof-handle{font-size:13px;color:var(--muted2)}
+.prof-meta{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap}
+.prof-meta-chip{
+  display:flex;align-items:center;gap:4px;
+  font-size:11px;color:var(--muted);
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:999px;padding:3px 9px;
+}
+.prof-bio-text{font-size:14px;color:var(--muted2);line-height:1.65;margin-top:12px}
+.prof-social-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+
+/* Stats strip */
+.prof-stats-strip{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+.prof-stat-cell{
+  padding:14px 0;text-align:center;position:relative;
+}
+.prof-stat-cell+.prof-stat-cell::before{
+  content:'';position:absolute;left:0;top:20%;height:60%;
+  width:1px;background:var(--border);
+}
+.prof-stat-num{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--gold)}
+.prof-stat-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+
+/* Profile tabs */
+.profile-tabs{
+  display:flex;border-bottom:1px solid var(--border);
+  position:sticky;top:calc(var(--nav-h) + var(--safe-t));
+  background:var(--bg);z-index:10;
+}
+.profile-tab{
+  flex:1;padding:13px 0;text-align:center;font-size:13px;font-weight:600;
+  color:var(--muted2);cursor:pointer;border-bottom:2px solid transparent;
+  transition:color .18s,border-color .18s;
+}
+.profile-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.profile-tab-panel{display:none;padding:20px 16px 32px}
+.profile-tab-panel.active{display:block;animation:pageIn .2s var(--ease) both}
+
+/* Profile sections */
+.prof-section{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  padding:16px;
+  margin-bottom:12px;
+}
+.prof-section-title{
+  font-size:9px;font-weight:800;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gold);
+  margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.prof-verse-text{
+  font-family:var(--font-display);font-style:italic;
+  font-size:15px;color:var(--text);line-height:1.7;
+}
+.prof-verse-ref{
+  font-size:12px;color:var(--muted);margin-top:6px;
+  display:flex;align-items:center;gap:6px;
+}
+.prof-verse-ref span{
+  background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);
+  border-radius:4px;padding:1px 7px;font-size:11px;color:var(--gold);
+}
+.prof-hot-take{
+  background:linear-gradient(135deg,rgba(201,168,76,.07),rgba(201,168,76,.03));
+  border-left:3px solid var(--gold);
+  border-radius:0 10px 10px 0;
+  padding:12px 14px;
+  font-size:14px;color:var(--text);line-height:1.6;
+}
+.prof-hobbies-text{font-size:14px;color:var(--text);line-height:1.6}
+.prof-connect-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.prof-connect-pill{
+  display:flex;align-items:center;gap:7px;
+  background:rgba(201,168,76,.08);
+  border:1px solid rgba(201,168,76,.2);
+  border-radius:999px;padding:6px 13px;
+  font-size:12px;font-weight:600;color:var(--gold);
+  transition:background .18s;
+}
+
+/* Old selectors kept for compat */
+.profile-hero{padding:0}
 .profile-edit-btn{
   display:inline-flex;height:36px;padding:0 16px;border-radius:var(--r-full);
   border:1px solid var(--border2);color:var(--muted2);font-size:13px;font-weight:600;
   align-items:center;gap:6px;transition:all .18s;
 }
 .profile-edit-btn:active{border-color:var(--gold);color:var(--gold)}
-.profile-stats{display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden}
+/* legacy stat selectors (kept for JS refs) */
 .stat-cell{flex:1;padding:14px 0;text-align:center;border-right:1px solid var(--border)}
 .stat-cell:last-child{border-right:none}
 .stat-num{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--gold)}
 .stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:2px}
 
-.profile-tabs{
-  display:flex;border-bottom:1px solid var(--border);
-  position:sticky;top:calc(var(--nav-h) + var(--safe-t));
-  background:var(--bg);z-index:10;
 }
 .profile-tab{
   flex:1;padding:14px 0;text-align:center;font-size:13px;font-weight:600;
@@ -2753,7 +2845,7 @@ button, a, [onclick],
 <div class="page" id="page-profile">
   <!-- auth gate -->
   <div class="profile-auth-gate" id="prof-gate" style="display:none">
-    <div style="font-size:56px">👤</div>
+    <div style="display:flex;justify-content:center;margin-bottom:12px"><div style="width:64px;height:75px" id="profGateLogo"></div></div>
     <div class="empty-title font-serif">Your Profile</div>
     <div class="empty-sub">Sign in to view your events, tickets & settings.</div>
     <button class="btn btn-gold" style="max-width:260px" onclick="openAuth('signup')">Create Account</button>
@@ -2762,82 +2854,144 @@ button, a, [onclick],
 
   <!-- content (hidden until logged in) -->
   <div id="prof-content" style="display:none">
-    <div style="padding:12px 20px 0">
-      <button class="page-back-btn" onclick="goTo('home')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-        Home
-      </button>
-    </div>
-    <div class="profile-hero">
-      <div class="profile-top">
-        <div class="profile-av" id="profAv">?</div>
-        <div class="profile-info">
-          <div class="profile-name" id="profName">—</div>
-          <div class="profile-handle" id="profHandle">—</div>
-          <div class="profile-joined" id="profJoined">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Joined
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button id="notifBellBtn" onclick="openNotifSheet()" style="position:relative;width:38px;height:38px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted2)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            <span id="notifBadge" style="display:none;position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#ef4444;border:1.5px solid var(--surface3)"></span>
-          </button>
-          <button class="profile-edit-btn" onclick="openEditProfile()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Edit
-          </button>
-        </div>
-      </div>
-      <div class="profile-bio" id="profBio">—</div>
-      <div id="profSocialLinks" style="display:flex;gap:14px;margin:10px 0 0;flex-wrap:wrap"></div>
-      <div class="profile-stats" id="profStats" style="margin-top:20px">
-        <div class="stat-cell"><div class="stat-num" id="statEvents">0</div><div class="stat-label">Events</div></div>
-        <div class="stat-cell"><div class="stat-num" id="statTickets">0</div><div class="stat-label">Tickets</div></div>
-        <div class="stat-cell"><div class="stat-num" id="statCity">—</div><div class="stat-label">City</div></div>
+
+    <!-- BANNER -->
+    <div class="prof-banner" id="profBanner">
+      <img id="profBannerImg" src="" alt="" style="display:none">
+      <!-- Action buttons float over banner -->
+      <div class="prof-banner-actions">
+        <button id="notifBellBtn" class="prof-action-btn" onclick="openNotifSheet()" style="position:relative">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span id="notifBadge" style="display:none;position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#ef4444;border:1.5px solid #111"></span>
+        </button>
+        <button class="prof-action-btn" onclick="openEditProfile()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
       </div>
     </div>
 
+    <!-- IDENTITY -->
+    <div class="prof-identity">
+      <div class="prof-av" id="profAv">?</div>
+      <div class="prof-name" id="profName">—</div>
+      <div class="prof-handle" id="profHandle">—</div>
+      <div class="prof-meta">
+        <div class="prof-meta-chip" id="profJoined" style="display:none">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span id="profJoinedText">Joined</span>
+        </div>
+        <div class="prof-meta-chip" id="profCityChip" style="display:none">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          <span id="profCityText">—</span>
+        </div>
+        <div class="prof-meta-chip" id="profRoleChip" style="display:none">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7l9 5 9-5-9-5zM3 17l9 5 9-5M3 12l9 5 9-5"/></svg>
+          <span id="profRoleText">Member</span>
+        </div>
+      </div>
+      <div class="prof-bio-text" id="profBio" style="display:none"></div>
+      <div class="prof-social-row" id="profSocialLinks"></div>
+    </div>
+
+    <!-- STATS STRIP -->
+    <div class="prof-stats-strip">
+      <div class="prof-stat-cell">
+        <div class="prof-stat-num" id="statEvents">0</div>
+        <div class="prof-stat-label">Events Hosted</div>
+      </div>
+      <div class="prof-stat-cell">
+        <div class="prof-stat-num" id="statTickets">0</div>
+        <div class="prof-stat-label">Tickets</div>
+      </div>
+      <div class="prof-stat-cell">
+        <div class="prof-stat-num" id="statCity">—</div>
+        <div class="prof-stat-label">City</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
     <div class="profile-tabs">
-      <div class="profile-tab active" onclick="switchPTab(this,'overview')">Overview</div>
+      <div class="profile-tab active" onclick="switchPTab(this,'overview')">Profile</div>
       <div class="profile-tab" onclick="switchPTab(this,'events')">My Events</div>
       <div class="profile-tab" onclick="switchPTab(this,'tickets')">Tickets</div>
     </div>
 
+    <!-- PROFILE TAB -->
     <div class="profile-tab-panel active" id="ptab-overview">
-      <div style="font-size:14px;color:var(--muted2);margin-bottom:12px;font-weight:600">About</div>
-      <div style="font-size:15px;line-height:1.7;color:var(--text)" id="profAbout">—</div>
 
-      <!-- Stripe Connect / Payouts section -->
-      <div id="stripeConnectSection" style="margin-top:24px;display:none">
-        <div style="font-size:14px;color:var(--muted2);margin-bottom:10px;font-weight:600">Payouts (Host)</div>
-        <div id="stripeConnectCard" style="background:var(--surface2);border-radius:var(--r-md);padding:16px;border:1px solid var(--border)">
+      <!-- Bible Verse -->
+      <div class="prof-section" id="profVerseSection" style="display:none">
+        <div class="prof-section-title"><span id="profVerseIcon" style="display:flex"></span>Favorite Verse</div>
+        <div class="prof-verse-text" id="profVerseText"></div>
+        <div class="prof-verse-ref">
+          <span id="profVerseRef"></span>
+          <span id="profVerseVersion"></span>
+        </div>
+      </div>
+
+      <!-- Hot Takes -->
+      <div class="prof-section" id="profHotSection" style="display:none">
+        <div class="prof-section-title"><span id="profHotIcon" style="display:flex"></span>Hot Takes</div>
+        <div class="prof-hot-take" id="profHotText"></div>
+      </div>
+
+      <!-- Hobbies -->
+      <div class="prof-section" id="profHobbiesSection" style="display:none">
+        <div class="prof-section-title"><span id="profHobbiesIcon" style="display:flex"></span>Hobbies & Interests</div>
+        <div class="prof-hobbies-text" id="profHobbiesText"></div>
+      </div>
+
+      <!-- Open to Connect -->
+      <div class="prof-section" id="profConnectSection" style="display:none">
+        <div class="prof-section-title"><span id="profConnectIcon" style="display:flex"></span>Open to Connect</div>
+        <div class="prof-connect-grid" id="profConnectGrid"></div>
+      </div>
+
+      <!-- About / Bio (fallback if no new fields) -->
+      <div class="prof-section" id="profAboutSection" style="display:none">
+        <div class="prof-section-title">About</div>
+        <div style="font-size:14px;line-height:1.7;color:var(--text)" id="profAbout"></div>
+      </div>
+
+      <!-- Stripe Connect / Payouts -->
+      <div id="stripeConnectSection" style="display:none">
+        <div class="prof-section">
+          <div class="prof-section-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            Payouts (Host)
+          </div>
           <div id="stripeConnectStatus" style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-            <div id="stripeStatusDot" style="width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0"></div>
+            <div id="stripeStatusDot" style="width:9px;height:9px;border-radius:50%;background:var(--muted);flex-shrink:0"></div>
             <div>
               <div style="font-size:14px;font-weight:600;color:var(--text)" id="stripeStatusLabel">Not connected</div>
               <div style="font-size:12px;color:var(--muted2)" id="stripeStatusSub">Connect Stripe to receive payouts from paid events</div>
             </div>
           </div>
-          <button id="stripeConnectBtn" class="btn btn-gold btn-sm" onclick="startStripeConnect()" style="width:100%">
-            Set Up Payouts →
-          </button>
+          <button id="stripeConnectBtn" class="btn btn-gold btn-sm" onclick="startStripeConnect()" style="width:100%">Set Up Payouts →</button>
+        </div>
+      </div>
+
+      <!-- Profile completion nudge -->
+      <div id="profNudge" style="display:none">
+        <div style="background:rgba(201,168,76,.06);border:1px dashed rgba(201,168,76,.25);border-radius:var(--r-lg);padding:16px;text-align:center;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:6px">Complete your profile</div>
+          <div style="font-size:12px;color:var(--muted2);margin-bottom:12px">Add your Bible verse, hobbies & connect tags to let the community know you better.</div>
+          <button class="btn btn-outline btn-sm" onclick="openEditProfile()">Edit Profile →</button>
         </div>
       </div>
     </div>
+
+    <!-- MY EVENTS TAB -->
     <div class="profile-tab-panel" id="ptab-events">
       <div id="myEventsContainer">
-        <div style="text-align:center;padding:32px 0">
-          <div class="spinner spinner-gold" style="margin:0 auto"></div>
-        </div>
+        <div style="text-align:center;padding:32px 0"><div class="spinner spinner-gold" style="margin:0 auto"></div></div>
       </div>
     </div>
+
+    <!-- TICKETS TAB -->
     <div class="profile-tab-panel" id="ptab-tickets">
       <div id="myTicketsContainer">
-        <div style="text-align:center;padding:32px 0">
-          <div class="spinner spinner-gold" style="margin:0 auto"></div>
-        </div>
+        <div style="text-align:center;padding:32px 0"><div class="spinner spinner-gold" style="margin:0 auto"></div></div>
       </div>
     </div>
   </div>
@@ -5462,31 +5616,155 @@ async function saveEditEvent() {
 function renderProfilePage() {
   if (!currentUser) return;
   const name = profileData?.full_name || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Friend';
+
+  // ── Avatar ────────────────────────────────────────────────
   const avEl = document.getElementById('profAv');
   avEl.innerHTML = '';
-  avEl.style.background = '';
   if (profileData?.avatar_url) {
     const img = document.createElement('img');
     img.src = profileData.avatar_url;
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
     avEl.appendChild(img);
+    avEl.style.background = 'transparent';
   } else {
     avEl.textContent = name.charAt(0).toUpperCase();
     avEl.style.background = profileData?.avatar_color || 'linear-gradient(135deg,var(--gold),#6B4A00)';
   }
-  document.getElementById('profName').textContent = name;
+
+  // ── Banner ────────────────────────────────────────────────
+  const bannerImg = document.getElementById('profBannerImg');
+  if (bannerImg) {
+    if (profileData?.banner_url) {
+      bannerImg.src = profileData.banner_url;
+      bannerImg.style.display = 'block';
+    } else {
+      bannerImg.style.display = 'none';
+    }
+  }
+
+  // ── Identity ──────────────────────────────────────────────
+  document.getElementById('profName').textContent   = name;
   document.getElementById('profHandle').textContent = currentUser.email || '';
-  const joined = new Date(currentUser.created_at);
-  document.getElementById('profJoined').innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Joined ${joined.toLocaleDateString('en-US',{month:'long',year:'numeric'})}`;
-  document.getElementById('profBio').textContent   = profileData?.bio || 'Tap Edit to add a bio.';
-  document.getElementById('profAbout').textContent = profileData?.bio || 'No bio added yet.';
-  const city = profileData?.city || '—';
-  document.getElementById('statCity').textContent = city.split(',')[0] || '—';
-  // Social links
+
+  const joinedEl = document.getElementById('profJoined');
+  const joinedTextEl = document.getElementById('profJoinedText');
+  if (currentUser.created_at && joinedEl && joinedTextEl) {
+    joinedTextEl.textContent = 'Joined ' + new Date(currentUser.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    joinedEl.style.display = 'flex';
+  }
+
+  const city = profileData?.city || '';
+  const cityChip = document.getElementById('profCityChip');
+  const cityText = document.getElementById('profCityText');
+  if (city && cityChip && cityText) {
+    cityText.textContent = city.split(',')[0];
+    cityChip.style.display = 'flex';
+    document.getElementById('statCity').textContent = city.split(',')[0];
+  } else {
+    document.getElementById('statCity').textContent = '—';
+    if (cityChip) cityChip.style.display = 'none';
+  }
+
+  const roleLabels = { admin: 'Admin', verified: 'Verified Host', host: 'Host' };
+  const roleChip = document.getElementById('profRoleChip');
+  const roleText = document.getElementById('profRoleText');
+  if (roleLabels[profileData?.role] && roleChip && roleText) {
+    roleText.textContent = roleLabels[profileData.role];
+    roleChip.style.display = 'flex';
+  } else if (roleChip) {
+    roleChip.style.display = 'none';
+  }
+
+  const bioEl = document.getElementById('profBio');
+  if (profileData?.bio) {
+    bioEl.textContent = profileData.bio;
+    bioEl.style.display = 'block';
+  } else {
+    bioEl.style.display = 'none';
+  }
+
   renderSocialLinks('profSocialLinks', profileData);
-  // Stripe Connect section
+
+  // ── Bible Verse ───────────────────────────────────────────
+  const verseSection = document.getElementById('profVerseSection');
+  const verseText    = document.getElementById('profVerseText');
+  const verseRef     = document.getElementById('profVerseRef');
+  const verseVer     = document.getElementById('profVerseVersion');
+  const verseIcon    = document.getElementById('profVerseIcon');
+  if (profileData?.bible_verse) {
+    verseText.textContent = profileData.bible_verse;
+    verseRef.textContent  = profileData.bible_verse_reference || '';
+    verseVer.textContent  = profileData.bible_version || '';
+    verseRef.style.display  = profileData.bible_verse_reference ? 'inline' : 'none';
+    verseVer.style.display  = profileData.bible_version ? 'inline' : 'none';
+    if (verseIcon) verseIcon.innerHTML = icon('dailyVerse', 13);
+    verseSection.style.display = 'block';
+  } else {
+    verseSection.style.display = 'none';
+  }
+
+  // ── Hot Takes ─────────────────────────────────────────────
+  const hotSection = document.getElementById('profHotSection');
+  const hotText    = document.getElementById('profHotText');
+  const hotIcon    = document.getElementById('profHotIcon');
+  if (profileData?.hot_takes) {
+    hotText.textContent = profileData.hot_takes;
+    if (hotIcon) hotIcon.innerHTML = icon('prayerRequests', 13);
+    hotSection.style.display = 'block';
+  } else {
+    hotSection.style.display = 'none';
+  }
+
+  // ── Hobbies ───────────────────────────────────────────────
+  const hobbiesSection = document.getElementById('profHobbiesSection');
+  const hobbiesText    = document.getElementById('profHobbiesText');
+  const hobbiesIcon    = document.getElementById('profHobbiesIcon');
+  if (profileData?.hobbies) {
+    hobbiesText.textContent = profileData.hobbies;
+    if (hobbiesIcon) hobbiesIcon.innerHTML = icon('goals', 13);
+    hobbiesSection.style.display = 'block';
+  } else {
+    hobbiesSection.style.display = 'none';
+  }
+
+  // ── Connect Tags ──────────────────────────────────────────
+  const connectSection = document.getElementById('profConnectSection');
+  const connectGrid    = document.getElementById('profConnectGrid');
+  const connectIcon    = document.getElementById('profConnectIcon');
+  const tags = profileData?.connect_tags || [];
+  if (tags.length) {
+    const tagMap = Object.fromEntries(CONNECT_TAGS.map(t => [t.id, t]));
+    connectGrid.innerHTML = tags
+      .filter(id => tagMap[id])
+      .map(id => `<div class="prof-connect-pill"><span style="display:flex">${icon(tagMap[id].iconName, 16)}</span>${tagMap[id].label}</div>`)
+      .join('');
+    if (connectIcon) connectIcon.innerHTML = icon('openToConnect', 13);
+    connectSection.style.display = 'block';
+  } else {
+    connectSection.style.display = 'none';
+  }
+
+  // ── About (bio fallback) ──────────────────────────────────
+  const aboutSection = document.getElementById('profAboutSection');
+  const aboutEl      = document.getElementById('profAbout');
+  const hasNewFields = profileData?.bible_verse || profileData?.hot_takes || profileData?.hobbies || tags.length;
+  if (profileData?.bio || !hasNewFields) {
+    aboutEl.textContent = profileData?.bio || 'No bio added yet.';
+    aboutSection.style.display = 'block';
+  } else {
+    aboutSection.style.display = 'none';
+  }
+
+  // ── Profile completion nudge ──────────────────────────────
+  const nudge = document.getElementById('profNudge');
+  if (nudge) nudge.style.display = hasNewFields ? 'none' : 'block';
+
+  // ── Auth gate logo ────────────────────────────────────────
+  const gateLogo = document.getElementById('profGateLogo');
+  if (gateLogo && !gateLogo.innerHTML) gateLogo.innerHTML = LOGO_MARK;
+
+  // ── Stripe Connect section ────────────────────────────────
   renderStripeConnectStatus();
-  // Show admin nav link for admin users
   syncAdminNav();
 }
 
