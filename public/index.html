@@ -1322,53 +1322,92 @@ select.field {
    PROFILE PAGE
 ═══════════════════════════════════════════════════════════ */
 /* ── PROFILE PAGE REDESIGN ───────────────────────────────── */
+/* ── PROFILE PAGE ─────────────────────────────────────────── */
 .prof-banner{
-  width:100%;height:160px;
-  background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+  width:100%;height:200px;
+  background:linear-gradient(160deg,#0d0d1f 0%,#111128 40%,#0f2040 100%);
   position:relative;
 }
 .prof-banner img.prof-banner-img{
   position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
 }
-.prof-banner-actions{
-  position:absolute;top:12px;right:12px;display:flex;gap:8px;z-index:3
+.prof-banner-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(10,10,20,.18) 0%,rgba(10,10,20,.75) 100%);
+  z-index:1;pointer-events:none;
 }
+.prof-banner-actions{
+  position:absolute;top:14px;right:14px;display:flex;gap:8px;z-index:3
+}
+.prof-action-btn{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.14);
+  display:flex;align-items:center;justify-content:center;color:var(--text);
+  backdrop-filter:blur(8px);cursor:pointer;transition:background .18s;
+}
+.prof-action-btn:active{background:rgba(201,168,76,.22)}
 .prof-av-anchor{
-  position:absolute;bottom:-43px;left:20px;z-index:4;
+  position:absolute;bottom:-46px;left:20px;z-index:4;
 }
 .prof-av{
-  width:86px;height:86px;border-radius:50%;
-  border:3px solid var(--bg);
+  width:92px;height:92px;border-radius:50%;
+  border:3.5px solid var(--bg);
   background:linear-gradient(135deg,var(--gold),#6B4A00);
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--font-display);font-size:32px;font-weight:700;color:#000;
-  overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.5);
+  font-family:var(--font-display);font-size:34px;font-weight:700;color:#000;
+  overflow:hidden;
+  box-shadow:0 0 0 1.5px rgba(201,168,76,.45),0 6px 24px rgba(0,0,0,.6);
 }
-.prof-identity{padding:55px 20px 20px;border-bottom:1px solid var(--border)}
-.prof-av img{width:100%;height:100%;object-fit:cover}
-.prof-name{font-family:var(--font-display);font-size:24px;font-weight:800;margin:10px 0 2px;line-height:1.2}
-.prof-handle{font-size:13px;color:var(--muted2)}
-.prof-meta{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap}
+.prof-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.prof-identity{padding:56px 20px 16px}
+.prof-identity-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.prof-name{font-family:var(--font-display);font-size:24px;font-weight:800;margin:0 0 2px;line-height:1.2;display:flex;align-items:center;gap:7px}
+.prof-verified-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.prof-handle{font-size:13px;color:var(--muted2);margin-bottom:6px}
+.prof-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .prof-meta-chip{
-  display:flex;align-items:center;gap:4px;
-  font-size:11px;color:var(--muted);
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:600;color:var(--muted2);
   background:var(--surface2);border:1px solid var(--border);
-  border-radius:999px;padding:3px 9px;
+  border-radius:999px;padding:3px 10px;
 }
-.prof-bio-text{font-size:14px;color:var(--muted2);line-height:1.65;margin-top:12px}
-.prof-social-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.prof-meta-chip.role-admin{color:var(--gold);background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.3)}
+.prof-meta-chip.role-verified{color:#7EB8F7;background:rgba(126,184,247,.1);border-color:rgba(126,184,247,.25)}
+.prof-bio-text{font-size:14px;color:var(--muted2);line-height:1.65;margin-bottom:10px}
+.prof-social-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+
+/* Action buttons row */
+.prof-actions-row{
+  display:flex;gap:9px;padding:0 20px 18px;border-bottom:1px solid var(--border);
+}
+.prof-btn-primary{
+  flex:1;height:40px;border-radius:var(--r-full);
+  background:var(--gold);color:#000;
+  font-size:14px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:opacity .18s;
+}
+.prof-btn-primary:active{opacity:.8}
+.prof-btn-secondary{
+  flex:1;height:40px;border-radius:var(--r-full);
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text);font-size:14px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:background .18s;
+}
+.prof-btn-secondary:active{background:var(--surface3);border-color:var(--gold)}
 
 /* Stats strip */
 .prof-stats-strip{
   display:grid;grid-template-columns:repeat(3,1fr);
-  background:var(--surface);
+  background:var(--bg);
   border-bottom:1px solid var(--border);
 }
 .prof-stat-cell{
-  padding:14px 0;text-align:center;position:relative;
+  padding:16px 0 14px;text-align:center;position:relative;cursor:default;
 }
 .prof-stat-cell+.prof-stat-cell::before{
-  content:'';position:absolute;left:0;top:20%;height:60%;
+  content:'';position:absolute;left:0;top:22%;height:56%;
   width:1px;background:var(--border);
 }
 .prof-stat-num{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--gold)}
@@ -1386,7 +1425,7 @@ select.field {
   transition:color .18s,border-color .18s;
 }
 .profile-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
-.profile-tab-panel{display:none;padding:20px 16px 32px}
+.profile-tab-panel{display:none;padding:18px 16px 40px}
 .profile-tab-panel.active{display:block;animation:pageIn .2s var(--ease) both}
 
 /* Profile sections */
@@ -1398,22 +1437,42 @@ select.field {
   margin-bottom:12px;
 }
 .prof-section-title{
-  font-size:9px;font-weight:800;letter-spacing:.14em;
+  font-size:11px;font-weight:800;letter-spacing:.1em;
   text-transform:uppercase;color:var(--gold);
-  margin-bottom:10px;display:flex;align-items:center;gap:6px;
+  margin-bottom:12px;display:flex;align-items:center;gap:7px;
+}
+/* Featured verse card */
+.prof-verse-card{
+  background:linear-gradient(145deg,rgba(201,168,76,.1) 0%,rgba(201,168,76,.04) 100%);
+  border:1px solid rgba(201,168,76,.25);
+  border-radius:var(--r-lg);padding:18px;margin-bottom:12px;
+  position:relative;overflow:hidden;
+}
+.prof-verse-card::before{
+  content:'';position:absolute;top:-20px;right:-20px;
+  width:90px;height:90px;border-radius:50%;
+  background:radial-gradient(circle,rgba(201,168,76,.15) 0%,transparent 70%);
+  pointer-events:none;
+}
+.prof-verse-title{
+  font-size:10px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--gold);
+  margin-bottom:12px;display:flex;align-items:center;gap:6px;
 }
 .prof-verse-text{
   font-family:var(--font-display);font-style:italic;
-  font-size:15px;color:var(--text);line-height:1.7;
+  font-size:15px;color:var(--text);line-height:1.75;
+  margin-bottom:10px;
 }
 .prof-verse-ref{
-  font-size:12px;color:var(--muted);margin-top:6px;
-  display:flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--muted);
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
 }
 .prof-verse-ref span{
-  background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);
-  border-radius:4px;padding:1px 7px;font-size:11px;color:var(--gold);
+  background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);
+  border-radius:4px;padding:2px 8px;font-size:11px;color:var(--gold);font-weight:600;
 }
+/* Faith thought */
 .prof-hot-take{
   background:linear-gradient(135deg,rgba(201,168,76,.07),rgba(201,168,76,.03));
   border-left:3px solid var(--gold);
@@ -1421,16 +1480,54 @@ select.field {
   padding:12px 14px;
   font-size:14px;color:var(--text);line-height:1.6;
 }
-.prof-hobbies-text{font-size:14px;color:var(--text);line-height:1.6}
+/* Hobby chips */
+.prof-hobbies-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.prof-hobby-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--surface3);border:1px solid var(--border2);
+  border-radius:999px;padding:6px 13px;
+  font-size:12px;font-weight:600;color:var(--text);
+  transition:background .18s;
+}
+/* Connect pills */
 .prof-connect-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
 .prof-connect-pill{
   display:flex;align-items:center;gap:7px;
   background:rgba(201,168,76,.08);
-  border:1px solid rgba(201,168,76,.2);
-  border-radius:999px;padding:6px 13px;
+  border:1px solid rgba(201,168,76,.22);
+  border-radius:999px;padding:7px 14px;
   font-size:12px;font-weight:600;color:var(--gold);
-  transition:background .18s;
 }
+/* Hosted events preview */
+.prof-event-preview{
+  display:flex;gap:12px;align-items:flex-start;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r-md);padding:12px;margin-bottom:10px;
+  cursor:pointer;transition:border-color .18s,background .18s;
+}
+.prof-event-preview:active{background:var(--surface3);border-color:var(--border2)}
+.prof-event-thumb{
+  width:72px;height:72px;border-radius:var(--r-sm);
+  object-fit:cover;flex-shrink:0;background:var(--surface3);overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.prof-event-info{flex:1;min-width:0}
+.prof-event-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.prof-event-meta{font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:4px}
+.prof-event-attendees{font-size:11px;font-weight:600;color:var(--muted2)}
+.prof-event-view-btn{
+  align-self:center;flex-shrink:0;
+  background:var(--gold);color:#000;
+  font-size:11px;font-weight:700;
+  padding:6px 13px;border-radius:var(--r-full);cursor:pointer;
+  white-space:nowrap;
+}
+/* Hosted events section header */
+.prof-section-header{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;
+}
+.prof-section-see-all{font-size:12px;font-weight:600;color:var(--gold);cursor:pointer}
 
 /* Old selectors kept for compat */
 .profile-hero{padding:0}
@@ -1836,6 +1933,17 @@ input[type="datetime-local"] {
 .banner-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none}
 /* Connect tags */
 .connect-tags-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ep-hobbies-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.ep-hobby-chip{
+  display:inline-flex;align-items:center;
+  padding:7px 14px;border-radius:999px;cursor:pointer;
+  font-size:13px;font-weight:600;transition:all .15s;
+  background:var(--surface2);border:1.5px solid var(--border2);color:var(--muted2);
+  user-select:none;-webkit-user-select:none;
+}
+.ep-hobby-chip.selected{
+  background:rgba(201,168,76,.14);border-color:rgba(201,168,76,.5);color:var(--gold);
+}
 .connect-tag-btn{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:50px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--muted2);font-size:12px;cursor:pointer;transition:all .18s;font-family:inherit;text-align:left}
 .connect-tag-btn.active{border-color:var(--gold);background:rgba(201,168,76,.12);color:var(--gold)}
 /* Public profile sheet extras */
@@ -2285,9 +2393,9 @@ button, a, [onclick],
           <div class="dd-name" id="dd-name">—</div>
           <div class="dd-email" id="dd-email">—</div>
         </div>
-        <div class="dd-item" onclick="goTo('profile');closeDrop()">👤 My Profile</div>
+        <div class="dd-item" onclick="goTo('profile');closeDrop()"><svg width="14" height="14" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:5px"><circle cx="16" cy="10" r="5" stroke="#C9A84C" stroke-width="2"/><path d="M6 28 C6 22 10.5 17 16 17 C21.5 17 26 22 26 28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>My Profile</div>
         <div class="dd-item" onclick="goTo('host');closeDrop()"><svg width="11" height="14" viewBox="0 0 18 22" fill="none" style="vertical-align:middle;margin-right:4px"><rect x="7" y="0" width="4" height="22" rx="2" fill="#C9A84C"/><rect x="0" y="6" width="18" height="4" rx="2" fill="#C9A84C"/></svg> Host Event</div>
-        <div class="dd-item" id="dd-admin-link" style="display:none" onclick="goTo('admin');closeDrop()">⚙️ Admin Dashboard</div>
+        <div class="dd-item" id="dd-admin-link" style="display:none" onclick="goTo('admin');closeDrop()"><svg width="14" height="14" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:5px"><circle cx="16" cy="16" r="4" stroke="#C9A84C" stroke-width="2"/><path d="M14.5 4L13 8C12.3 8.2 11.6 8.5 11 9L7 7.5L5 10.8L8 13.5C7.9 14 7.9 14.7 8 15.2L5 18L7 21.3L11 19.8C11.6 20.3 12.3 20.6 13 20.8L14.5 25H17.5L19 20.8C19.7 20.6 20.4 20.3 21 19.8L25 21.3L27 18L24 15.2C24.1 14.7 24.1 14 24 13.5L27 10.8L25 7.5L21 9C20.4 8.5 19.7 8.2 19 8L17.5 4Z" stroke="#C9A84C" stroke-width="1.8" stroke-linejoin="round"/></svg>Admin Dashboard</div>
         <div class="dd-item danger" onclick="signOut()">↩ Sign Out</div>
       </div>
     </div>
@@ -2373,7 +2481,7 @@ button, a, [onclick],
   </div>
   <div class="events-scroll" id="homeScroll">
     <div class="empty-state" style="width:100%;padding:40px 20px">
-      <div class="empty-icon">✝</div>
+      <div class="empty-icon"><svg width="52" height="52" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg></div>
       <div class="empty-title">No events yet</div>
       <div class="empty-sub">Be the first to host a gathering.</div>
       <button class="btn btn-gold btn-sm mt-4" onclick="goTo('host')">Host an Event →</button>
@@ -2494,7 +2602,7 @@ button, a, [onclick],
   <!-- auth gate -->
   <div id="host-gate" style="display:none">
     <div class="empty-state" style="padding-top:80px">
-      <div style="font-size:48px">✝</div>
+      <div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px"><svg width="52" height="52" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg></div>
       <div class="empty-title font-serif">Host a Gathering</div>
       <div class="empty-sub">Sign in to create your event and reach believers in your city.</div>
       <button class="btn btn-gold" style="max-width:260px;margin-top:8px" onclick="openAuth('signup')">Create Account →</button>
@@ -2512,7 +2620,7 @@ button, a, [onclick],
           Home
         </button>
       </div>
-      <div style="font-size:28px;margin-bottom:8px">✝</div>
+      <div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg></div>
       <div style="font-family:var(--font-display);font-size:24px;font-weight:800;margin-bottom:6px;text-align:center">Host a Gathering</div>
       <div style="font-size:14px;color:var(--muted2);margin-bottom:32px;text-align:center">What kind of event are you creating?</div>
 
@@ -2521,7 +2629,7 @@ button, a, [onclick],
         <button onclick="selectEventType(false)" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:22px 20px;text-align:left;cursor:pointer;transition:border-color .2s;width:100%"
           onmouseenter="this.style.borderColor='var(--gold)'" onmouseleave="this.style.borderColor='var(--border)'">
           <div style="display:flex;align-items:center;gap:14px">
-            <div style="width:48px;height:48px;border-radius:var(--r-md);background:rgba(78,201,140,.12);border:1px solid rgba(78,201,140,.25);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🙌</div>
+            <div style="width:48px;height:48px;border-radius:var(--r-md);background:rgba(78,201,140,.12);border:1px solid rgba(78,201,140,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="24" height="24" viewBox="0 0 32 32" fill="none"><path d="M4 28 L14 18" stroke="#4EC98C" stroke-width="2" stroke-linecap="round"/><path d="M4 28 L9 22 L12 25 Z" stroke="#4EC98C" stroke-width="1.5" fill="none" stroke-linejoin="round"/><path d="M22 5 L20 13 L15 10 Z" fill="#4EC98C" opacity="0.7"/><line x1="20" y1="13" x2="16" y2="17" stroke="#4EC98C" stroke-width="2" stroke-linecap="round"/><line x1="23" y1="11" x2="27" y2="9" stroke="#4EC98C" stroke-width="1.5" stroke-linecap="round"/></svg></div>
             <div>
               <div style="font-size:17px;font-weight:700;margin-bottom:3px">Free Event</div>
               <div style="font-size:13px;color:var(--muted2)">Attendees RSVP at no cost. Perfect for worship nights, Bible studies & community gatherings.</div>
@@ -2533,7 +2641,7 @@ button, a, [onclick],
         <button onclick="selectEventType(true)" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:22px 20px;text-align:left;cursor:pointer;transition:border-color .2s;width:100%"
           onmouseenter="this.style.borderColor='var(--gold)'" onmouseleave="this.style.borderColor='var(--border)'">
           <div style="display:flex;align-items:center;gap:14px">
-            <div style="width:48px;height:48px;border-radius:var(--r-md);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🎟️</div>
+            <div style="width:48px;height:48px;border-radius:var(--r-md);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="24" height="24" viewBox="0 0 32 32" fill="none"><path d="M4 11 C4 9.5 5 9 6 9 L26 9 C27 9 28 9.5 28 11 C28 11 26 12 26 14 C26 16 28 17 28 17 C28 18.5 27 19 26 19 L6 19 C5 19 4 18.5 4 17 C4 17 6 16 6 14 C6 12 4 11 4 11Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="20" y1="9" x2="20" y2="19" stroke="#C9A84C" stroke-width="1.5" stroke-dasharray="2 2"/></svg></div>
             <div>
               <div style="font-size:17px;font-weight:700;margin-bottom:3px">Paid Event <span style="font-size:12px;font-weight:600;color:var(--gold);background:var(--gold-dim);padding:2px 8px;border-radius:var(--r-full);margin-left:4px">$19.99 listing fee</span></div>
               <div style="font-size:13px;color:var(--muted2)">Sell tickets with Stripe. A 7% service fee is added to each ticket — paid by attendees.</div>
@@ -2677,7 +2785,7 @@ button, a, [onclick],
               <div style="font-size:20px;font-weight:800;color:var(--gold)">$19.99</div>
             </div>
             <p style="font-size:13px;color:var(--muted2);margin-bottom:12px">Required to publish a paid event. A 7% service fee is added to each ticket price — paid by attendees, not you.</p>
-            <div id="listingStatus" style="display:none;font-size:13px;color:var(--green);font-weight:600">✅ Listing fee paid — ticketing unlocked</div>
+            <div id="listingStatus" style="display:none;font-size:13px;color:var(--green);font-weight:600"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Listing fee paid — ticketing unlocked</div>
             <button id="payFeeBtn" class="btn btn-gold btn-sm" onclick="openSheet('listingFeeSheet')">Pay $19.99 to Unlock →</button>
           </div>
         </div>
@@ -2685,7 +2793,7 @@ button, a, [onclick],
         <!-- free events -->
         <div id="freeEventSetup">
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;margin-bottom:18px">
-            <div style="font-weight:700;margin-bottom:4px">✓ Free Event</div>
+            <div style="font-weight:700;margin-bottom:4px"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Free Event</div>
             <div style="font-size:13px;color:var(--muted2)">Attendees RSVP for free. No payment needed.</div>
           </div>
         </div>
@@ -2731,7 +2839,7 @@ button, a, [onclick],
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:20px">
           <div id="reviewCoverWrap" style="height:140px;background:linear-gradient(135deg,#1E1E2A,#252533);display:flex;align-items:center;justify-content:center;position:relative">
             <img id="reviewCoverImg" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-            <span id="reviewCoverPlaceholder" style="font-size:40px">✝</span>
+            <span id="reviewCoverPlaceholder" style="display:flex;align-items:center;justify-content:center"><svg width="44" height="44" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg></span>
           </div>
           <div style="padding:16px">
             <div style="font-family:var(--font-display);font-size:20px;font-weight:700;margin-bottom:4px" id="reviewName">Event Name</div>
@@ -2752,7 +2860,7 @@ button, a, [onclick],
         <!-- Save as Draft -->
         <div class="publish-opt" id="popt-draft" onclick="selectPublishMode('draft')">
           <div class="publish-opt-row">
-            <div class="publish-opt-icon">📋</div>
+            <div class="publish-opt-icon"><svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect x="7" y="7" width="18" height="22" rx="2" stroke="#C9A84C" stroke-width="2"/><path d="M12 7 L12 5 C12 4 13 3 14 3 L18 3 C19 3 20 4 20 5 L20 7" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="14" x2="21" y2="14" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="18" x2="21" y2="18" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="22" x2="17" y2="22" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg></div>
             <div style="flex:1">
               <div class="publish-opt-title">Save as Draft</div>
               <div class="publish-opt-sub">Save privately. Come back and publish whenever you're ready.</div>
@@ -2764,7 +2872,7 @@ button, a, [onclick],
         <!-- Schedule -->
         <div class="publish-opt" id="popt-scheduled" onclick="selectPublishMode('scheduled')">
           <div class="publish-opt-row">
-            <div class="publish-opt-icon">📅</div>
+            <div class="publish-opt-icon"><svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect x="4" y="7" width="24" height="22" rx="3" stroke="#C9A84C" stroke-width="2"/><path d="M4 13 L28 13" stroke="#C9A84C" stroke-width="2"/><line x1="10" y1="4" x2="10" y2="10" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="22" y1="4" x2="22" y2="10" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="17" x2="16" y2="22" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="13.5" y1="19.5" x2="18.5" y2="19.5" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg></div>
             <div style="flex:1">
               <div class="publish-opt-title">Schedule Publishing</div>
               <div class="publish-opt-sub">Go live automatically on a date you choose.</div>
@@ -2782,18 +2890,18 @@ button, a, [onclick],
         <!-- Publish Now -->
         <div class="publish-opt selected" id="popt-publish" onclick="selectPublishMode('publish')">
           <div class="publish-opt-row">
-            <div class="publish-opt-icon">🚀</div>
+            <div class="publish-opt-icon"><svg width="28" height="28" viewBox="0 0 32 32" fill="none"><path d="M16 5 C16 5 23 8 23 17 L23 21 L20 24 L12 24 L9 21 L9 17 C9 8 16 5 16 5Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M9 17 L6 20 L7 23 L12 24" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 17 L26 20 L25 23 L20 24" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="14" r="2.5" stroke="#C9A84C" stroke-width="1.5"/><path d="M13 27 C13 27 14 25 16 25 C18 25 19 27 19 27" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg></div>
             <div style="flex:1">
               <div class="publish-opt-title">Publish Now</div>
               <div class="publish-opt-sub">Go live immediately — visible to your community right away.</div>
             </div>
-            <div class="publish-opt-check">✓</div>
+            <div class="publish-opt-check"><svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           </div>
         </div>
 
         <div class="step-nav" style="margin-top:24px">
           <button class="btn btn-outline" style="flex:0 0 auto;width:auto;padding:0 20px" onclick="hostPrev(4)">←</button>
-          <button class="btn btn-gold" id="publishBtn" onclick="publishEvent()">🚀 Publish Now</button>
+          <button class="btn btn-gold" id="publishBtn" onclick="publishEvent()"><svg width="16" height="16" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:6px"><path d="M16 5 C16 5 23 8 23 17 L23 21 L20 24 L12 24 L9 21 L9 17 C9 8 16 5 16 5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 17 L6 20 L7 23 L12 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M23 17 L26 20 L25 23 L20 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="14" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>Publish Now</button>
         </div>
       </div>
 
@@ -2823,7 +2931,7 @@ button, a, [onclick],
     </div>
     <div id="community-form">
       <div class="post-input-row">
-        <div class="post-av" id="commAv">🙏</div>
+        <div class="post-av" id="commAv" style="display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 32 32" fill="none"><path d="M10 6 L10 18 C10 21 12.5 23 16 23 C19.5 23 22 21 22 18 L22 6" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M10 10 C10 10 8 9 7 11 C6 13 7 15 9 15" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M22 10 C22 10 24 9 25 11 C26 13 25 15 23 15" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M13 27 L16 23 L19 27" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <textarea class="post-field" id="postInput" placeholder="Share a prayer…" rows="1" enterkeyhint="send" autocorrect="on" autocapitalize="sentences" style="-webkit-appearance:none"></textarea>
       </div>
       <div class="post-submit" id="postSubmitRow" style="display:none">
@@ -2856,7 +2964,8 @@ button, a, [onclick],
     <!-- BANNER -->
     <div class="prof-banner" id="profBanner">
       <img id="profBannerImg" class="prof-banner-img" src="" alt="" style="display:none">
-      <!-- Action buttons float over banner -->
+      <div class="prof-banner-overlay"></div>
+      <!-- Action buttons over banner -->
       <div class="prof-banner-actions">
         <button id="notifBellBtn" class="prof-action-btn" onclick="openNotifSheet()" style="position:relative">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
@@ -2866,7 +2975,7 @@ button, a, [onclick],
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
       </div>
-      <!-- Avatar anchored to bottom-left, overlapping banner edge -->
+      <!-- Avatar overlapping banner bottom edge -->
       <div class="prof-av-anchor">
         <div class="prof-av" id="profAv">?</div>
       </div>
@@ -2874,40 +2983,67 @@ button, a, [onclick],
 
     <!-- IDENTITY -->
     <div class="prof-identity">
-      <div class="prof-name" id="profName">—</div>
-      <div class="prof-handle" id="profHandle">—</div>
-      <div class="prof-meta">
-        <div class="prof-meta-chip" id="profJoined" style="display:none">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <span id="profJoinedText">Joined</span>
+      <div class="prof-identity-top">
+        <div style="flex:1;min-width:0">
+          <div class="prof-name">
+            <span id="profName">—</span>
+            <span id="profVerifiedBadge" style="display:none" class="prof-verified-badge">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+          <div class="prof-handle" id="profHandle">—</div>
         </div>
+      </div>
+      <div class="prof-meta">
         <div class="prof-meta-chip" id="profCityChip" style="display:none">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
           <span id="profCityText">—</span>
         </div>
         <div class="prof-meta-chip" id="profRoleChip" style="display:none">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7l9 5 9-5-9-5zM3 17l9 5 9-5M3 12l9 5 9-5"/></svg>
           <span id="profRoleText">Member</span>
+        </div>
+        <div class="prof-meta-chip" id="profJoined" style="display:none">
+          <span id="profJoinedText">Joined</span>
         </div>
       </div>
       <div class="prof-bio-text" id="profBio" style="display:none"></div>
       <div class="prof-social-row" id="profSocialLinks"></div>
     </div>
 
+    <!-- ACTION BUTTONS ROW -->
+    <div class="prof-actions-row">
+      <button class="prof-btn-primary" onclick="openEditProfile()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit Profile
+      </button>
+      <button class="prof-btn-secondary" onclick="shareProfile()">
+        <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><path d="M20 6 L26 12 L20 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 12 L12 12 C8.7 12 6 14.7 6 18 L6 26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Share
+      </button>
+      <button class="prof-btn-secondary" onclick="goTo('host')" style="flex:none;width:44px;padding:0">
+        <svg width="16" height="16" viewBox="0 0 18 22" fill="none"><rect x="7" y="0" width="4" height="22" rx="2" fill="currentColor"/><rect x="0" y="6" width="18" height="4" rx="2" fill="currentColor"/></svg>
+      </button>
+    </div>
+
     <!-- STATS STRIP -->
     <div class="prof-stats-strip">
       <div class="prof-stat-cell">
+        <div class="prof-stat-num" id="statFollowers">0</div>
+        <div class="prof-stat-label">Followers</div>
+      </div>
+      <div class="prof-stat-cell">
+        <div class="prof-stat-num" id="statFollowing">0</div>
+        <div class="prof-stat-label">Following</div>
+      </div>
+      <div class="prof-stat-cell">
         <div class="prof-stat-num" id="statEvents">0</div>
-        <div class="prof-stat-label">Events Hosted</div>
+        <div class="prof-stat-label">Events</div>
       </div>
-      <div class="prof-stat-cell">
-        <div class="prof-stat-num" id="statTickets">0</div>
-        <div class="prof-stat-label">Tickets</div>
-      </div>
-      <div class="prof-stat-cell">
-        <div class="prof-stat-num" id="statCity">—</div>
-        <div class="prof-stat-label">City</div>
-      </div>
+    </div>
+    <!-- Hidden legacy stat elements for JS compat -->
+    <div style="display:none">
+      <span id="statTickets">0</span>
+      <span id="statCity">—</span>
     </div>
 
     <!-- TABS -->
@@ -2920,9 +3056,13 @@ button, a, [onclick],
     <!-- PROFILE TAB -->
     <div class="profile-tab-panel active" id="ptab-overview">
 
-      <!-- Bible Verse -->
-      <div class="prof-section" id="profVerseSection" style="display:none">
-        <div class="prof-section-title"><span id="profVerseIcon" style="display:flex"></span>Favorite Verse</div>
+      <!-- Bible Verse — featured card -->
+      <div class="prof-verse-card" id="profVerseSection" style="display:none">
+        <div class="prof-verse-title">
+          <svg width="13" height="13" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg>
+          <span id="profVerseIcon" style="display:none"></span>
+          Favorite Verse
+        </div>
         <div class="prof-verse-text" id="profVerseText"></div>
         <div class="prof-verse-ref">
           <span id="profVerseRef"></span>
@@ -2930,25 +3070,49 @@ button, a, [onclick],
         </div>
       </div>
 
-      <!-- Hot Takes -->
-      <div class="prof-section" id="profHotSection" style="display:none">
-        <div class="prof-section-title"><span id="profHotIcon" style="display:flex"></span>Hot Takes</div>
-        <div class="prof-hot-take" id="profHotText"></div>
-      </div>
-
-      <!-- Hobbies -->
-      <div class="prof-section" id="profHobbiesSection" style="display:none">
-        <div class="prof-section-title"><span id="profHobbiesIcon" style="display:flex"></span>Hobbies & Interests</div>
-        <div class="prof-hobbies-text" id="profHobbiesText"></div>
+      <!-- Two-column: Faith Thought + Interests -->
+      <div id="profTwoColRow" style="display:none;gap:10px;margin-bottom:12px">
+        <!-- Faith Thought -->
+        <div class="prof-section" id="profHotSection" style="margin-bottom:0;flex:1;min-width:0">
+          <div class="prof-section-title">
+            <svg width="12" height="12" viewBox="0 0 32 32" fill="none"><path d="M16 28 C10 28 7 24 7 19 C7 14 11 11 13 8 C13 12 15 13 15 13 C15 13 14 10 17 7 C17 12 20 14 21 17 C22 14 21 12 20 10 C23 13 25 16 25 19 C25 24 22 28 16 28Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round" fill="none"/></svg>
+            Faith Thought
+          </div>
+          <div class="prof-hot-take" id="profHotText"></div>
+        </div>
+        <!-- Interests -->
+        <div class="prof-section" id="profHobbiesSection" style="margin-bottom:0;flex:1;min-width:0">
+          <div class="prof-section-title">
+            <svg width="12" height="12" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="11" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="16" r="6.5" stroke="#C9A84C" stroke-width="1.5"/><line x1="16" y1="11" x2="16" y2="21" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="16" x2="21" y2="16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>
+            Interests
+          </div>
+          <div class="prof-hobbies-chips" id="profHobbiesChips"></div>
+        </div>
       </div>
 
       <!-- Open to Connect -->
       <div class="prof-section" id="profConnectSection" style="display:none">
-        <div class="prof-section-title"><span id="profConnectIcon" style="display:flex"></span>Open to Connect</div>
+        <div class="prof-section-title">
+          <svg width="12" height="12" viewBox="0 0 32 32" fill="none"><path d="M6 14 L6 12 C6 10 8 9 10 10 L14 12 L18 10 C20 9 22 10 22 12 L22 14" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M4 14 L28 14 L26 22 L6 22 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="16" y1="16" x2="16" y2="20" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>
+          <span id="profConnectIcon" style="display:none"></span>
+          Open to Connect
+        </div>
         <div class="prof-connect-grid" id="profConnectGrid"></div>
       </div>
 
-      <!-- About / Bio (fallback if no new fields) -->
+      <!-- Hosted Events preview -->
+      <div id="profHostedEventsSection" style="display:none;margin-bottom:12px">
+        <div class="prof-section-header">
+          <div class="prof-section-title" style="margin:0">
+            <svg width="13" height="13" viewBox="0 0 32 32" fill="none"><rect x="4" y="7" width="24" height="22" rx="3" stroke="#C9A84C" stroke-width="2"/><path d="M4 13 L28 13" stroke="#C9A84C" stroke-width="2"/><line x1="10" y1="4" x2="10" y2="10" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="22" y1="4" x2="22" y2="10" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>
+            Hosted Events
+          </div>
+          <div class="prof-section-see-all" onclick="switchPTab(document.querySelector('.profile-tab:nth-child(2)'),'events')">See all →</div>
+        </div>
+        <div id="profHostedEventsPreview"></div>
+      </div>
+
+      <!-- About / Bio fallback -->
       <div class="prof-section" id="profAboutSection" style="display:none">
         <div class="prof-section-title">About</div>
         <div style="font-size:14px;line-height:1.7;color:var(--text)" id="profAbout"></div>
@@ -3009,7 +3173,7 @@ button, a, [onclick],
     <button class="detail-share-btn" id="detailShareBtn" onclick="shareEvent()" aria-label="Share event">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
     </button>
-    <span id="detailEmoji" style="position:relative;z-index:1">✝</span>
+    <span id="detailEmoji" style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center"><svg width="52" height="52" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg></span>
   </div>
   <div class="detail-content">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">
@@ -3025,7 +3189,7 @@ button, a, [onclick],
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px">
           <div style="font-size:13px;font-weight:700" id="detailHostName">—</div>
-          <span id="detailHostVerified" style="display:none;font-size:10px;font-weight:700;color:var(--gold);background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);border-radius:4px;padding:1px 6px;letter-spacing:.04em">✓ VERIFIED</span>
+          <span id="detailHostVerified" style="display:none;font-size:10px;font-weight:700;color:var(--gold);background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);border-radius:4px;padding:1px 6px;letter-spacing:.04em"><svg width="10" height="10" viewBox="0 0 14 14" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>VERIFIED</span>
         </div>
         <div style="font-size:11px;color:var(--muted)" id="detailHostSub">Hosted by</div>
       </div>
@@ -3033,7 +3197,7 @@ button, a, [onclick],
     </div>
     <div class="detail-meta-list">
       <div class="detail-meta-row">
-        <div class="detail-meta-icon">📅</div>
+        <div class="detail-meta-icon"><svg width="16" height="16" viewBox="0 0 32 32" fill="none"><rect x="4" y="7" width="24" height="22" rx="3" stroke="#C9A84C" stroke-width="2"/><path d="M4 13 L28 13" stroke="#C9A84C" stroke-width="2"/><line x1="10" y1="4" x2="10" y2="10" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="22" y1="4" x2="22" y2="10" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg></div>
         <div style="flex:1;min-width:0">
           <div class="detail-meta-text" id="detailDate">—</div>
           <div class="detail-meta-sub">Date & Time</div>
@@ -3041,7 +3205,7 @@ button, a, [onclick],
         </div>
       </div>
       <div class="detail-meta-row" id="detailLocationRow" onclick="openMapsChoice()" style="cursor:pointer">
-        <div class="detail-meta-icon">📍</div>
+        <div class="detail-meta-icon"><svg width="16" height="16" viewBox="0 0 32 32" fill="none"><path d="M16 4 C11.6 4 8 7.6 8 12 C8 18 16 28 16 28 C16 28 24 18 24 12 C24 7.6 20.4 4 16 4Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="16" cy="12" r="3" stroke="#C9A84C" stroke-width="2"/></svg></div>
         <div style="flex:1;min-width:0">
           <div class="detail-meta-text" id="detailLocation">—</div>
           <div class="detail-meta-sub">Tap for directions</div>
@@ -3190,7 +3354,7 @@ button, a, [onclick],
           <input class="otp-box" type="number" maxlength="1" inputmode="numeric" enterkeyhint="done">
         </div>
         <div class="error-msg" id="err-otp"></div>
-        <button class="btn btn-gold" id="verifyOtpBtn" onclick="verifyOtp()">Verify Code ✓</button>
+        <button class="btn btn-gold" id="verifyOtpBtn" onclick="verifyOtp()">Verify Code</button>
         <div class="resend-row">
           <button id="resendBtn" onclick="resendOtp()" disabled style="color:var(--muted);font-weight:600;background:none;border:none;font-size:13px">Resend code</button>
           <span id="resendTimer" style="display:none;color:var(--muted);font-size:13px"> in <span id="resendCount">30</span>s</span>
@@ -3201,14 +3365,14 @@ button, a, [onclick],
       </div>
 
       <div class="auth-step" id="auth-magic-sent" style="text-align:center;padding:20px 0 8px">
-        <div style="font-size:36px;margin-bottom:12px">📬</div>
+        <div style="display:flex;justify-content:center;margin-bottom:12px"><svg width="44" height="44" viewBox="0 0 32 32" fill="none"><rect x="4" y="8" width="24" height="17" rx="2" stroke="#C9A84C" stroke-width="2"/><path d="M4 10 L16 18 L28 10" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="font-serif" style="font-size:20px;font-weight:700;margin-bottom:8px">Check your email</div>
         <div style="font-size:14px;color:var(--muted2)">A sign-in link has been sent to <strong id="magicLinkEmail" style="color:var(--text)">—</strong>. Click it to sign in — no code needed.</div>
         <button onclick="showAuthStep('auth-otp')" style="margin-top:18px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;text-decoration:underline">← Back to code entry</button>
       </div>
 
       <div class="auth-step" id="auth-success" style="text-align:center;padding:20px 0 8px">
-        <div class="success-icon">🙌</div>
+        <div class="success-icon"><svg width="52" height="52" viewBox="0 0 32 32" fill="none"><path d="M4 28 L14 18" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M4 28 L9 22 L12 25 Z" stroke="#C9A84C" stroke-width="1.5" fill="none" stroke-linejoin="round"/><path d="M22 5 L20 13 L15 10 Z" fill="#C9A84C" opacity="0.7"/><line x1="20" y1="13" x2="16" y2="17" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="23" y1="11" x2="27" y2="9" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="24" y1="14" x2="28" y2="15" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="21" y1="8" x2="22" y2="4" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><circle cx="14" cy="16" r="1.5" fill="#C9A84C"/></svg></div>
         <div class="font-serif" style="font-size:22px;font-weight:700;margin-bottom:6px" id="authSuccessTitle">Welcome!</div>
         <div style="font-size:14px;color:var(--muted2)" id="authSuccessSub">You're all set.</div>
       </div>
@@ -3246,7 +3410,7 @@ button, a, [onclick],
         </label>
         <div class="step-nav">
           <button class="btn btn-outline" style="flex:0 0 auto;width:auto;padding:0 20px" onclick="obBack()">←</button>
-          <button class="btn btn-gold" id="obFinishBtn" onclick="obFinish()">Finish Setup ✦</button>
+          <button class="btn btn-gold" id="obFinishBtn" onclick="obFinish()"><svg width="16" height="16" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:6px"><path d="M16 3 L17.5 14 L28 16 L17.5 18 L16 29 L14.5 18 L4 16 L14.5 14 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Finish Setup</button>
         </div>
       </div>
     </div>
@@ -3338,7 +3502,7 @@ button, a, [onclick],
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-body" style="text-align:center;padding:32px 24px">
-      <div class="success-icon" id="successIcon">🎟️</div>
+      <div class="success-icon" id="successIcon"><svg width="52" height="52" viewBox="0 0 32 32" fill="none"><path d="M4 11 C4 9.5 5 9 6 9 L26 9 C27 9 28 9.5 28 11 C28 11 26 12 26 14 C26 16 28 17 28 17 C28 18.5 27 19 26 19 L6 19 C5 19 4 18.5 4 17 C4 17 6 16 6 14 C6 12 4 11 4 11Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="20" y1="9" x2="20" y2="19" stroke="#C9A84C" stroke-width="1.5" stroke-dasharray="2 2"/><path d="M8 13 L16 13 M8 15 L13 15" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg></div>
       <div class="font-serif" style="font-size:22px;font-weight:700;margin-bottom:8px" id="successTitle">Confirmed!</div>
       <div style="font-size:14px;color:var(--muted2);margin-bottom:28px;line-height:1.65" id="successMsg">—</div>
       <button class="btn btn-gold" onclick="closeSheet('successSheet')">Close</button>
@@ -3409,15 +3573,15 @@ button, a, [onclick],
       <textarea id="epBio" class="field" placeholder="A little about yourself…" rows="2"></textarea>
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">Social Links</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-size:18px">📸</span>
+        <span style="display:flex;align-items:center"><svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="24" height="24" rx="7" stroke="#E1306C" stroke-width="2"/><circle cx="16" cy="16" r="5" stroke="#E1306C" stroke-width="2"/><circle cx="23" cy="9" r="1.5" fill="#E1306C"/></svg></span>
         <input type="url" id="epInstagram" class="field" placeholder="instagram.com/yourhandle" style="margin:0;flex:1">
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-size:18px">👥</span>
+        <span style="display:flex;align-items:center"><svg width="22" height="22" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="13" stroke="#1877F2" stroke-width="2"/><path d="M20 5.5 L18 5.5 C15.8 5.5 14 7.3 14 9.5 L14 13 L11 13 L11 17 L14 17 L14 27 L18 27 L18 17 L21 17 L22 13 L18 13 L18 9.5 C18 9.2 18.2 9 18.5 9 L20 9 Z" stroke="#1877F2" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
         <input type="url" id="epFacebook" class="field" placeholder="facebook.com/yourpage" style="margin:0;flex:1">
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
-        <span style="font-size:18px">🎵</span>
+        <span style="display:flex;align-items:center"><svg width="22" height="22" viewBox="0 0 32 32" fill="none"><path d="M21 4 C21 4 21.5 9 27 10 L27 14 C27 14 24 14 21 12 L21 20 C21 24 18.5 27 15 27 C11.5 27 9 24.5 9 21 C9 17.5 11.5 15 15 15 C15.7 15 16.3 15.1 17 15.3 L17 19.5 C16.4 19.2 15.7 19 15 19 C13.3 19 12 20.3 12 22 C12 23.7 13.3 25 15 25 C16.7 25 18 23.7 18 22 L18 4 Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
         <input type="url" id="epTikTok" class="field" placeholder="tiktok.com/@yourhandle" style="margin:0;flex:1">
       </div>
       <!-- BANNER PHOTO -->
@@ -3428,14 +3592,14 @@ button, a, [onclick],
           <button type="button" class="banner-remove-btn" onclick="event.stopPropagation();epRemoveBanner()">×</button>
         </div>
         <div id="epBannerPlaceholder" class="banner-placeholder">
-          <span style="font-size:28px;opacity:.3">🖼️</span>
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="opacity:.35"><rect x="4" y="6" width="24" height="20" rx="2" stroke="#C9A84C" stroke-width="2"/><circle cx="11" cy="12" r="2.5" stroke="#C9A84C" stroke-width="1.5"/><path d="M4 22 L10 16 L15 21 L20 15 L28 22" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>
           <span style="font-size:12px;color:var(--muted)">Tap to add banner photo</span>
         </div>
         <input type="file" id="epBannerInput" accept="image/*" style="display:none" onchange="epHandleBanner(this)">
       </div>
 
       <!-- FAVORITE BIBLE VERSE -->
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">✝ Favorite Bible Verse</div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px"><svg width="14" height="14" viewBox="0 0 32 32" fill="none" style="margin-right:5px;vertical-align:middle"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg>Favorite Bible Verse</div>
       <textarea id="epBibleVerse" class="field" rows="3" placeholder="e.g. For God so loved the world…" maxlength="500" style="resize:none"></textarea>
       <div style="display:flex;gap:8px;margin-top:8px">
         <input type="text" id="epBibleRef" class="field" style="flex:1;margin:0" placeholder="Reference (e.g. John 3:16)" maxlength="60">
@@ -3447,12 +3611,14 @@ button, a, [onclick],
       <textarea id="epHotTakes" class="field" rows="3" placeholder="Share your spicy (but respectful) Christian hot takes…" maxlength="300" oninput="document.getElementById('epHotTakesCount').textContent=this.value.length+'/300'" style="resize:none"></textarea>
       <div style="text-align:right;font-size:11px;color:var(--muted);margin-top:2px" id="epHotTakesCount">0/300</div>
 
-      <!-- HOBBIES -->
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">🎯 Hobbies & Interests</div>
-      <input type="text" id="epHobbies" class="field" placeholder="e.g. Hiking, guitar, cooking, photography…" maxlength="200">
+      <!-- HOBBIES — preset chip selector -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px"><svg width="14" height="14" viewBox="0 0 32 32" fill="none" style="margin-right:5px;vertical-align:middle"><circle cx="16" cy="16" r="11" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="16" r="6.5" stroke="#C9A84C" stroke-width="1.5"/><line x1="16" y1="11" x2="16" y2="21" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="16" x2="21" y2="16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>Hobbies & Interests <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted2)">(tap to select)</span></div>
+      <div class="ep-hobbies-grid" id="epHobbiesGrid"></div>
+      <!-- Hidden input keeps JS compat for saveProfile() -->
+      <input type="hidden" id="epHobbies">
 
       <!-- OPEN TO CONNECT -->
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">🤝 Open to Connect</div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px"><svg width="14" height="14" viewBox="0 0 32 32" fill="none" style="margin-right:5px;vertical-align:middle"><path d="M6 14 L6 12 C6 10 8 9 10 10 L14 12 L18 10 C20 9 22 10 22 12 L22 14" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M4 14 L28 14 L26 22 L6 22 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="16" y1="16" x2="16" y2="20" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>Open to Connect</div>
       <div class="connect-tags-grid" id="epConnectTags"></div>
 
       <div class="error-msg" id="epErr"></div>
@@ -3555,7 +3721,7 @@ button, a, [onclick],
       <!-- Copy address -->
       <button onclick="copyAddress()" style="width:100%;padding:14px;background:transparent;border:1px solid var(--border);
         border-radius:var(--r-lg);font-size:14px;font-weight:600;color:var(--muted2);cursor:pointer">
-        📋 Copy Address
+        <svg width="14" height="14" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:5px"><rect x="7" y="7" width="18" height="22" rx="2" stroke="currentColor" stroke-width="2"/><path d="M12 7 L12 5 C12 4 13 3 14 3 L18 3 C19 3 20 4 20 5 L20 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Copy Address
       </button>
     </div>
   </div>
@@ -3583,9 +3749,9 @@ button, a, [onclick],
         <div style="height:160px;position:relative;overflow:hidden;background:linear-gradient(135deg,#1A0E38,#252533)">
           <img id="tvCoverImg" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
           <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.1) 0%,rgba(13,13,26,.85) 100%)"></div>
-          <span id="tvCoverEmoji" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:52px;opacity:.2;z-index:1">✝</span>
+          <span id="tvCoverEmoji" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;opacity:.2;z-index:1"><svg width="52" height="52" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg></span>
           <!-- Top-right: admit badge -->
-          <div style="position:absolute;top:14px;left:16px;z-index:2;font-size:9px;font-weight:800;letter-spacing:.14em;color:rgba(201,168,76,.7);text-transform:uppercase">✦ ChristLink</div>
+          <div style="position:absolute;top:14px;left:16px;z-index:2;font-size:9px;font-weight:800;letter-spacing:.14em;color:rgba(201,168,76,.7);text-transform:uppercase"><svg width="8" height="8" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M16 3 L17.5 14 L28 16 L17.5 18 L16 29 L14.5 18 L4 16 L14.5 14 Z" fill="rgba(201,168,76,.7)"/></svg>ChristLink</div>
           <div style="position:absolute;top:14px;right:16px;z-index:2;font-size:9px;font-weight:800;letter-spacing:.12em;color:rgba(255,255,255,.35);text-transform:uppercase;border:1px solid rgba(255,255,255,.15);padding:3px 8px;border-radius:4px">ADMIT <span id="tvAdmit">1</span></div>
           <!-- Event name over cover -->
           <div style="position:absolute;bottom:14px;left:16px;right:16px;z-index:2">
@@ -3627,7 +3793,7 @@ button, a, [onclick],
         <!-- QR STUB -->
         <div style="padding:20px 16px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;background:linear-gradient(170deg,#0D0D1A,#130B28)">
           <!-- Status badge -->
-          <span id="tvStatusBadge" style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:4px 16px;border-radius:999px;background:rgba(78,201,140,.12);color:#4EC98C;border:1px solid rgba(78,201,140,.3)">✓ Confirmed</span>
+          <span id="tvStatusBadge" style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:4px 16px;border-radius:999px;background:rgba(78,201,140,.12);color:#4EC98C;border:1px solid rgba(78,201,140,.3)"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Confirmed</span>
 
           <!-- QR block -->
           <div style="background:#fff;border-radius:16px;padding:16px;display:inline-flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(0,0,0,.4)">
@@ -3720,7 +3886,7 @@ button, a, [onclick],
       </div>
       <div id="scanResult" style="display:none;margin:12px 16px 0;border-radius:var(--r-md);overflow:hidden;flex-shrink:0">
         <div id="scanResultInner" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
-          <div id="scanResultIcon" style="font-size:22px;flex-shrink:0">✓</div>
+          <div id="scanResultIcon" style="font-size:22px;flex-shrink:0;display:flex;align-items:center"><svg width="20" height="20" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div style="flex:1;min-width:0">
             <div id="scanResultTitle" style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
             <div id="scanResultSub" style="font-size:12px;color:var(--muted);margin-top:1px"></div>
@@ -3778,7 +3944,7 @@ button, a, [onclick],
 
       <!-- Bible Verse -->
       <div class="pub-section" id="pubBibleSection" style="display:none">
-        <div class="pub-section-title" id="pubBibleTitle">✝ Favorite Verse</div>
+        <div class="pub-section-title" id="pubBibleTitle"><svg width="14" height="14" viewBox="0 0 32 32" fill="none" style="margin-right:5px;vertical-align:middle"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg>Favorite Verse</div>
         <div class="bible-verse-text" id="pubBibleVerse"></div>
         <div class="bible-verse-ref" id="pubBibleRef"></div>
       </div>
@@ -3823,7 +3989,7 @@ button, a, [onclick],
         src=""
         alt="Event"
         style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:none">
-      <span id="forumGroupAvFallback">✝</span>
+      <span id="forumGroupAvFallback" style="display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg></span>
       <div class="forum-group-av-dot"></div>
     </div>
     <div class="forum-topbar-info">
@@ -3844,7 +4010,7 @@ button, a, [onclick],
   <!-- Messages -->
   <div class="forum-messages" id="forumMessages">
     <div class="forum-empty-state" id="forumEmpty">
-      <div class="forum-empty-icon">💬</div>
+      <div class="forum-empty-icon"><svg width="44" height="44" viewBox="0 0 32 32" fill="none"><path d="M5 6 C5 5 6 4 7 4 L22 4 C23 4 24 5 24 6 L24 16 C24 17 23 18 22 18 L14 18 L9 23 L9 18 L7 18 C6 18 5 17 5 16 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="11" cy="11" r="1" fill="#C9A84C"/><circle cx="15" cy="11" r="1" fill="#C9A84C"/><circle cx="19" cy="11" r="1" fill="#C9A84C"/></svg></div>
       <div class="forum-empty-text">No messages yet.<br>Be the first to say something!</div>
     </div>
   </div>
@@ -3881,7 +4047,7 @@ button, a, [onclick],
         maxlength="1000"
         oninput="forumTextareaInput(this)"
         onkeydown="forumTextareaKeydown(event)"></textarea>
-      <button class="forum-emoji-btn">☺</button>
+      <button class="forum-emoji-btn"><svg width="18" height="18" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="12" stroke="#C9A84C" stroke-width="2"/><circle cx="11.5" cy="13.5" r="1.5" fill="#C9A84C"/><circle cx="20.5" cy="13.5" r="1.5" fill="#C9A84C"/><path d="M10.5 19 C11.5 22 14 23.5 16 23.5 C18 23.5 20.5 22 21.5 19" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg></button>
     </div>
     <button class="forum-send-btn" id="forumSendBtn" onclick="submitForumPost()" disabled>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0a0a0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -3904,7 +4070,7 @@ button, a, [onclick],
       </button>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:36px;height:36px;border-radius:var(--r-sm);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;font-size:18px">⚙️</div>
+      <div style="width:36px;height:36px;border-radius:var(--r-sm);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="4" stroke="#C9A84C" stroke-width="2"/><path d="M14.5 4L13 8C12.3 8.2 11.6 8.5 11 9L7 7.5L5 10.8L8 13.5C7.9 14 7.9 14.7 8 15.2L5 18L7 21.3L11 19.8C11.6 20.3 12.3 20.6 13 20.8L14.5 25H17.5L19 20.8C19.7 20.6 20.4 20.3 21 19.8L25 21.3L27 18L24 15.2C24.1 14.7 24.1 14 24 13.5L27 10.8L25 7.5L21 9C20.4 8.5 19.7 8.2 19 8L17.5 4Z" stroke="#C9A84C" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
       <div>
         <div class="page-h1" style="font-size:22px">Admin Dashboard</div>
         <div class="page-sub">Christ Link Platform Analytics</div>
@@ -4222,12 +4388,48 @@ const ICONS = {
   goals:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="11" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="16" r="6.5" stroke="#C9A84C" stroke-width="1.5"/><line x1="16" y1="11" x2="16" y2="21" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="16" x2="21" y2="16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="22" y1="5" x2="17.5" y2="14" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M22 5 L25 9 M22 5 L18 4" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
   encouragement:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 4 L27 8 L27 17 C27 22 22 27 16 29 C10 27 5 22 5 17 L5 8 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M16 20 C13 20 11 18 11 16 C11 14 13 13 15 14 C14 12 15 11 17 11 C19 11 21 13 20 15 L23 13 C23 13 22 17 20 18 L22 20 Z" stroke="#C9A84C" stroke-width="1.5" stroke-linejoin="round" fill="none"/><circle cx="17.5" cy="11.5" r="1" fill="#C9A84C"/></svg>`,
   inspiration:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 3 L17.5 14 L28 16 L17.5 18 L16 29 L14.5 18 L4 16 L14.5 14 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round" fill="none"/><path d="M25 6 L25.6 8 L27.5 8.5 L25.6 9 L25 11 L24.4 9 L22.5 8.5 L24.4 8 Z" stroke="#C9A84C" stroke-width="1.2" fill="none"/><path d="M7 23 L7.4 24.5 L9 24.8 L7.4 25.2 L7 27 L6.6 25.2 L5 24.8 L6.6 24.5 Z" stroke="#C9A84C" stroke-width="1.2" fill="none"/></svg>`,
+  cross:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg>`,
+  ticket:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 11 C4 9.5 5 9 6 9 L26 9 C27 9 28 9.5 28 11 C28 11 26 12 26 14 C26 16 28 17 28 17 C28 18.5 27 19 26 19 L6 19 C5 19 4 18.5 4 17 C4 17 6 16 6 14 C6 12 4 11 4 11Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="20" y1="9" x2="20" y2="11" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="13" x2="20" y2="15" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="17" x2="20" y2="19" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M8 13 L16 13 M8 15 L13 15" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  rocket:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 5 C16 5 23 8 23 17 L23 21 L20 24 L12 24 L9 21 L9 17 C9 8 16 5 16 5Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M9 17 L6 20 L7 23 L12 24" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 17 L26 20 L25 23 L20 24" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="14" r="2.5" stroke="#C9A84C" stroke-width="1.5"/><path d="M13 27 C13 27 14 25 16 25 C18 25 19 27 19 27" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  clipboard:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="7" width="18" height="22" rx="2" stroke="#C9A84C" stroke-width="2"/><path d="M12 7 L12 5 C12 4 13 3 14 3 L18 3 C19 3 20 4 20 5 L20 7" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="14" x2="21" y2="14" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="18" x2="21" y2="18" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="22" x2="17" y2="22" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  mail:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="24" height="17" rx="2" stroke="#C9A84C" stroke-width="2"/><path d="M4 10 L16 18 L28 10" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  camera:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 11 L4 24 C4 25 5 26 6 26 L26 26 C27 26 28 25 28 24 L28 11 C28 10 27 9 26 9 L22 9 L20 6 L12 6 L10 9 L6 9 C5 9 4 10 4 11Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="16" cy="18" r="5" stroke="#C9A84C" stroke-width="2"/><circle cx="24" cy="12" r="1.5" fill="#C9A84C"/></svg>`,
+  save:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 4 L24 4 L28 8 L28 26 C28 27 27 28 26 28 L6 28 C5 28 4 27 4 26 L4 6 C4 5 5 4 6 4Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M11 4 L11 12 L21 12 L21 4" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><rect x="9" y="18" width="14" height="10" rx="1" stroke="#C9A84C" stroke-width="2"/><line x1="18" y1="7" x2="18" y2="10" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  link:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 19 C13 19 10 22 8 22 C5.8 22 4 20.2 4 18 C4 15.8 5.8 14 8 14 L12 14" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M19 13 C19 13 22 10 24 10 C26.2 10 28 11.8 28 14 C28 16.2 26.2 18 24 18 L20 18" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="21" x2="21" y2="11" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  pin:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 4 C11.6 4 8 7.6 8 12 C8 18 16 28 16 28 C16 28 24 18 24 12 C24 7.6 20.4 4 16 4Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="16" cy="12" r="3" stroke="#C9A84C" stroke-width="2"/></svg>`,
+  person:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="10" r="5" stroke="#C9A84C" stroke-width="2"/><path d="M6 28 C6 22 10.5 17 16 17 C21.5 17 26 22 26 28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  card:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="8" width="26" height="17" rx="3" stroke="#C9A84C" stroke-width="2"/><line x1="3" y1="14" x2="29" y2="14" stroke="#C9A84C" stroke-width="2"/><rect x="7" y="19" width="6" height="3" rx="1" stroke="#C9A84C" stroke-width="1.5"/><line x1="18" y1="20.5" x2="25" y2="20.5" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  money:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="9" width="26" height="15" rx="2" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="16.5" r="3.5" stroke="#C9A84C" stroke-width="1.5"/><line x1="16" y1="13" x2="16" y2="12" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="16" y1="20" x2="16" y2="21" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  xCircle:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="12" stroke="#C9A84C" stroke-width="2"/><path d="M11 11 L21 21 M21 11 L11 21" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  share:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6 L26 12 L20 18" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 12 L12 12 C8.7 12 6 14.7 6 18 L6 26" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  phone:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="9" y="3" width="14" height="26" rx="3" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="26" r="1.5" fill="#C9A84C"/><line x1="13" y1="7" x2="19" y2="7" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  people:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="10" r="4" stroke="#C9A84C" stroke-width="2"/><circle cx="22" cy="12" r="3" stroke="#C9A84C" stroke-width="2"/><path d="M4 28 C4 22 7.5 18 12 18 C16.5 18 20 22 20 28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M20 19 C21 18.2 22.5 17.5 24 17.5 C27 17.5 29 20 29 23" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  music:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22 L12 8 L27 5 L27 19" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="23" r="3" stroke="#C9A84C" stroke-width="2"/><circle cx="24" cy="20" r="3" stroke="#C9A84C" stroke-width="2"/></svg>`,
+  settings:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="4" stroke="#C9A84C" stroke-width="2"/><path d="M14.5 4L13 8C12.3 8.2 11.6 8.5 11 9L7 7.5L5 10.8L8 13.5C7.9 14 7.9 14.7 8 15.2L5 18L7 21.3L11 19.8C11.6 20.3 12.3 20.6 13 20.8L14.5 25H17.5L19 20.8C19.7 20.6 20.4 20.3 21 19.8L25 21.3L27 18L24 15.2C24.1 14.7 24.1 14 24 13.5L27 10.8L25 7.5L21 9C20.4 8.5 19.7 8.2 19 8L17.5 4Z" stroke="#C9A84C" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+  smile:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="12" stroke="#C9A84C" stroke-width="2"/><circle cx="11.5" cy="13.5" r="1.5" fill="#C9A84C"/><circle cx="20.5" cy="13.5" r="1.5" fill="#C9A84C"/><path d="M10.5 19 C11.5 22 14 23.5 16 23.5 C18 23.5 20.5 22 21.5 19" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  pencil:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M23 5 L27 9 L10 26 L5 27 L6 22 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M20 8 L24 12" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  image:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="6" width="24" height="20" rx="2" stroke="#C9A84C" stroke-width="2"/><circle cx="11" cy="12" r="2.5" stroke="#C9A84C" stroke-width="1.5"/><path d="M4 22 L10 16 L15 21 L20 15 L28 22" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>`,
+  celebrate:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 28 L14 18" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M4 28 L9 22 L12 25 Z" stroke="#C9A84C" stroke-width="1.5" fill="none" stroke-linejoin="round"/><path d="M22 5 L20 13 L15 10 Z" fill="#C9A84C" opacity="0.7"/><line x1="20" y1="13" x2="16" y2="17" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="23" y1="11" x2="27" y2="9" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="24" y1="14" x2="28" y2="15" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="21" y1="8" x2="22" y2="4" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><circle cx="14" cy="16" r="1.5" fill="#C9A84C"/><circle cx="26" cy="20" r="1" fill="#C9A84C"/></svg>`,
+  instagram:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="24" height="24" rx="7" stroke="#E1306C" stroke-width="2"/><circle cx="16" cy="16" r="5" stroke="#E1306C" stroke-width="2"/><circle cx="23" cy="9" r="1.5" fill="#E1306C"/></svg>`,
+  facebook:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="13" stroke="#1877F2" stroke-width="2"/><path d="M20 5.5 L18 5.5 C15.8 5.5 14 7.3 14 9.5 L14 13 L11 13 L11 17 L14 17 L14 27 L18 27 L18 17 L21 17 L22 13 L18 13 L18 9.5 C18 9.2 18.2 9 18.5 9 L20 9 Z" stroke="#1877F2" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+  tiktok:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 4 C21 4 21.5 9 27 10 L27 14 C27 14 24 14 21 12 L21 20 C21 24 18.5 27 15 27 C11.5 27 9 24.5 9 21 C9 17.5 11.5 15 15 15 C15.7 15 16.3 15.1 17 15.3 L17 19.5 C16.4 19.2 15.7 19 15 19 C13.3 19 12 20.3 12 22 C12 23.7 13.3 25 15 25 C16.7 25 18 23.7 18 22 L18 4 Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+};
 };
 
 function icon(name, size = 22) {
   const svg = ICONS[name];
   if (!svg) return '';
   return svg.replace('<svg ', `<svg width="${size}" height="${size}" `);
+}
+
+const GLYPHS = {
+  check: `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  x:     `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  warn:  `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2L13 12H1L7 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="7" y1="6" x2="7" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="10.5" r="0.7" fill="currentColor"/></svg>`,
+};
+function glyph(name, color) {
+  const g = GLYPHS[name] || '';
+  return color ? g.replace(/currentColor/g, color) : g;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -4409,7 +4611,7 @@ async function signOut() {
   syncAuthUI();
   closeDrop();
   goTo('home');
-  showToast('👋 Signed out. See you soon!');
+  showToast('Signed out. See you soon!');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -4665,7 +4867,7 @@ async function sendMagicLink() {
 async function resendOtp() {
   const email = document.getElementById('authEmail').value.trim();
   await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:true } });
-  showToast('📬 New code sent!');
+  showToast('New code sent!');
   startResend();
 }
 
@@ -4694,12 +4896,12 @@ async function verifyOtp() {
     const { data, error } = await sb.auth.verifyOtp({ email, token, type:'email' });
     if (error) {
       showErr('err-otp', error.message?.includes('expired') ? 'Code expired — request a new one.' : 'Invalid code. Please try again.');
-      btn.disabled=false; btn.innerHTML='Verify Code ✓'; return;
+      btn.disabled=false; btn.innerHTML='Verify Code'; return;
     }
     currentUser    = data.user;
     currentSession = data.session;
     const name = data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Friend';
-    document.getElementById('authSuccessTitle').textContent = authMode === 'signup' ? `Welcome, ${name}! 🙌` : `Good to see you, ${name}!`;
+    document.getElementById('authSuccessTitle').textContent = authMode === 'signup' ? `Welcome, ${name}!` : `Good to see you, ${name}!`;
     document.getElementById('authSuccessSub').textContent   = 'You\'re all set.';
     showAuthStep('auth-success');
     spawnConfetti();
@@ -4712,7 +4914,7 @@ async function verifyOtp() {
     }, 1600);
   } catch {
     showErr('err-otp','Verification failed. Please try again.');
-    btn.disabled=false; btn.innerHTML='Verify Code ✓';
+    btn.disabled=false; btn.innerHTML='Verify Code';
   }
 }
 
@@ -4909,9 +5111,9 @@ async function obFinish() {
   closeSheet('onboardingSheet');
   syncAuthUI();
   renderProfilePage();
-  showToast('Welcome to ChristLink! 🙌','success');
+  showToast('Welcome to ChristLink!','success');
   spawnConfetti();
-  btn.disabled=false; btn.innerHTML='Finish Setup ✦';
+  btn.disabled=false; btn.innerHTML='Finish Setup';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -4961,7 +5163,7 @@ const EMPTY_SVGS = {
   </svg>`,
 };
 function emptyStateHTML(type, title, sub, btnLabel, btnAction) {
-  const icon = EMPTY_SVGS[type] || `<div class="empty-icon">📋</div>`;
+  const icon = EMPTY_SVGS[type] || `<div class="empty-icon"><svg width="52" height="52" viewBox="0 0 32 32" fill="none"><rect x="7" y="7" width="18" height="22" rx="2" stroke="#C9A84C" stroke-width="2"/><path d="M12 7 L12 5 C12 4 13 3 14 3 L18 3 C19 3 20 4 20 5 L20 7" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="14" x2="21" y2="14" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="18" x2="21" y2="18" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg></div>`;
   const btn  = btnLabel ? `<button class="btn btn-gold btn-sm" style="margin-top:8px" onclick="${btnAction}">${btnLabel}</button>` : '';
   return `<div class="empty-state" style="color:var(--muted2)">${icon}<div class="empty-title">${title}</div><div class="empty-sub">${sub}</div>${btn}</div>`;
 }
@@ -4977,6 +5179,8 @@ async function fetchMyEvents(countOnly = false) {
     const events = data.events || [];
     // update stat
     document.getElementById('statEvents').textContent = events.length;
+    // always render preview in overview tab
+    renderHostedEventsPreview(events);
     if (countOnly) return;
     // render into tab
     const container = document.getElementById('myEventsContainer');
@@ -5026,7 +5230,7 @@ async function fetchMyTickets(countOnly = false) {
     if (countOnly) return;
     const container = document.getElementById('myTicketsContainer');
     if (container) container.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">🎟️</div>
+      <div class="empty-icon"><svg width="52" height="52" viewBox="0 0 32 32" fill="none"><path d="M4 11 C4 9.5 5 9 6 9 L26 9 C27 9 28 9.5 28 11 C28 11 26 12 26 14 C26 16 28 17 28 17 C28 18.5 27 19 26 19 L6 19 C5 19 4 18.5 4 17 C4 17 6 16 6 14 C6 12 4 11 4 11Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="20" y1="9" x2="20" y2="19" stroke="#C9A84C" stroke-width="1.5" stroke-dasharray="2 2"/><path d="M8 13 L16 13 M8 15 L13 15" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg></div>
       <div class="empty-title">No tickets yet</div>
       <div class="empty-sub">Tickets and RSVPs will appear here.</div>
       <button class="btn btn-gold btn-sm mt-4" onclick="goTo('browse')">Explore Events →</button>
@@ -5048,7 +5252,7 @@ function makeHostedEventCard(ev) {
     <div style="position:relative;width:100%;height:160px;background:${bg};overflow:hidden;flex-shrink:0">
       ${ev.cover_url
         ? `<img src="${ev.cover_url}" style="width:100%;height:100%;object-fit:cover;display:block">`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:52px;opacity:.6">${ev.emoji || '✝'}</div>`}
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;display:flex;align-items:center;justify-content:center;opacity:.6"><svg width="40" height="40" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg></div>`}
       <div style="position:absolute;top:10px;left:10px;font-size:11px;font-weight:700;color:${statusColor};background:${statusBg};border:1px solid ${statusColor}44;border-radius:var(--r-full);padding:3px 10px;text-transform:uppercase;letter-spacing:.06em;backdrop-filter:blur(6px)">${ev.status}</div>
       <div style="position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;color:${ev.is_paid?'var(--gold)':'#4EC98C'};background:${ev.is_paid?'rgba(201,168,76,.18)':'rgba(78,201,140,.15)'};border:1px solid ${ev.is_paid?'rgba(201,168,76,.4)':'rgba(78,201,140,.35)'};border-radius:var(--r-full);padding:3px 10px;backdrop-filter:blur(6px)">${ev.is_paid?'Paid':'Free'}</div>
     </div>
@@ -5103,7 +5307,7 @@ function makeTicketCard(t) {
   el.innerHTML = `
     <div style="display:flex;gap:12px;padding:14px 16px;align-items:center;position:relative">
       <div style="width:56px;height:56px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#1A0E38,#0F0F1A);display:flex;align-items:center;justify-content:center;font-size:24px">
-        ${t.event_cover_url ? `<img src="${t.event_cover_url}" style="width:100%;height:100%;object-fit:cover">` : '🎟️'}
+        ${t.event_cover_url ? `<img src="${t.event_cover_url}" style="width:100%;height:100%;object-fit:cover">` : '<svg width="40" height="40" viewBox="0 0 32 32" fill="none"><path d="M4 11 C4 9.5 5 9 6 9 L26 9 C27 9 28 9.5 28 11 C28 11 26 12 26 14 C26 16 28 17 28 17 C28 18.5 27 19 26 19 L6 19 C5 19 4 18.5 4 17 C4 17 6 16 6 14 C6 12 4 11 4 11Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>'}
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${t.event_name || 'Event'}</div>
@@ -5123,7 +5327,7 @@ function makeTicketCard(t) {
       <!-- dropdown -->
       <div class="ticket-dropdown" style="display:none;position:absolute;top:42px;right:10px;z-index:100;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden">
         <button class="td-view" style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 16px;background:none;border:none;color:var(--text);font-size:14px;cursor:pointer;text-align:left">
-          🎟 View Ticket
+          <svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:5px"><path d="M4 11 C4 9.5 5 9 6 9 L26 9 C27 9 28 9.5 28 11 C28 11 26 12 26 14 C26 16 28 17 28 17 C28 18.5 27 19 26 19 L6 19 C5 19 4 18.5 4 17 C4 17 6 16 6 14 C6 12 4 11 4 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>View Ticket
         </button>
         <button class="td-share" style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 16px;background:none;border:none;color:var(--text);font-size:14px;cursor:pointer;text-align:left">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -5141,7 +5345,7 @@ function makeTicketCard(t) {
     <div style="padding:0 14px 14px;display:flex;gap:8px">
       <button class="view-ticket-btn"
         style="flex:1;height:40px;border-radius:var(--r-full);background:var(--gold);color:#000;font-size:13px;font-weight:700;border:none;cursor:pointer;touch-action:manipulation">
-        🎟 View Ticket
+        <svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:5px"><path d="M4 11 C4 9.5 5 9 6 9 L26 9 C27 9 28 9.5 28 11 C28 11 26 12 26 14 C26 16 28 17 28 17 C28 18.5 27 19 26 19 L6 19 C5 19 4 18.5 4 17 C4 17 6 16 6 14 C6 12 4 11 4 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>View Ticket
       </button>
     </div>` : ''}`;
 
@@ -5200,13 +5404,13 @@ function makeRsvpCard(r) {
   el.innerHTML = `
     <div style="display:flex;gap:12px;padding:14px 16px;align-items:center">
       <div style="width:48px;height:48px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#0E3820,#0F1A15);display:flex;align-items:center;justify-content:center;font-size:22px">
-        ${r.event_cover_url ? `<img src="${r.event_cover_url}" style="width:100%;height:100%;object-fit:cover">` : '✝'}
+        ${r.event_cover_url ? `<img src="${r.event_cover_url}" style="width:100%;height:100%;object-fit:cover">` : '<svg width="40" height="40" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg>'}
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${r.event_name || 'Event'}</div>
         <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">${fmtDate} · ${r.event_city || ''}</div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.05em">✅ Going</span>
+          <span style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.05em"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" style="vertical-align:middle;margin-right:2px"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Going</span>
           <span style="font-size:11px;color:var(--muted)">Free</span>
         </div>
       </div>
@@ -5579,7 +5783,7 @@ async function saveEditEvent() {
     await saveEeeCoupons();
 
     closeSheet('editEventSheet');
-    showToast('Event updated! ✓', 'success');
+    showToast('Event updated!', 'success');
 
     // Refresh profile events list
     fetchMyEvents();
@@ -5614,6 +5818,12 @@ async function saveEditEvent() {
   }
 }
 
+const PRESET_HOBBIES = [
+  'Roller Skating','Swimming','Hiking','Reading','Praying','Bible Study','Worship',
+  'Volunteering','Mentorship','Fitness','Content Creation','Photography','Traveling',
+  'Cooking','Music','Church Events','Fellowship','Community Outreach','Serving','Resting'
+];
+
 function renderProfilePage() {
   if (!currentUser) return;
   const name = profileData?.full_name || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Friend';
@@ -5644,38 +5854,47 @@ function renderProfilePage() {
   }
 
   // ── Identity ──────────────────────────────────────────────
-  document.getElementById('profName').textContent   = name;
+  document.getElementById('profName').textContent = name;
   document.getElementById('profHandle').textContent = currentUser.email || '';
 
+  // Verified badge
+  const verifiedBadge = document.getElementById('profVerifiedBadge');
+  const isVerified = profileData?.role === 'verified' || profileData?.role === 'admin';
+  if (verifiedBadge) verifiedBadge.style.display = isVerified ? 'inline-flex' : 'none';
+
+  // Joined chip
   const joinedEl = document.getElementById('profJoined');
   const joinedTextEl = document.getElementById('profJoinedText');
   if (currentUser.created_at && joinedEl && joinedTextEl) {
     joinedTextEl.textContent = 'Joined ' + new Date(currentUser.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    joinedEl.style.display = 'flex';
+    joinedEl.style.display = 'inline-flex';
   }
 
+  // City chip
   const city = profileData?.city || '';
   const cityChip = document.getElementById('profCityChip');
   const cityText = document.getElementById('profCityText');
   if (city && cityChip && cityText) {
-    cityText.textContent = city.split(',')[0];
-    cityChip.style.display = 'flex';
-    document.getElementById('statCity').textContent = city.split(',')[0];
-  } else {
-    document.getElementById('statCity').textContent = '—';
-    if (cityChip) cityChip.style.display = 'none';
+    cityText.textContent = city;
+    cityChip.style.display = 'inline-flex';
+  } else if (cityChip) {
+    cityChip.style.display = 'none';
   }
 
+  // Role chip
   const roleLabels = { admin: 'Admin', verified: 'Verified Host', host: 'Host' };
   const roleChip = document.getElementById('profRoleChip');
   const roleText = document.getElementById('profRoleText');
   if (roleLabels[profileData?.role] && roleChip && roleText) {
     roleText.textContent = roleLabels[profileData.role];
-    roleChip.style.display = 'flex';
+    const roleClass = profileData.role === 'admin' ? 'role-admin' : 'role-verified';
+    roleChip.className = `prof-meta-chip ${roleClass}`;
+    roleChip.style.display = 'inline-flex';
   } else if (roleChip) {
     roleChip.style.display = 'none';
   }
 
+  // Bio
   const bioEl = document.getElementById('profBio');
   if (profileData?.bio) {
     bioEl.textContent = profileData.bio;
@@ -5686,52 +5905,63 @@ function renderProfilePage() {
 
   renderSocialLinks('profSocialLinks', profileData);
 
+  // ── Stats (followers/following are placeholders for now) ──
+  const statFollowersEl = document.getElementById('statFollowers');
+  const statFollowingEl = document.getElementById('statFollowing');
+  if (statFollowersEl) statFollowersEl.textContent = profileData?.followers_count ?? 0;
+  if (statFollowingEl) statFollowingEl.textContent = profileData?.following_count ?? 0;
+  // statEvents is updated by fetchMyEvents()
+
   // ── Bible Verse ───────────────────────────────────────────
   const verseSection = document.getElementById('profVerseSection');
   const verseText    = document.getElementById('profVerseText');
   const verseRef     = document.getElementById('profVerseRef');
   const verseVer     = document.getElementById('profVerseVersion');
-  const verseIcon    = document.getElementById('profVerseIcon');
   if (profileData?.bible_verse) {
-    verseText.textContent = profileData.bible_verse;
+    verseText.textContent = `"${profileData.bible_verse}"`;
     verseRef.textContent  = profileData.bible_verse_reference || '';
-    verseVer.textContent  = profileData.bible_version || '';
+    verseVer.textContent  = profileData.bible_version ? `• ${profileData.bible_version}` : '';
     verseRef.style.display  = profileData.bible_verse_reference ? 'inline' : 'none';
     verseVer.style.display  = profileData.bible_version ? 'inline' : 'none';
-    if (verseIcon) verseIcon.innerHTML = icon('dailyVerse', 13);
     verseSection.style.display = 'block';
   } else {
     verseSection.style.display = 'none';
   }
 
-  // ── Hot Takes ─────────────────────────────────────────────
-  const hotSection = document.getElementById('profHotSection');
-  const hotText    = document.getElementById('profHotText');
-  const hotIcon    = document.getElementById('profHotIcon');
-  if (profileData?.hot_takes) {
-    hotText.textContent = profileData.hot_takes;
-    if (hotIcon) hotIcon.innerHTML = icon('prayerRequests', 13);
-    hotSection.style.display = 'block';
-  } else {
-    hotSection.style.display = 'none';
+  // ── Faith Thought (hot takes) + Interests (hobbies) — two col ─
+  const hotSection     = document.getElementById('profHotSection');
+  const hotText        = document.getElementById('profHotText');
+  const hobbiesSection = document.getElementById('profHobbiesSection');
+  const hobbiesChips   = document.getElementById('profHobbiesChips');
+  const twoColRow      = document.getElementById('profTwoColRow');
+
+  const hasHot     = !!profileData?.hot_takes;
+  const hasHobbies = !!profileData?.hobbies;
+
+  if (hasHot) hotText.textContent = profileData.hot_takes;
+  if (hasHobbies && hobbiesChips) {
+    // Split stored hobbies string and match against preset list for chip display
+    const stored = profileData.hobbies.split(',').map(h => h.trim()).filter(Boolean);
+    const matched = stored.filter(h => PRESET_HOBBIES.some(p => p.toLowerCase() === h.toLowerCase()));
+    const display = matched.length ? matched : stored.slice(0, 6);
+    hobbiesChips.innerHTML = display
+      .map(h => `<span class="prof-hobby-chip">${h}</span>`)
+      .join('');
   }
 
-  // ── Hobbies ───────────────────────────────────────────────
-  const hobbiesSection = document.getElementById('profHobbiesSection');
-  const hobbiesText    = document.getElementById('profHobbiesText');
-  const hobbiesIcon    = document.getElementById('profHobbiesIcon');
-  if (profileData?.hobbies) {
-    hobbiesText.textContent = profileData.hobbies;
-    if (hobbiesIcon) hobbiesIcon.innerHTML = icon('goals', 13);
-    hobbiesSection.style.display = 'block';
-  } else {
-    hobbiesSection.style.display = 'none';
+  if (twoColRow) {
+    if (hasHot || hasHobbies) {
+      twoColRow.style.display = 'flex';
+      hotSection.style.display     = hasHot ? '' : 'none';
+      hobbiesSection.style.display = hasHobbies ? '' : 'none';
+    } else {
+      twoColRow.style.display = 'none';
+    }
   }
 
   // ── Connect Tags ──────────────────────────────────────────
   const connectSection = document.getElementById('profConnectSection');
   const connectGrid    = document.getElementById('profConnectGrid');
-  const connectIcon    = document.getElementById('profConnectIcon');
   const tags = profileData?.connect_tags || [];
   if (tags.length) {
     const tagMap = Object.fromEntries(CONNECT_TAGS.map(t => [t.id, t]));
@@ -5739,18 +5969,17 @@ function renderProfilePage() {
       .filter(id => tagMap[id])
       .map(id => `<div class="prof-connect-pill"><span style="display:flex">${icon(tagMap[id].iconName, 16)}</span>${tagMap[id].label}</div>`)
       .join('');
-    if (connectIcon) connectIcon.innerHTML = icon('openToConnect', 13);
     connectSection.style.display = 'block';
   } else {
     connectSection.style.display = 'none';
   }
 
   // ── About (bio fallback) ──────────────────────────────────
+  const hasNewFields = profileData?.bible_verse || profileData?.hot_takes || profileData?.hobbies || tags.length;
   const aboutSection = document.getElementById('profAboutSection');
   const aboutEl      = document.getElementById('profAbout');
-  const hasNewFields = profileData?.bible_verse || profileData?.hot_takes || profileData?.hobbies || tags.length;
-  if (profileData?.bio || !hasNewFields) {
-    aboutEl.textContent = profileData?.bio || 'No bio added yet.';
+  if (!hasNewFields && profileData?.bio) {
+    aboutEl.textContent = profileData.bio;
     aboutSection.style.display = 'block';
   } else {
     aboutSection.style.display = 'none';
@@ -5767,6 +5996,43 @@ function renderProfilePage() {
   // ── Stripe Connect section ────────────────────────────────
   renderStripeConnectStatus();
   syncAdminNav();
+}
+
+function renderHostedEventsPreview(events) {
+  const section  = document.getElementById('profHostedEventsSection');
+  const container = document.getElementById('profHostedEventsPreview');
+  if (!section || !container) return;
+  const published = (events || []).filter(e => e.status === 'published').slice(0, 3);
+  if (!published.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  container.innerHTML = published.map(ev => {
+    const d = ev.start_date ? new Date(ev.start_date).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : 'Date TBD';
+    const thumb = ev.cover_url
+      ? `<img src="${ev.cover_url}" style="width:100%;height:100%;object-fit:cover">`
+      : `<svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg>`;
+    const city = ev.city ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>${ev.city}` : '';
+    return `<div class="prof-event-preview" onclick="viewDetail(${JSON.stringify(ev).replace(/"/g,'&quot;')})">
+      <div class="prof-event-thumb">${thumb}</div>
+      <div class="prof-event-info">
+        <div class="prof-event-name">${ev.name || 'Untitled Event'}</div>
+        <div class="prof-event-meta">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${d}${city ? ' · ' + city : ''}
+        </div>
+        ${ev.attendee_count ? `<div class="prof-event-attendees">${ev.attendee_count} attending</div>` : ''}
+      </div>
+      <div class="prof-event-view-btn">View</div>
+    </div>`;
+  }).join('');
+}
+
+function shareProfile() {
+  const name = profileData?.full_name || currentUser?.email?.split('@')[0] || 'my profile';
+  const url  = window.location.href;
+  if (navigator.share) {
+    navigator.share({ title: `${name} on ChristLink`, url }).catch(() => {});
+  } else {
+    navigator.clipboard?.writeText(url).then(() => showToast('Link copied!')).catch(() => showToast('Link copied!'));
+  }
 }
 
 function renderStripeConnectStatus() {
@@ -5822,7 +6088,7 @@ function renderStripeConnectStatus() {
   } else {
     // Fully active
     dot.style.background = '#4EC98C';
-    label.textContent    = 'Payouts active ✓';
+    label.textContent    = 'Payouts active';
     sub.textContent      = 'Your Stripe account is connected and receiving payments';
     btn.textContent      = 'Manage in Stripe ↗';
     btn.onclick          = startStripeConnect;
@@ -5863,9 +6129,9 @@ function renderSocialLinks(containerId, profile) {
   if (!el) return;
   el.innerHTML = '';
   const links = [
-    { key: 'instagram_url', label: 'Instagram', icon: '📸', color: '#E1306C' },
-    { key: 'facebook_url',  label: 'Facebook',  icon: '👥', color: '#1877F2' },
-    { key: 'tiktok_url',    label: 'TikTok',    icon: '🎵', color: '#fff' },
+    { key: 'instagram_url', label: 'Instagram', icon: '<svg width="18" height="18" viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="24" height="24" rx="7" stroke="#E1306C" stroke-width="2"/><circle cx="16" cy="16" r="5" stroke="#E1306C" stroke-width="2"/><circle cx="23" cy="9" r="1.5" fill="#E1306C"/></svg>', color: '#E1306C' },
+    { key: 'facebook_url',  label: 'Facebook',  icon: '<svg width="18" height="18" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="13" stroke="#1877F2" stroke-width="2"/><path d="M20 5.5 L18 5.5 C15.8 5.5 14 7.3 14 9.5 L14 13 L11 13 L11 17 L14 17 L14 27 L18 27 L18 17 L21 17 L22 13 L18 13 L18 9.5 C18 9.2 18.2 9 18.5 9 L20 9 Z" stroke="#1877F2" stroke-width="1.5" stroke-linejoin="round"/></svg>', color: '#1877F2' },
+    { key: 'tiktok_url',    label: 'TikTok',    icon: '<svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M21 4 C21 4 21.5 9 27 10 L27 14 C27 14 24 14 21 12 L21 20 C21 24 18.5 27 15 27 C11.5 27 9 24.5 9 21 C9 17.5 11.5 15 15 15 C15.7 15 16.3 15.1 17 15.3 L17 19.5 C16.4 19.2 15.7 19 15 19 C13.3 19 12 20.3 12 22 C12 23.7 13.3 25 15 25 C16.7 25 18 23.7 18 22 L18 4 Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg>', color: '#fff' },
   ];
   links.forEach(({ key, label, icon, color }) => {
     if (!profile?.[key]) return;
@@ -6015,7 +6281,7 @@ function openForum(event) {
   const msgArea = document.getElementById('forumMessages');
   msgArea.innerHTML = `
     <div class="forum-empty-state">
-      <div class="forum-empty-icon">💬</div>
+      <div class="forum-empty-icon"><svg width="44" height="44" viewBox="0 0 32 32" fill="none"><path d="M5 6 C5 5 6 4 7 4 L22 4 C23 4 24 5 24 6 L24 16 C24 17 23 18 22 18 L14 18 L9 23 L9 18 L7 18 C6 18 5 17 5 16 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="11" cy="11" r="1" fill="#C9A84C"/><circle cx="15" cy="11" r="1" fill="#C9A84C"/><circle cx="19" cy="11" r="1" fill="#C9A84C"/></svg></div>
       <div class="forum-empty-text">Loading messages…</div>
     </div>`;
   const ta = document.getElementById('forumTextarea');
@@ -6084,7 +6350,7 @@ function renderForumMessages(posts) {
   if (posts.length === 0) {
     msgArea.innerHTML = `
       <div class="forum-empty-state">
-        <div class="forum-empty-icon">💬</div>
+        <div class="forum-empty-icon"><svg width="44" height="44" viewBox="0 0 32 32" fill="none"><path d="M5 6 C5 5 6 4 7 4 L22 4 C23 4 24 5 24 6 L24 16 C24 17 23 18 22 18 L14 18 L9 23 L9 18 L7 18 C6 18 5 17 5 16 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="11" cy="11" r="1" fill="#C9A84C"/><circle cx="15" cy="11" r="1" fill="#C9A84C"/><circle cx="19" cy="11" r="1" fill="#C9A84C"/></svg></div>
         <div class="forum-empty-text">No messages yet.<br>Be the first to say something!</div>
       </div>`;
     return;
@@ -6121,7 +6387,7 @@ function renderForumMessages(posts) {
               : `<div class="forum-msg-av" style="background:${avColor}">${avInitial}</div>`)
           : `<div style="width:28px;flex-shrink:0"></div>`)
       : '';
-    const tickHtml = isOwn ? `<span class="forum-msg-tick${isOpt ? '' : ' seen'}">✓✓</span>` : '';
+    const tickHtml = isOwn ? `<span class="forum-msg-tick${isOpt ? '' : ' seen'}" style="display:inline-flex"><svg width="14" height="10" viewBox="0 0 20 12" fill="none"><path d="M1 6L4.5 10L10 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 6L10.5 10L16 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : '';
     const delHtml  = isOwn && !isOpt
       ? `<button class="forum-msg-del" id="fdel-${post.id}" onclick="forumDeletePost('${post.id}')">Delete</button>`
       : '';
@@ -6372,6 +6638,23 @@ function populateBibleVersions() {
   sel.innerHTML = BIBLE_VERSIONS.map(v => `<option value="${v.code}">${v.code}</option>`).join('');
 }
 
+function renderHobbyChipsEdit(savedHobbies = '') {
+  const container = document.getElementById('epHobbiesGrid');
+  if (!container) return;
+  // Parse saved hobbies string into array
+  const saved = savedHobbies.split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
+  container.innerHTML = PRESET_HOBBIES.map(hobby => {
+    const isSelected = saved.some(s => s === hobby.toLowerCase());
+    return `<button type="button" class="ep-hobby-chip${isSelected ? ' selected' : ''}"
+      onclick="this.classList.toggle('selected')">${hobby}</button>`;
+  }).join('');
+}
+
+function getSelectedHobbies() {
+  const chips = [...document.querySelectorAll('#epHobbiesGrid .ep-hobby-chip.selected')];
+  return chips.map(c => c.textContent.trim()).join(', ') || null;
+}
+
 function renderConnectTagsEdit(selectedTags = []) {
   const container = document.getElementById('epConnectTags');
   if (!container) return;
@@ -6453,7 +6736,8 @@ function populateEditProfile() {
   const hotTakes = profileData?.hot_takes || '';
   document.getElementById('epHotTakes').value     = hotTakes;
   document.getElementById('epHotTakesCount').textContent = hotTakes.length + '/300';
-  document.getElementById('epHobbies').value      = profileData?.hobbies || '';
+  // Render hobby preset chips
+  renderHobbyChipsEdit(profileData?.hobbies || '');
   renderConnectTagsEdit(profileData?.connect_tags || []);
   // Banner
   const bannerUrl = profileData?.banner_url || null;
@@ -6586,7 +6870,7 @@ async function saveProfile() {
     bible_verse_reference: document.getElementById('epBibleRef').value.trim()   || null,
     bible_version:         document.getElementById('epBibleVersion')?.value     || 'NIV',
     hot_takes:             document.getElementById('epHotTakes').value.trim()   || null,
-    hobbies:               document.getElementById('epHobbies').value.trim()    || null,
+    hobbies:               getSelectedHobbies() || null,
     connect_tags:          getSelectedConnectTags(),
   };
 
@@ -6621,7 +6905,7 @@ async function saveProfile() {
   closeSheet('editProfileSheet');
   syncAuthUI();
   renderProfilePage();
-  showToast('Profile updated! ✓', 'success');
+  showToast('Profile updated!', 'success');
   btn.disabled = false;
   btn.innerHTML = 'Save Changes';
 }
@@ -6653,7 +6937,7 @@ function makeCardHTML(ev, scrollMode) {
         <div style="display:flex">
           ${[...Array(Math.min(3, going))].map((_, i) => {
             const c = AVATAR_COLORS_CARD[(Math.abs((ev.name||'x').charCodeAt(i*2)) + i) % AVATAR_COLORS_CARD.length];
-            return `<div style="width:22px;height:22px;border-radius:50%;background:${c};border:2px solid rgba(0,0,0,.6);margin-left:${i>0?'-7px':'0'};flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700">${['✝','★','♡'][i]}</div>`;
+            return `<div style="width:22px;height:22px;border-radius:50%;background:${c};border:2px solid rgba(0,0,0,.6);margin-left:${i>0?'-7px':'0'};flex-shrink:0"></div>`;
           }).join('')}
         </div>
         <span style="font-size:11px;color:rgba(255,255,255,.8);font-weight:600">${going > 99 ? '99+' : going} going</span>
@@ -6666,7 +6950,7 @@ function makeCardHTML(ev, scrollMode) {
     <div style="position:absolute;inset:0;background:${bg}"></div>
     ${ev.cover_url
       ? `<img class="card-img" src="${ev.cover_url}" alt="${escapeAttr(ev.name||'')}" loading="lazy">`
-      : `<div class="card-img-emoji">${ev.emoji || '✝'}</div>`}
+      : `<div class="card-img-emoji" style="display:flex;align-items:center;justify-content:center"><svg width="40" height="40" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg></div>`}
     <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.4) 50%,rgba(0,0,0,.08) 100%)"></div>
     <div class="card-badges">
       <span class="badge badge-type">${ev.event_type || 'Event'}</span>
@@ -6949,7 +7233,7 @@ function viewDetail(ev) {
   } else {
     detailHero.style.cssText = `background:${bg};`;
     document.getElementById('detailEmoji').style.display = 'block';
-    document.getElementById('detailEmoji').textContent = ev.emoji || '✝';
+    document.getElementById('detailEmoji').innerHTML = ev.emoji ? `<span style="font-size:52px">${ev.emoji}</span>` : '<svg width="52" height="52" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg>';
     detailHero.classList.remove('has-photo');
     detailHero.onclick = null;
   }
@@ -7088,7 +7372,7 @@ function viewDetail(ev) {
       if (data.rsvp?.status === 'confirmed') {
         const btn = document.getElementById('detailRsvpBtn');
         if (btn && !btn.classList.contains('confirmed')) {
-          btn.textContent = '✅ You\'re Going!';
+          btn.textContent = "You're Going!";
           btn.classList.add('confirmed');
           document.getElementById('detailCancelRsvpBtn').style.display = 'block';
         }
@@ -7121,7 +7405,7 @@ function handleRsvp() {
   }).then(async r => {
     btn.disabled = false;
     if (r.ok) {
-      btn.textContent = '✅ You\'re Going!';
+      btn.textContent = "You're Going!";
       btn.classList.add('confirmed');
       document.getElementById('detailCancelRsvpBtn').style.display = 'block';
       // Update attendance count
@@ -7134,7 +7418,7 @@ function handleRsvp() {
       loadInlineAttendees(selectedEvent.id, selectedEvent.is_paid);
       spawnConfetti();
       setTimeout(() => spawnConfetti(), 600);
-      showSuccess('🙌', 'You\'re Going!', `Spot reserved for ${selectedEvent?.name || 'the event'}. See you there!`);
+      showSuccess('celebrate', 'You\'re Going!', `Spot reserved for ${selectedEvent?.name || 'the event'}. See you there!`);
     } else {
       const d = await r.json().catch(() => ({}));
       showToast(d.error || 'Could not RSVP', 'error');
@@ -7228,7 +7512,7 @@ async function loadInlineAttendees(eventId, isPaid = false) {
       if (isGoing) {
         const rsvpBtn = document.getElementById('detailRsvpBtn');
         if (rsvpBtn && !rsvpBtn.classList.contains('confirmed')) {
-          rsvpBtn.textContent = isPaid ? '✅ Tickets Purchased!' : "✅ You're Going!";
+          rsvpBtn.textContent = isPaid ? 'Tickets Purchased!' : "You're Going!";
           rsvpBtn.classList.add('confirmed');
           if (!isPaid) {
             const cancelBtn = document.getElementById('detailCancelRsvpBtn');
@@ -7239,7 +7523,7 @@ async function loadInlineAttendees(eventId, isPaid = false) {
     }
 
     // Attendee list rows
-    const tag = isPaid ? '🎟️ Ticket' : "✓ RSVP'd";
+    const tag = isPaid ? 'Ticket' : "RSVP'd";
     shown.forEach((p, i) => {
       const row = document.createElement('div');
       row.className = 'who-going-row';
@@ -7535,8 +7819,8 @@ async function processPayment() {
       closeSheet('ticketSheet');
       spawnConfetti();
       const codeDisplay = ticketCode ? ` · Code: ${ticketCode}` : '';
-      showSuccess('🎟️','Tickets Confirmed!',`${currentQty} ticket${currentQty>1?'s':''} to ${selectedEvent.name}${codeDisplay}.`);
-      document.getElementById('detailRsvpBtn').textContent = '✅ Tickets Purchased!';
+      showSuccess('ticket','Tickets Confirmed!',`${currentQty} ticket${currentQty>1?'s':''} to ${selectedEvent.name}${codeDisplay}.`);
+      document.getElementById('detailRsvpBtn').textContent = 'Tickets Purchased!';
       document.getElementById('detailRsvpBtn').classList.add('confirmed');
       document.getElementById('detailCancelRsvpBtn').style.display = 'none';
       fetchMyTickets();
@@ -7570,8 +7854,8 @@ async function processPayment() {
       closeSheet('ticketSheet');
       spawnConfetti();
       const codeDisplay = ticketCode ? ` · Code: ${ticketCode}` : '';
-      showSuccess('🎟️','Tickets Confirmed!',`${currentQty} ticket${currentQty>1?'s':''} to ${selectedEvent.name}${codeDisplay}. Receipt sent to ${currentUser?.email}.`);
-      document.getElementById('detailRsvpBtn').textContent = '✅ Tickets Purchased!';
+      showSuccess('ticket','Tickets Confirmed!',`${currentQty} ticket${currentQty>1?'s':''} to ${selectedEvent.name}${codeDisplay}. Receipt sent to ${currentUser?.email}.`);
+      document.getElementById('detailRsvpBtn').textContent = 'Tickets Purchased!';
       document.getElementById('detailRsvpBtn').classList.add('confirmed');
       document.getElementById('detailCancelRsvpBtn').style.display = 'none';
       // Refresh profile ticket count + list immediately
@@ -7674,7 +7958,7 @@ function handleListingFeePaid() {
   closeSheet('listingFeeSheet');
   document.getElementById('listingStatus').style.display = 'block';
   document.getElementById('payFeeBtn').style.display     = 'none';
-  showToast('✅ Card saved — $19.99 charged when you publish','success');
+  showToast('Card saved — $19.99 charged when you publish','success');
   spawnConfetti();
   // If user came from the type selector paywall, auto-proceed into the paid event form
   if (_pendingPaidEventStart) {
@@ -7754,7 +8038,7 @@ function copyAddress() {
   const addr = document.getElementById('mapsAddress')?.textContent || '';
   if (!addr) return;
   navigator.clipboard.writeText(addr).then(() => {
-    showToast('📋 Address copied!', 'success');
+    showToast('Address copied!', 'success');
     closeSheet('mapsSheet');
   }).catch(() => showToast('Could not copy — try manually', 'error'));
 }
@@ -7848,7 +8132,7 @@ function setHostStep(n) {
     const lbl  = document.getElementById(`sl-${i}`);
     num.classList.remove('active','done');
     lbl.classList.remove('active');
-    if (i<n)  {num.classList.add('done'); num.textContent='✓';}
+    if (i<n)  {num.classList.add('done'); num.innerHTML='<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
     else       num.textContent = i;
     if (i===n) {num.classList.add('active'); lbl.classList.add('active');}
     if (i<=3) document.getElementById(`line-${i}-${i+1}`).classList.toggle('done',i<n);
@@ -7862,7 +8146,7 @@ function hostNext(from) {
   if (from===1) {
     const isPaid = document.getElementById('paidToggle').checked;
     if (isPaid && !listingFeePaid) {
-      showToast('💳 Pay listing fee to continue');
+      showToast('Pay listing fee to continue');
       document.getElementById('listingFeeSection').scrollIntoView({behavior:'smooth',block:'center'});
       return;
     }
@@ -7925,7 +8209,7 @@ function addTicketRow(first=false) {
       <div class="ticket-row-label">Qty</div>
       <input type="number" value="100" min="1">
     </div>
-    <button class="remove-tt" onclick="removeTicketRow(${ticketRowCount})" title="Remove">✕</button>`;
+    <button class="remove-tt" onclick="removeTicketRow(${ticketRowCount})" title="Remove"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>`;
   builder.appendChild(row);
   previewRevenue();
 }
@@ -7979,7 +8263,7 @@ function selectPublishMode(mode) {
     const check = card?.querySelector('.publish-opt-check');
     if (m === mode) {
       card?.classList.add('selected');
-      if (check) check.textContent = '✓';
+      if (check) check.innerHTML = '<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     } else {
       card?.classList.remove('selected');
       if (check) check.textContent = '';
@@ -7991,7 +8275,7 @@ function selectPublishMode(mode) {
   // Update action button label
   const btn = document.getElementById('publishBtn');
   if (btn) {
-    const labels = { draft: '💾 Save as Draft', scheduled: '📅 Schedule Event', publish: '🚀 Publish Now' };
+    const labels = { draft: 'Save as Draft', scheduled: 'Schedule Event', publish: 'Publish Now' };
     btn.textContent = labels[mode];
   }
 }
@@ -8056,7 +8340,7 @@ async function publishEvent() {
       const dataUrl = coverPhotoB64 || await compressFile(coverPhotoFile);
       coverUrl = await uploadImgViaServer(dataUrl, 'cover');
     } catch (e) {
-      btn.disabled = false; btn.innerHTML = '🚀 Publish Event';
+      btn.disabled = false; btn.innerHTML = 'Publish Event';
       showToast('Cover photo upload failed: ' + e.message, 'error'); return;
     }
   }
@@ -8082,7 +8366,7 @@ async function publishEvent() {
   const onlineUrl = document.getElementById('evOnlineUrl').value.trim();
   if (!name) {
     showToast('Please add an event name','error');
-    btn.disabled=false; btn.textContent = { draft:'💾 Save as Draft', scheduled:'📅 Schedule Event', publish:'🚀 Publish Now' }[publishMode];
+    btn.disabled=false; btn.textContent = { draft:'Save as Draft', scheduled:'Schedule Event', publish:'Publish Now' }[publishMode];
     setHostStep(1); return;
   }
   const authHeader = { 'Content-Type':'application/json','Authorization':`Bearer ${currentSession?.access_token}` };
@@ -8106,7 +8390,7 @@ async function publishEvent() {
     if (isDraft) {
       listingFeePaymentMethodId = null; listingFeeHostEmail = null; listingFeePaid = false;
       publishMode = 'publish'; // reset for next use
-      showToast('📋 Event saved as draft','success');
+      showToast('Event saved as draft','success');
       setTimeout(()=>goTo('profile'),1200);
       return;
     }
@@ -8174,16 +8458,16 @@ async function publishEvent() {
     publishMode = 'publish'; // reset for next use
     if (isScheduled) {
       const schedDate = new Date(scheduleAt).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-      showToast(`📅 Scheduled for ${schedDate}`,'success');
+      showToast(`Scheduled for ${schedDate}`,'success');
     } else {
-      showToast('🚀 Event is live!','success');
+      showToast('Event is live!','success');
       spawnConfetti();
     }
     setTimeout(()=>goTo('profile'),1400);
   } catch(e) {
     showToast(e.message||'Something went wrong. Please try again.','error');
     btn.disabled=false;
-    btn.textContent = { draft:'💾 Save as Draft', scheduled:'📅 Schedule Event', publish:'🚀 Publish Now' }[publishMode];
+    btn.textContent = { draft:'Save as Draft', scheduled:'Schedule Event', publish:'Publish Now' }[publishMode];
   }
 }
 
@@ -8255,7 +8539,7 @@ function renderCommunityFeed(posts) {
   const feed = document.getElementById('communityFeed');
   if (!feed) return;
   if (!posts.length) {
-    feed.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--muted2);font-size:14px">No posts yet — be the first to share! 🙏</div>';
+    feed.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--muted2);font-size:14px">No posts yet — be the first to share!</div>';
     return;
   }
   feed.innerHTML = '';
@@ -8296,9 +8580,9 @@ function makeCommunityPost(p) {
     </div>
     <div class="feed-body" id="post-body-${p.id}" style="white-space:pre-wrap">${escapeHtml(p.body)}</div>
     <div class="feed-reactions">
-      <button class="reaction-btn" data-post-id="${p.id}" onclick="amenPost('${p.id}',this)">🙏 Amen <span>${p.amen_count||0}</span></button>
+      <button class="reaction-btn" data-post-id="${p.id}" onclick="amenPost('${p.id}',this)"><svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M10 6 L10 18 C10 21 12.5 23 16 23 C19.5 23 22 21 22 18 L22 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 10 C8 9 7 11 7 13 C7 15 9 15 9 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 10 C24 9 25 11 25 13 C25 15 23 15 23 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 27 L16 23 L19 27" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Amen <span>${p.amen_count||0}</span></button>
       <button class="reply-toggle-btn ${replyCount > 0 ? 'has-replies' : ''}" id="reply-toggle-${p.id}" onclick="toggleReplies('${p.id}', this)">
-        💬 ${replyCount > 0 ? replyCount + ' repl' + (replyCount === 1 ? 'y' : 'ies') : 'Reply'}
+        <svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M5 6 C5 5 6 4 7 4 L22 4 C23 4 24 5 24 6 L24 16 C24 17 23 18 22 18 L14 18 L9 23 L9 18 L7 18 C6 18 5 17 5 16 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>${replyCount > 0 ? replyCount + ' repl' + (replyCount === 1 ? 'y' : 'ies') : 'Reply'}
       </button>
     </div>
     <div class="reply-section" id="reply-section-${p.id}">
@@ -8347,7 +8631,7 @@ async function amenPost(postId, btn) {
 async function postToFeed() {
   if (!currentUser) { openAuth('signup'); return; }
   const inp = document.getElementById('postInput');
-  if (!inp.value.trim()) { showToast('Write something first ✏️'); return; }
+  if (!inp.value.trim()) { showToast('Write something first'); return; }
   const body = inp.value.trim();
   const btn = document.querySelector('#postSubmitRow .btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Posting…'; }
@@ -8361,7 +8645,7 @@ async function postToFeed() {
     if (!res.ok) throw new Error(data.error || 'Failed to post');
     inp.value = '';
     document.getElementById('postSubmitRow').style.display = 'none';
-    showToast('Posted! 🙏', 'success');
+    showToast('Posted!', 'success');
     await initCommunityFeed();
   } catch(e) {
     showToast(e.message || 'Failed to post', 'error');
@@ -8422,7 +8706,7 @@ async function saveCommunityPostEdit(postId) {
       div.textContent = data.body || newBody;
       wrap.replaceWith(div);
     }
-    showToast('Post updated ✓', 'success');
+    showToast('Post updated', 'success');
   } catch { showToast('Could not save. Try again.', 'error'); ta.disabled = false; }
 }
 
@@ -8491,8 +8775,9 @@ function showFooterPage(key) {
 // ═══════════════════════════════════════════════════════════
 // SUCCESS
 // ═══════════════════════════════════════════════════════════
-function showSuccess(icon, title, msg) {
-  document.getElementById('successIcon').textContent  = icon;
+function showSuccess(iconName, title, msg) {
+  const el = document.getElementById('successIcon');
+  if (el) el.innerHTML = icon(iconName, 52) || `<svg width="52" height="52" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg>`;
   document.getElementById('successTitle').textContent = title;
   document.getElementById('successMsg').textContent   = msg;
   openSheet('successSheet');
@@ -8551,7 +8836,7 @@ function openTicketViewer(t) {
     const badge   = document.getElementById('tvStatusBadge');
     const shimmer = document.getElementById('tvShimmer');
     if (t.status === 'confirmed') {
-      badge.textContent = '✓ Confirmed';
+      badge.innerHTML = '<svg width="11" height="11" viewBox="0 0 14 14" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Confirmed';
       badge.style.cssText = 'font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:4px 16px;border-radius:999px;background:rgba(78,201,140,.12);color:#4EC98C;border:1px solid rgba(78,201,140,.3)';
       if (shimmer) shimmer.style.display = 'block';
     } else if (t.status === 'refunded') {
@@ -8696,7 +8981,7 @@ async function submitRefundRequest() {
     if (body) {
       body.innerHTML = `
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 0;gap:14px;text-align:center">
-          <div style="width:56px;height:56px;border-radius:50%;background:rgba(78,201,140,.12);border:1.5px solid rgba(78,201,140,.3);display:flex;align-items:center;justify-content:center;font-size:26px">✅</div>
+          <div style="width:56px;height:56px;border-radius:50%;background:rgba(78,201,140,.12);border:1.5px solid rgba(78,201,140,.3);display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="#4EC98C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div style="font-size:17px;font-weight:700;color:var(--text)">Request Sent</div>
           <div style="font-size:14px;color:var(--muted2);line-height:1.6;max-width:280px">Your refund request has been sent to the host. You'll get a notification once they respond.</div>
           <button class="btn btn-secondary" style="margin-top:8px" onclick="closeSheet('refundRequestSheet')">Close</button>
@@ -8740,7 +9025,7 @@ async function openNotifSheet() {
       return;
     }
 
-    const typeIcon = { ticket_sale: '🎟️', refund_request: '💸', refund_approved: '✅', refund_denied: '❌' };
+    const typeIcon = { ticket_sale: '<svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M4 11 C4 9.5 5 9 6 9 L26 9 C27 9 28 9.5 28 11 C28 11 26 12 26 14 C26 16 28 17 28 17 C28 18.5 27 19 26 19 L6 19 C5 19 4 18.5 4 17 C4 17 6 16 6 14 C6 12 4 11 4 11Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>', refund_request: '<svg width="18" height="18" viewBox="0 0 32 32" fill="none"><rect x="3" y="9" width="26" height="15" rx="2" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="16.5" r="3.5" stroke="#C9A84C" stroke-width="1.5"/></svg>', refund_approved: '<svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="#4EC98C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>', refund_denied: '<svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="#E05050" stroke-width="2" stroke-linecap="round"/></svg>' };
     list.innerHTML = notifications.map(n => {
       const ago = (() => {
         const d = Math.floor((Date.now() - new Date(n.created_at)) / 60000);
@@ -8750,7 +9035,7 @@ async function openNotifSheet() {
         return `${Math.floor(d/1440)}d ago`;
       })();
       return `<div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);${n.read?'opacity:.6':''}">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${typeIcon[n.type] || '🔔'}</div>
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0">${typeIcon[n.type] || '<svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M16 4 C11 4 8 8 8 13 L8 20 L5 23 L27 23 L24 20 L24 13 C24 8 21 4 16 4Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M13 23 C13 24.7 14.3 26 16 26 C17.7 26 19 24.7 19 23" stroke="#C9A84C" stroke-width="2"/></svg>'}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:14px;font-weight:${n.read?'500':'700'};color:var(--text);margin-bottom:3px">${n.title}</div>
           ${n.body ? `<div style="font-size:13px;color:var(--muted2);line-height:1.5">${n.body}</div>` : ''}
@@ -8786,7 +9071,7 @@ async function handleRefundRequest(requestId, action, btn) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed');
-    showToast(action === 'approve' ? 'Refund issued ✓' : 'Request denied', 'success');
+    showToast(action === 'approve' ? 'Refund issued' : 'Request denied', 'success');
     // Re-render notification list
     openNotifSheet();
   } catch (e) {
@@ -8934,7 +9219,7 @@ async function handleScannedCode(raw) {
       scannerCheckedIn++;
       const total = parseInt(document.getElementById('statTotal')?.textContent) || 0;
       updateScannerStats(scannerCheckedIn, total);
-      showScanResult('success', 'Valid Ticket ✓', data.message || 'Check-in confirmed.');
+      showScanResult('success', 'Valid Ticket', data.message || 'Check-in confirmed.');
       addRecentScan(data.ticket?.event_name || payload.code, data.ticket?.code || dedupeKey, 'success');
     } else {
       showScanResult('error', 'Invalid Ticket', data.error || 'This ticket could not be verified.');
@@ -8948,7 +9233,7 @@ async function handleScannedCode(raw) {
       scannerCheckedIn++;
       const total = parseInt(document.getElementById('statTotal')?.textContent) || 0;
       updateScannerStats(scannerCheckedIn, total);
-      showScanResult('success', 'Valid Ticket ✓ (Offline)', 'Check-in recorded. Will sync when online.');
+      showScanResult('success', 'Valid Ticket (Offline)', 'Check-in recorded. Will sync when online.');
       addRecentScan(payload.event_name || payload.code, payload.code || dedupeKey, 'success');
     } else {
       showScanResult('error', 'Cannot Verify', 'Network unavailable. Check ticket manually.');
@@ -8966,14 +9251,14 @@ function showScanResult(status, title, sub) {
   const subEl = document.getElementById('scanResultSub');
   if (!el) return;
   const colors = {
-    success: { bg: 'rgba(34,197,94,.12)',  border: 'rgba(34,197,94,.3)',  icon: '✓', color: 'var(--green)' },
-    error:   { bg: 'rgba(239,68,68,.12)',  border: 'rgba(239,68,68,.3)',  icon: '✕', color: 'var(--red)'   },
-    warning: { bg: 'rgba(251,191,36,.12)', border: 'rgba(251,191,36,.3)', icon: '⚠', color: 'var(--gold)'  },
+    success: { bg: 'rgba(34,197,94,.12)',  border: 'rgba(34,197,94,.3)',  icon: '<svg width="20" height="20" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>', color: 'var(--green)' },
+    error:   { bg: 'rgba(239,68,68,.12)',  border: 'rgba(239,68,68,.3)',  icon: '<svg width="20" height="20" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', color: 'var(--red)'   },
+    warning: { bg: 'rgba(251,191,36,.12)', border: 'rgba(251,191,36,.3)', icon: '<svg width="20" height="20" viewBox="0 0 14 14" fill="none"><path d="M7 2L13 12H1L7 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="7" y1="6" x2="7" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="10.5" r="0.7" fill="currentColor"/></svg>', color: 'var(--gold)'  },
   };
   const c = colors[status] || colors.error;
   inner.style.cssText = `padding:12px 14px;display:flex;align-items:center;gap:10px;background:${c.bg};border:1px solid ${c.border};border-radius:var(--r-md)`;
   icon.style.color    = c.color;
-  icon.textContent    = c.icon;
+  icon.innerHTML      = c.icon;
   ttl.textContent     = title;
   subEl.textContent   = sub || '';
   el.style.display    = 'block';
@@ -9044,14 +9329,14 @@ function spawnConfetti() {
         const data = await res.json();
 
         if (res.ok && data.payoutsEnabled) {
-          showToast('✅ Stripe connected! You can now accept payments.', 'success');
+          showToast('Stripe connected! You can now accept payments.', 'success');
         } else if (res.ok && data.onboardingComplete) {
-          showToast('✅ Setup submitted — Stripe is verifying your account (usually minutes).', 'success');
+          showToast('Setup submitted — Stripe is verifying your account (usually minutes).', 'success');
         } else {
-          showToast('⚠️ Onboarding saved. Finish setup to enable payouts.', 'error');
+          showToast('Onboarding saved. Finish setup to enable payouts.', 'error');
         }
       } catch (e) {
-        showToast('✅ Connected! Refreshing your profile…', 'success');
+        showToast('Connected! Refreshing your profile…', 'success');
       }
 
       await fetchProfile();
@@ -9074,7 +9359,7 @@ function spawnConfetti() {
       if (currentSession?.access_token || _count > 30) {
         clearInterval(waitForReauth);
         goTo('profile');
-        showToast('⚠️ Please reconnect your Stripe account to receive payouts.', 'error');
+        showToast('Please reconnect your Stripe account to receive payouts.', 'error');
         fetchProfile();
       }
     }, 100);
@@ -9082,7 +9367,7 @@ function spawnConfetti() {
 
   if (params.get('listing_success') === '1') {
     window.history.replaceState({}, '', window.location.pathname);
-    setTimeout(() => showToast('✅ Listing fee paid — ticketing unlocked!', 'success'), 800);
+    setTimeout(() => showToast('Listing fee paid — ticketing unlocked!', 'success'), 800);
   }
 })();
 
@@ -9098,21 +9383,21 @@ const SHARE_PLATFORMS = [
   {
     id:    'native',
     label: 'Share…',
-    icon:  '📤',
+    icon:  '<svg width="20" height="20" viewBox="0 0 32 32" fill="none"><path d="M20 6 L26 12 L20 18" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 12 L12 12 C8.7 12 6 14.7 6 18 L6 26" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>',
     color: '#C9A84C',
     // handled separately — uses Web Share API
   },
   {
     id:    'messages',
     label: 'Messages',
-    icon:  '💬',
+    icon:  '<svg width="20" height="20" viewBox="0 0 32 32" fill="none"><path d="M5 6 C5 5 6 4 7 4 L22 4 C23 4 24 5 24 6 L24 16 C24 17 23 18 22 18 L14 18 L9 23 L9 18 L7 18 C6 18 5 17 5 16 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>',
     color: '#4EC98C',
     url:   (u, t) => `sms:?body=${enc(t + ' ' + u)}`,
   },
   {
     id:    'whatsapp',
     label: 'WhatsApp',
-    icon:  '📱',
+    icon:  '<svg width="20" height="20" viewBox="0 0 32 32" fill="none"><rect x="9" y="3" width="14" height="26" rx="3" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="26" r="1.5" fill="#C9A84C"/><line x1="13" y1="7" x2="19" y2="7" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>',
     color: '#25D366',
     url:   (u, t) => `https://wa.me/?text=${enc(t + '\n' + u)}`,
   },
@@ -9126,14 +9411,14 @@ const SHARE_PLATFORMS = [
   {
     id:    'facebook',
     label: 'Facebook',
-    icon:  '👥',
+    icon:  '<svg width="20" height="20" viewBox="0 0 32 32" fill="none"><circle cx="12" cy="10" r="4" stroke="#C9A84C" stroke-width="2"/><circle cx="22" cy="12" r="3" stroke="#C9A84C" stroke-width="2"/><path d="M4 28 C4 22 7.5 18 12 18 C16.5 18 20 22 20 28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M20 19 C21 18.2 22.5 17.5 24 17.5 C27 17.5 29 20 29 23" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>',
     color: '#1877F2',
     url:   (u, t) => `https://www.facebook.com/sharer/sharer.php?u=${enc(u)}`,
   },
   {
     id:    'copy',
     label: 'Copy Link',
-    icon:  '🔗',
+    icon:  '<svg width="20" height="20" viewBox="0 0 32 32" fill="none"><path d="M13 19 C13 19 10 22 8 22 C5.8 22 4 20.2 4 18 C4 15.8 5.8 14 8 14 L12 14" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M19 13 C19 13 22 10 24 10 C26.2 10 28 11.8 28 14 C28 16.2 26.2 18 24 18 L20 18" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="21" x2="21" y2="11" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>',
     color: 'var(--gold)',
     url:   null, // handled separately
   },
@@ -9295,7 +9580,7 @@ function closeSharePopover() {
 async function copyToClipboard(url, anchorBtn) {
   try {
     await navigator.clipboard.writeText(url);
-    showToast('🔗 Link copied!', 'success');
+    showToast('Link copied!', 'success');
     if (anchorBtn) flashShareBtn(anchorBtn);
   } catch {
     // Fallback: execCommand
@@ -9304,7 +9589,7 @@ async function copyToClipboard(url, anchorBtn) {
     input.style.cssText = 'position:fixed;top:-999px';
     document.body.appendChild(input);
     input.select();
-    try { document.execCommand('copy'); showToast('🔗 Link copied!', 'success'); } catch {}
+    try { document.execCommand('copy'); showToast('Link copied!', 'success'); } catch {}
     input.remove();
     if (anchorBtn) flashShareBtn(anchorBtn);
   }
@@ -9471,7 +9756,7 @@ function makeReplyEl(postId, r) {
       <div class="reply-text">${escapeHtml(r.body)}</div>
       <div class="reply-actions">
         <button class="reply-amen-btn" onclick="amenReply('${r.id}', this)">
-          🙏 <span>${r.amen_count || 0}</span>
+          <svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M10 6 L10 18 C10 21 12.5 23 16 23 C19.5 23 22 21 22 18 L22 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 27 L16 23 L19 27" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${r.amen_count || 0}</span>
         </button>
         ${isOwn ? `<button class="reply-delete-btn" onclick="deleteReply('${postId}','${r.id}',this)">Delete</button>` : ''}
       </div>
@@ -9503,7 +9788,7 @@ async function submitReply(postId) {
       list.appendChild(makeReplyEl(postId, data));
     }
     updateReplyToggleBtn(postId, 1);
-    showToast('Reply posted! 🙏', 'success');
+    showToast('Reply posted!', 'success');
   } catch(e) {
     showToast('Could not post reply. Try again.', 'error');
   } finally {
@@ -9562,10 +9847,10 @@ function updateReplyToggleBtn(postId, delta) {
   const current = match ? parseInt(match[1]) : 0;
   const newCount = Math.max(0, current + delta);
   if (newCount > 0) {
-    btn.innerHTML = `💬 ${newCount} repl${newCount === 1 ? 'y' : 'ies'}`;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M5 6 C5 5 6 4 7 4 L22 4 C23 4 24 5 24 6 L24 16 C24 17 23 18 22 18 L14 18 L9 23 L9 18 L7 18 C6 18 5 17 5 16 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>${newCount} repl${newCount === 1 ? 'y' : 'ies'}`;
     btn.classList.add('has-replies');
   } else {
-    btn.innerHTML = '💬 Reply';
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M5 6 C5 5 6 4 7 4 L22 4 C23 4 24 5 24 6 L24 16 C24 17 23 18 22 18 L14 18 L9 23 L9 18 L7 18 C6 18 5 17 5 16 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Reply';
     btn.classList.remove('has-replies');
   }
 }
@@ -10062,7 +10347,7 @@ async function openEventSales(eventId) {
               <div style="font-size:14px;font-weight:600">${escapeHtml(name)}</div>
               <div style="font-size:11px;color:var(--muted2)">RSVP'd ${date}</div>
             </div>
-            <div style="font-size:12px;font-weight:700;color:var(--green)">✓ Going</div>
+            <div style="font-size:12px;font-weight:700;color:var(--green)"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" style="vertical-align:middle;margin-right:2px"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Going</div>
           </div>`;
       }).join('');
     }
@@ -10099,7 +10384,7 @@ async function hostIssueRefund(ticketId, btn) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Refund failed');
-    showToast('Refund issued ✓', 'success');
+    showToast('Refund issued', 'success');
     btn.textContent = 'Refunded';
     btn.style.color = 'var(--muted)';
     btn.style.borderColor = 'var(--border)';
@@ -10159,12 +10444,12 @@ async function salesHandleRefund(requestId, action, btn) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed');
-    showToast(action === 'approve' ? 'Refund issued ✓' : 'Request denied', 'success');
+    showToast(action === 'approve' ? 'Refund issued' : 'Request denied', 'success');
     // Update row in place
     const row = btn.closest('div[style*="border-bottom"]');
     if (row) {
       const btnRow = btn.parentElement;
-      btnRow.innerHTML = `<span style="font-size:12px;font-weight:700;color:${action==='approve'?'#4EC98C':'#ef4444'}">${action === 'approve' ? '✓ Approved & Refunded' : '✗ Denied'}</span>`;
+      btnRow.innerHTML = `<span style="font-size:12px;font-weight:700;color:${action==='approve'?'#4EC98C':'#ef4444'}">${action === 'approve' ? '<svg width="11" height="11" viewBox="0 0 14 14" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Approved & Refunded' : '<svg width="11" height="11" viewBox="0 0 14 14" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Denied'}</span>`;
       row.style.opacity = '0.6';
     }
     // Update pending badge
@@ -10273,14 +10558,14 @@ async function applyCoupon() {
     }
     _appliedCoupon = data;
     msgEl.style.cssText = 'font-size:12px;margin-top:6px;display:block;color:var(--green)';
-    msgEl.textContent   = `✓ ${data.label} applied!`;
+    msgEl.textContent   = `${data.label} applied!`;
     const newTotal = data.newTotal;
     const pf       = Math.round(newTotal * 0.07);
     document.getElementById('bdFace').textContent  = `$${(newTotal/100).toFixed(2)}`;
     document.getElementById('bdPf').textContent    = `$${(pf/100).toFixed(2)}`;
     document.getElementById('bdTotal').textContent = `$${((newTotal + pf)/100).toFixed(2)}`;
     document.getElementById('payBtnAmt').textContent = `$${((newTotal + pf)/100).toFixed(2)}`;
-    btn.disabled = false; btn.textContent = 'Applied ✓';
+    btn.disabled = false; btn.textContent = 'Applied';
     btn.style.color = 'var(--green)';
   } catch(e) {
     msgEl.style.cssText = 'font-size:12px;margin-top:6px;display:block;color:var(--red)';
@@ -10325,7 +10610,7 @@ function addRecentScan(name, code, status) {
   const empty = list.querySelector('[data-empty]');
   if (empty) empty.remove();
   const color = status === 'success' ? 'var(--green)' : status === 'warning' ? 'var(--gold)' : 'var(--red)';
-  const icon  = status === 'success' ? '✓' : status === 'warning' ? '⚠' : '✕';
+  const icon  = status === 'success' ? '<svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : status === 'warning' ? '<svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M7 2L13 12H1L7 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="7" y1="6" x2="7" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' : '<svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   const time  = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   const row   = document.createElement('div');
   row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)';
@@ -10358,7 +10643,7 @@ async function duplicateEvent(eventId, btn) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Duplicate failed');
-    showToast('Event duplicated as draft ✓', 'success');
+    showToast('Event duplicated as draft', 'success');
     btn.disabled = false; btn.textContent = 'Duplicate';
     // Refresh My Events list
     if (typeof loadHostedEvents === 'function') loadHostedEvents(true);
@@ -10381,7 +10666,7 @@ async function toggleEventVisibility(eventId, currentStatus, btn) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed');
     const nowPublished = data.status === 'published';
-    showToast(nowPublished ? 'Event published ✓' : 'Event unpublished', 'success');
+    showToast(nowPublished ? 'Event published' : 'Event unpublished', 'success');
     // Instantly update button text + colour without waiting for full list reload
     btn.textContent = nowPublished ? 'Unpublish' : 'Publish';
     btn.style.color      = nowPublished ? 'var(--gold)' : '#4EC98C';
@@ -10502,7 +10787,7 @@ async function saveEeeCoupons() {
 
 <!-- ── Image Lightbox ─────────────────────────────────── -->
 <div id="imgLightbox" onclick="closeLightbox()">
-  <button id="imgLightboxClose" onclick="closeLightbox()" aria-label="Close">✕</button>
+  <button id="imgLightboxClose" onclick="closeLightbox()" aria-label="Close"><svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
   <img id="imgLightboxImg" src="" alt="Event photo" onclick="event.stopPropagation()">
 </div>
 
