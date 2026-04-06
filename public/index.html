@@ -3921,26 +3921,57 @@ button, a, [onclick],
     <div class="sheet-handle" style="margin:10px auto 0"></div>
     <button class="sheet-close" onclick="closeSheet('publicProfileSheet')" style="position:absolute;top:14px;right:14px;z-index:20">×</button>
 
-    <!-- Banner + avatar -->
-    <div class="pub-banner" id="pubProfBanner">
-      <img id="pubProfBannerImg" src="" alt="" style="display:none">
+    <!-- Banner -->
+    <div class="pub-banner" id="pubProfBanner" style="height:130px;position:relative;background:linear-gradient(160deg,#0d0d1f,#111128);overflow:hidden">
+      <img id="pubProfBannerImg" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(10,10,20,.1),rgba(10,10,20,.7));z-index:1"></div>
     </div>
+
+    <!-- Avatar overlapping banner -->
     <div style="position:relative;padding:0 16px 0">
-      <!-- Avatar overlapping banner -->
-      <div id="pubProfAv" style="width:72px;height:72px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#000;flex-shrink:0;overflow:hidden;border:3px solid var(--bg);margin-top:-36px;margin-bottom:10px"></div>
+      <div id="pubProfAv" style="width:78px;height:78px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#000;flex-shrink:0;overflow:hidden;border:3px solid var(--bg);box-shadow:0 0 0 1.5px rgba(201,168,76,.4),0 4px 16px rgba(0,0,0,.5);margin-top:-39px;position:relative;z-index:5"></div>
     </div>
 
     <div id="pubProfLoading" style="text-align:center;padding:32px 0"><div class="spinner spinner-gold" style="margin:0 auto"></div></div>
     <div id="pubProfContent" style="display:none;padding:0 16px 28px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">
-        <div>
-          <div style="font-family:var(--font-display);font-size:20px;font-weight:800" id="pubProfName">—</div>
-          <div style="font-size:13px;color:var(--muted2);margin-top:2px" id="pubProfCity"></div>
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:3px" id="pubProfRole"></div>
+
+      <!-- Name + role -->
+      <div style="margin-bottom:6px">
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:800;display:flex;align-items:center;gap:7px;margin-top:8px">
+          <span id="pubProfName">—</span>
+          <span id="pubProfVerifiedBadge" style="display:none;width:18px;height:18px;border-radius:50%;background:var(--gold);flex-shrink:0;display:none;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
+          <span style="font-size:13px;color:var(--muted2)" id="pubProfCity"></span>
+          <span id="pubProfRoleChip" style="display:none;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:var(--gold)" id="pubProfRole"></span>
         </div>
       </div>
-      <div style="font-size:14px;line-height:1.7;color:var(--muted2);margin:10px 0 14px" id="pubProfBio"></div>
-      <div id="pubProfSocial" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px"></div>
+
+      <!-- Stats strip -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);margin:12px 0 14px;overflow:hidden">
+        <div style="padding:12px 0;text-align:center;position:relative">
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--gold)" id="pubStatFollowers">0</div>
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:1px">Followers</div>
+        </div>
+        <div style="padding:12px 0;text-align:center;position:relative;border-left:1px solid var(--border);border-right:1px solid var(--border)">
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--gold)" id="pubStatFollowing">0</div>
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:1px">Following</div>
+        </div>
+        <div style="padding:12px 0;text-align:center">
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--gold)" id="pubStatEvents">0</div>
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:1px">Events</div>
+        </div>
+      </div>
+
+      <!-- Follow button (hidden for own profile / unauthenticated) -->
+      <div id="pubProfActionRow" style="display:none;margin-bottom:14px">
+        <button id="pubFollowBtn" class="btn btn-gold" style="width:100%;height:40px;font-size:14px;font-weight:700" onclick="toggleFollow()">
+          Follow
+        </button>
+      </div>
+
+      <div style="font-size:14px;line-height:1.7;color:var(--muted2);margin-bottom:12px" id="pubProfBio"></div>
+      <div id="pubProfSocial" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px"></div>
 
       <!-- Bible Verse -->
       <div class="pub-section" id="pubBibleSection" style="display:none">
@@ -3949,21 +3980,30 @@ button, a, [onclick],
         <div class="bible-verse-ref" id="pubBibleRef"></div>
       </div>
 
-      <!-- Hot Takes -->
+      <!-- Faith Thought -->
       <div class="pub-section" id="pubHotTakesSection" style="display:none">
-        <div class="pub-section-title" id="pubHotTakesTitle" style="display:flex;align-items:center;gap:5px"><span id="pubHotTakesIcon" style="display:flex"></span> Hot Takes</div>
+        <div class="pub-section-title">
+          <svg width="12" height="12" viewBox="0 0 32 32" fill="none" style="margin-right:5px"><path d="M16 28 C10 28 7 24 7 19 C7 14 11 11 13 8 C13 12 15 13 15 13 C15 13 14 10 17 7 C17 12 20 14 21 17 C22 14 21 12 20 10 C23 13 25 16 25 19 C25 24 22 28 16 28Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round" fill="none"/></svg>
+          Faith Thought
+        </div>
         <div class="hot-take-bubble" id="pubHotTakes"></div>
       </div>
 
-      <!-- Hobbies -->
+      <!-- Hobbies as chips -->
       <div class="pub-section" id="pubHobbiesSection" style="display:none">
-        <div class="pub-section-title" id="pubHobbiesTitle" style="display:flex;align-items:center;gap:5px"><span id="pubHobbiesIcon" style="display:flex"></span> Hobbies & Interests</div>
-        <div style="font-size:13px;color:var(--text)" id="pubHobbies"></div>
+        <div class="pub-section-title">
+          <svg width="12" height="12" viewBox="0 0 32 32" fill="none" style="margin-right:5px"><circle cx="16" cy="16" r="11" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="16" r="6.5" stroke="#C9A84C" stroke-width="1.5"/><line x1="16" y1="11" x2="16" y2="21" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="16" x2="21" y2="16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>
+          Interests
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="pubHobbies"></div>
       </div>
 
       <!-- Connect Tags -->
       <div class="pub-section" id="pubConnectSection" style="display:none">
-        <div class="pub-section-title" id="pubConnectTitle" style="display:flex;align-items:center;gap:5px"><span id="pubConnectIcon" style="display:flex"></span> Open to Connect</div>
+        <div class="pub-section-title">
+          <svg width="12" height="12" viewBox="0 0 32 32" fill="none" style="margin-right:5px"><path d="M6 14 L6 12 C6 10 8 9 10 10 L14 12 L18 10 C20 9 22 10 22 12 L22 14" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M4 14 L28 14 L26 22 L6 22 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="16" y1="16" x2="16" y2="20" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>
+          Open to Connect
+        </div>
         <div class="connect-tags-display" id="pubConnectTags"></div>
       </div>
 
@@ -3973,7 +4013,7 @@ button, a, [onclick],
         <div id="pubProfEventsList"></div>
       </div>
     </div>
-    <div id="pubProfErr" style="display:none;text-align:center;padding:32px 0;color:var(--muted2);padding:32px 16px">Could not load profile.</div>
+    <div id="pubProfErr" style="display:none;text-align:center;padding:32px 0;color:var(--muted2)">Could not load profile.</div>
   </div>
 </div>
 
@@ -6146,19 +6186,23 @@ function renderSocialLinks(containerId, profile) {
 }
 
 // ─── PUBLIC PROFILE VIEWER ───────────────────────────────────
+let _pubProfUserId = null; // track current public profile for follow toggle
+
 async function openPublicProfile(userId) {
   if (!userId) return;
   if (userId === currentUser?.id) { goTo('profile'); return; }
+  _pubProfUserId = userId;
+
   const loading = document.getElementById('pubProfLoading');
   const content = document.getElementById('pubProfContent');
   const errEl   = document.getElementById('pubProfErr');
   loading.style.display = 'block'; content.style.display = 'none'; errEl.style.display = 'none';
-  // Reset sections
   ['pubBibleSection','pubHotTakesSection','pubHobbiesSection','pubConnectSection'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = 'none';
   });
   document.getElementById('pubProfBannerImg').style.display = 'none';
   openSheet('publicProfileSheet');
+
   try {
     const headers = currentSession?.access_token ? { 'Authorization': `Bearer ${currentSession.access_token}` } : {};
     const [profRes, evRes] = await Promise.all([
@@ -6166,13 +6210,14 @@ async function openPublicProfile(userId) {
       fetch(`${API_BASE}/api/events?host_id=${encodeURIComponent(userId)}&limit=20`),
     ]);
     if (!profRes.ok) throw new Error('Not found');
-    const prof    = await profRes.json();
-    const evData  = await evRes.json();
-    const hostEvents = evData.events || [];
+    const prof       = await profRes.json();
+    const hostEvents = (await evRes.json()).events || [];
 
     // Banner
-    const bannerImg = document.getElementById('pubProfBannerImg');
-    if (prof.banner_url) { bannerImg.src = prof.banner_url; bannerImg.style.display = 'block'; }
+    if (prof.banner_url) {
+      const bi = document.getElementById('pubProfBannerImg');
+      bi.src = prof.banner_url; bi.style.display = 'block';
+    }
 
     // Avatar
     const avEl = document.getElementById('pubProfAv');
@@ -6184,33 +6229,63 @@ async function openPublicProfile(userId) {
       avEl.appendChild(img);
       avEl.style.background = 'transparent';
     } else {
-      avEl.textContent = (prof.full_name||'?').charAt(0).toUpperCase();
+      avEl.textContent = (prof.full_name || '?').charAt(0).toUpperCase();
       avEl.style.background = prof.avatar_color || 'var(--gold)';
     }
 
+    // Name + role
     document.getElementById('pubProfName').textContent = prof.full_name || 'ChristLink Member';
     document.getElementById('pubProfCity').textContent = prof.city || '';
     const roleLabels = { admin:'Admin', verified:'Verified Host', host:'Event Host' };
-    document.getElementById('pubProfRole').textContent = roleLabels[prof.role] || 'Member';
-    document.getElementById('pubProfBio').textContent  = prof.bio || '';
+    const roleChip = document.getElementById('pubProfRoleChip');
+    if (roleChip) {
+      const label = roleLabels[prof.role];
+      if (label) { roleChip.textContent = label; roleChip.style.display = 'inline-flex'; }
+      else roleChip.style.display = 'none';
+    }
+    // Verified badge
+    const verBadge = document.getElementById('pubProfVerifiedBadge');
+    if (verBadge) verBadge.style.display = (prof.role === 'admin' || prof.role === 'verified') ? 'inline-flex' : 'none';
+
+    // Stats
+    const sF = document.getElementById('pubStatFollowers');
+    const sG = document.getElementById('pubStatFollowing');
+    const sE = document.getElementById('pubStatEvents');
+    if (sF) sF.textContent = prof.followers_count ?? 0;
+    if (sG) sG.textContent = prof.following_count ?? 0;
+    if (sE) sE.textContent = hostEvents.filter(e => e.status === 'published').length;
+
+    // Follow button — only show when logged in
+    const actionRow = document.getElementById('pubProfActionRow');
+    const followBtn = document.getElementById('pubFollowBtn');
+    if (actionRow && followBtn && currentUser && !prof.restricted) {
+      actionRow.style.display = 'block';
+      _updateFollowBtn(prof.is_following);
+    } else if (actionRow) {
+      actionRow.style.display = 'none';
+    }
+
+    document.getElementById('pubProfBio').textContent = prof.bio || '';
     renderSocialLinks('pubProfSocial', prof);
 
     if (!prof.restricted) {
       // Bible verse
       if (prof.bible_verse) {
-        document.getElementById('pubBibleVerse').textContent = prof.bible_verse;
-        const refParts = [prof.bible_verse_reference, prof.bible_version].filter(Boolean);
-        document.getElementById('pubBibleRef').textContent = refParts.join(' · ');
+        document.getElementById('pubBibleVerse').textContent = `"${prof.bible_verse}"`;
+        const refParts = [prof.bible_verse_reference, prof.bible_version ? `• ${prof.bible_version}` : null].filter(Boolean);
+        document.getElementById('pubBibleRef').textContent = refParts.join(' ');
         document.getElementById('pubBibleSection').style.display = 'block';
       }
-      // Hot takes
+      // Faith Thought
       if (prof.hot_takes) {
         document.getElementById('pubHotTakes').textContent = prof.hot_takes;
         document.getElementById('pubHotTakesSection').style.display = 'block';
       }
-      // Hobbies
+      // Hobbies as chips
       if (prof.hobbies) {
-        document.getElementById('pubHobbies').textContent = prof.hobbies;
+        const hobbiesEl = document.getElementById('pubHobbies');
+        const chips = prof.hobbies.split(',').map(h => h.trim()).filter(Boolean);
+        hobbiesEl.innerHTML = chips.map(h => `<span class="prof-hobby-chip">${h}</span>`).join('');
         document.getElementById('pubHobbiesSection').style.display = 'block';
       }
       // Connect tags
@@ -6225,7 +6300,7 @@ async function openPublicProfile(userId) {
       }
     }
 
-    // Hosted events
+    // Hosted events list
     const listEl = document.getElementById('pubProfEventsList');
     listEl.innerHTML = '';
     if (hostEvents.length === 0) {
@@ -6239,10 +6314,50 @@ async function openPublicProfile(userId) {
         listEl.appendChild(d);
       });
     }
-    document.getElementById('pubProfEvents').style.display = (hostEvents.length === 0 && !['host','admin','verified'].includes(prof.role)) ? 'none' : 'block';
+    document.getElementById('pubProfEvents').style.display =
+      (hostEvents.length === 0 && !['host','admin','verified'].includes(prof.role)) ? 'none' : 'block';
+
     loading.style.display = 'none'; content.style.display = 'block';
   } catch {
     loading.style.display = 'none'; errEl.style.display = 'block';
+  }
+}
+
+function _updateFollowBtn(isFollowing) {
+  const btn = document.getElementById('pubFollowBtn');
+  if (!btn) return;
+  if (isFollowing) {
+    btn.textContent = 'Following';
+    btn.style.cssText = 'width:100%;height:40px;font-size:14px;font-weight:700;border-radius:var(--r-full);background:var(--surface2);border:1.5px solid var(--border2);color:var(--text);cursor:pointer';
+  } else {
+    btn.textContent = 'Follow';
+    btn.style.cssText = 'width:100%;height:40px;font-size:14px;font-weight:700;border-radius:var(--r-full);background:var(--gold);border:none;color:#000;cursor:pointer';
+  }
+  btn.dataset.following = isFollowing ? '1' : '0';
+}
+
+async function toggleFollow() {
+  if (!currentUser) { openAuth('signup'); return; }
+  if (!_pubProfUserId) return;
+  const btn = document.getElementById('pubFollowBtn');
+  const isFollowing = btn?.dataset.following === '1';
+  btn.disabled = true;
+  try {
+    const method  = isFollowing ? 'DELETE' : 'POST';
+    const res = await fetch(`${API_BASE}/api/follow/${_pubProfUserId}`, {
+      method,
+      headers: { 'Authorization': `Bearer ${currentSession.access_token}` },
+    });
+    if (!res.ok) throw new Error('failed');
+    const nowFollowing = !isFollowing;
+    _updateFollowBtn(nowFollowing);
+    // Update follower count display
+    const sF = document.getElementById('pubStatFollowers');
+    if (sF) sF.textContent = Math.max(0, parseInt(sF.textContent || '0') + (nowFollowing ? 1 : -1));
+  } catch {
+    showToast('Could not update follow. Try again.', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 

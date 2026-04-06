@@ -190,21 +190,15 @@ app.post('/api/auth/refresh', async (req, res) => {
 // ════════════════════════════════════════════════════════════
 app.get('/api/profile', requireAuth, async (req, res) => {
   try {
-    // Two separate queries instead of a join — works regardless of
-    // whether Supabase foreign key relationships are configured
-    const [profileResult, stripeResult] = await Promise.all([
-      supabaseAdmin
-        .from('profiles')
-        .select('*')
-        .eq('id', req.userId)
-        .single(),
-      supabaseAdmin
-        .from('host_stripe_accounts')
+    const [profileResult, stripeResult, followersResult, followingResult] = await Promise.all([
+      supabaseAdmin.from('profiles').select('*').eq('id', req.userId).single(),
+      supabaseAdmin.from('host_stripe_accounts')
         .select('stripe_account_id, onboarding_complete, payouts_enabled, charges_enabled')
         .eq('user_id', req.userId),
+      supabaseAdmin.from('user_follows').select('*', { count: 'exact', head: true }).eq('following_id', req.userId),
+      supabaseAdmin.from('user_follows').select('*', { count: 'exact', head: true }).eq('follower_id', req.userId),
     ]);
     if (profileResult.error || !profileResult.data) {
-      // Profile row missing — return a usable fallback instead of 404
       const fallback = {
         id:         req.userId,
         email:      req.user.email,
@@ -212,12 +206,16 @@ app.get('/api/profile', requireAuth, async (req, res) => {
         role:       'attendee',
         created_at: new Date().toISOString(),
         host_stripe_accounts: [],
+        followers_count: 0,
+        following_count: 0,
       };
       return res.json(fallback);
     }
     res.json({
       ...profileResult.data,
       host_stripe_accounts: stripeResult.data || [],
+      followers_count: followersResult.count || 0,
+      following_count: followingResult.count || 0,
     });
   } catch (e) {
     console.error('[profile GET]', e.message);
@@ -255,26 +253,61 @@ app.get('/api/profiles/:id/stats', async (req, res) => {
   });
 });
 
-// GET /api/profile/public/:userId — full profile for authenticated users, name+avatar only otherwise
+// GET /api/profile/public/:userId — full profile for authenticated, restricted for guests
 app.get('/api/profile/public/:userId', async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('profiles')
-      .select('id, full_name, avatar_url, avatar_color, banner_url, bio, city, role, created_at, instagram_url, facebook_url, tiktok_url, bible_verse, bible_verse_reference, bible_version, hot_takes, hobbies, connect_tags')
-      .eq('id', req.params.userId).single();
-    if (error || !data) return res.status(404).json({ error: 'Profile not found.' });
-    // Check auth
-    let isAuthenticated = false;
+    const targetId = req.params.userId;
     const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+    let viewerId = null;
     if (token) {
       const { data: authData } = await supabase.auth.getUser(token);
-      isAuthenticated = !!authData?.user;
+      viewerId = authData?.user?.id || null;
     }
-    if (!isAuthenticated) {
-      return res.json({ id: data.id, full_name: data.full_name, avatar_url: data.avatar_url, avatar_color: data.avatar_color, banner_url: data.banner_url, restricted: true });
+
+    const [profileRes, followersRes, followingRes] = await Promise.all([
+      supabaseAdmin.from('profiles')
+        .select('id, full_name, avatar_url, avatar_color, banner_url, bio, city, role, created_at, instagram_url, facebook_url, tiktok_url, bible_verse, bible_verse_reference, bible_version, hot_takes, hobbies, connect_tags')
+        .eq('id', targetId).single(),
+      supabaseAdmin.from('user_follows').select('*', { count: 'exact', head: true }).eq('following_id', targetId),
+      supabaseAdmin.from('user_follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetId),
+    ]);
+
+    if (profileRes.error || !profileRes.data) return res.status(404).json({ error: 'Profile not found.' });
+    const data = profileRes.data;
+
+    // Check if viewer is following this profile
+    let is_following = false;
+    if (viewerId && viewerId !== targetId) {
+      const { data: followRow } = await supabaseAdmin.from('user_follows')
+        .select('id').eq('follower_id', viewerId).eq('following_id', targetId).maybeSingle();
+      is_following = !!followRow;
     }
-    res.json(data);
+
+    const counts = { followers_count: followersRes.count || 0, following_count: followingRes.count || 0 };
+
+    if (!viewerId) {
+      return res.json({ id: data.id, full_name: data.full_name, avatar_url: data.avatar_url, avatar_color: data.avatar_color, banner_url: data.banner_url, restricted: true, ...counts });
+    }
+    res.json({ ...data, ...counts, is_following });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/follow/:userId — follow a user
+app.post('/api/follow/:userId', requireAuth, async (req, res) => {
+  const followingId = req.params.userId;
+  if (followingId === req.userId) return res.status(400).json({ error: 'Cannot follow yourself.' });
+  const { error } = await supabaseAdmin.from('user_follows')
+    .insert({ follower_id: req.userId, following_id: followingId });
+  if (error && error.code !== '23505') return res.status(500).json({ error: error.message }); // 23505 = unique violation (already following)
+  res.json({ following: true });
+});
+
+// DELETE /api/follow/:userId — unfollow a user
+app.delete('/api/follow/:userId', requireAuth, async (req, res) => {
+  const { error } = await supabaseAdmin.from('user_follows')
+    .delete().eq('follower_id', req.userId).eq('following_id', req.params.userId);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ following: false });
 });
 
 // POST /api/upload-banner — same dataUrl pattern as upload-avatar
@@ -606,8 +639,33 @@ app.get('/api/my-events', requireAuth, async (req, res) => {
     .eq('host_id', req.userId)
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
-  // View now has explicit cover_url and forum_enabled — no aliasing needed.
-  res.json({ events: data || [] });
+  const events = data || [];
+
+  // Fetch confirmed ticket + RSVP counts for each event in one query
+  if (events.length) {
+    const eventIds = events.map(e => e.id);
+    const [{ data: ticketCounts }, { data: rsvpCounts }] = await Promise.all([
+      supabaseAdmin.from('tickets')
+        .select('event_id, quantity')
+        .in('event_id', eventIds)
+        .eq('status', 'confirmed'),
+      supabaseAdmin.from('rsvps')
+        .select('event_id')
+        .in('event_id', eventIds)
+        .eq('status', 'confirmed'),
+    ]);
+    // Aggregate by event_id
+    const ticketMap = {};
+    (ticketCounts || []).forEach(t => {
+      ticketMap[t.event_id] = (ticketMap[t.event_id] || 0) + (t.quantity || 1);
+    });
+    (rsvpCounts || []).forEach(r => {
+      ticketMap[r.event_id] = (ticketMap[r.event_id] || 0) + 1;
+    });
+    events.forEach(ev => { ev.attendee_count = ticketMap[ev.id] || 0; });
+  }
+
+  res.json({ events });
 });
 
 // ── My Tickets (attendee's purchased tickets) ────────────────
