@@ -312,23 +312,25 @@ end $$;
 
 -- ─── EVENT FORUM POSTS ───────────────────────────────────────
 create table if not exists public.event_forum_posts (
-  id          uuid primary key default uuid_generate_v4(),
-  event_id    uuid not null references public.events(id) on delete cascade,
-  author_id   uuid not null references public.profiles(id) on delete cascade,
-  body        text not null,
-  created_at  timestamptz not null default now()
+  id           uuid primary key default gen_random_uuid(),
+  event_id     uuid not null references public.events(id) on delete cascade,
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  content      text,
+  image_url    text,
+  message_type text not null default 'text',
+  created_at   timestamptz not null default now()
 );
 
 alter table public.event_forum_posts enable row level security;
 do $$ begin
-  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Anyone can read forum posts') then
-    create policy "Anyone can read forum posts" on public.event_forum_posts for select using (true);
+  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Authenticated users can read posts') then
+    create policy "Authenticated users can read posts" on public.event_forum_posts for select using (auth.role() = 'authenticated');
   end if;
-  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Authenticated users can post') then
-    create policy "Authenticated users can post" on public.event_forum_posts for insert with check (auth.uid() = author_id);
+  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Users insert own posts') then
+    create policy "Users insert own posts" on public.event_forum_posts for insert with check (auth.uid() = user_id);
   end if;
-  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Authors can delete own forum posts') then
-    create policy "Authors can delete own forum posts" on public.event_forum_posts for delete using (auth.uid() = author_id);
+  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Users delete own posts') then
+    create policy "Users delete own posts" on public.event_forum_posts for delete using (auth.uid() = user_id);
   end if;
 end $$;
 
