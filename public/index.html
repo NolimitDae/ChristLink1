@@ -5863,6 +5863,33 @@ const PRESET_HOBBIES = [
   'Cooking','Music','Church Events','Fellowship','Community Outreach','Serving','Resting'
 ];
 
+const HOBBY_ICONS = {
+  'roller skating': `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><ellipse cx="16" cy="22" rx="10" ry="5" stroke="#C9A84C" stroke-width="2"/><path d="M10 22 L12 14 L20 14 L22 22" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="11" cy="27" r="2" stroke="#C9A84C" stroke-width="1.5"/><circle cx="21" cy="27" r="2" stroke="#C9A84C" stroke-width="1.5"/><path d="M13 14 L15 9 L19 9" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'swimming':        `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M4 20 C7 17 9 23 12 20 C15 17 17 23 20 20 C23 17 25 23 28 20" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M4 25 C7 22 9 28 12 25 C15 22 17 28 20 25 C23 22 25 28 28 25" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><circle cx="22" cy="10" r="3" stroke="#C9A84C" stroke-width="2"/><path d="M10 15 L16 10 L22 13" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'hiking':          `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M6 28 L12 16 L16 20 L22 10 L28 28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="7" r="3" stroke="#C9A84C" stroke-width="1.5"/><path d="M8 28 L8 22" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  'reading':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M6 6 C6 6 10 5 16 8 C22 5 26 6 26 6 L26 26 C26 26 22 25 16 28 C10 25 6 26 6 26 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="16" y1="8" x2="16" y2="28" stroke="#C9A84C" stroke-width="1.5"/></svg>`,
+  'praying':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M12 6 L12 18 C12 21 14 23 16 23 C18 23 20 21 20 18 L20 6" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M10 10 L12 10 M20 10 L22 10" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><path d="M13 27 C13 25 16 24 16 24 C16 24 19 25 19 27" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'bible study':     `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><rect x="5" y="5" width="22" height="26" rx="2" stroke="#C9A84C" stroke-width="2"/><path d="M5 10 L27 10" stroke="#C9A84C" stroke-width="1.5"/><rect x="14" y="3" width="4" height="28" rx="1" fill="#C9A84C" opacity="0.18"/><line x1="9" y1="16" x2="23" y2="16" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="21" x2="19" y2="21" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'worship':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M16 6 C12 6 8 9 8 13 C8 19 16 26 16 26 C16 26 24 19 24 13 C24 9 20 6 16 6Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><rect x="14.5" y="10" width="3" height="10" rx="1" fill="#C9A84C"/><rect x="11" y="13.5" width="10" height="3" rx="1" fill="#C9A84C"/></svg>`,
+  'volunteering':    `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M16 7 C14 4 9 4 9 9 C9 13 13 16 16 19 C19 16 23 13 23 9 C23 4 18 4 16 7Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M10 22 L8 28 L16 25 L24 28 L22 22" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'mentorship':      `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><circle cx="11" cy="10" r="4" stroke="#C9A84C" stroke-width="2"/><circle cx="22" cy="8" r="3" stroke="#C9A84C" stroke-width="1.5"/><path d="M4 26 C4 21 7 19 11 19 C15 19 18 21 18 26" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M20 17 C22 16 28 17 28 22" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'fitness':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><rect x="3" y="14" width="4" height="4" rx="1" stroke="#C9A84C" stroke-width="1.5"/><rect x="25" y="14" width="4" height="4" rx="1" stroke="#C9A84C" stroke-width="1.5"/><rect x="7" y="11" width="4" height="10" rx="1" stroke="#C9A84C" stroke-width="1.5"/><rect x="21" y="11" width="4" height="10" rx="1" stroke="#C9A84C" stroke-width="1.5"/><line x1="11" y1="16" x2="21" y2="16" stroke="#C9A84C" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+  'content creation':`<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><rect x="4" y="7" width="24" height="16" rx="2" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="15" r="4" stroke="#C9A84C" stroke-width="1.5"/><path d="M10 27 L22 27" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M16 23 L16 27" stroke="#C9A84C" stroke-width="1.5"/></svg>`,
+  'photography':     `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><rect x="3" y="9" width="26" height="18" rx="2" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="18" r="5" stroke="#C9A84C" stroke-width="2"/><path d="M11 9 L13 5 L19 5 L21 9" stroke="#C9A84C" stroke-width="1.5" stroke-linejoin="round"/><circle cx="24" cy="13" r="1.5" fill="#C9A84C"/></svg>`,
+  'traveling':       `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M16 4 C10 4 5 9 5 15 C5 22 16 30 16 30 C16 30 27 22 27 15 C27 9 22 4 16 4Z" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="15" r="4" stroke="#C9A84C" stroke-width="1.5"/></svg>`,
+  'cooking':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M8 14 C8 10 12 7 16 7 C20 7 24 10 24 14 L24 18 L8 18 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="6" y1="18" x2="26" y2="18" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M13 18 L13 24 L19 24 L19 18" stroke="#C9A84C" stroke-width="1.5"/><line x1="10" y1="24" x2="22" y2="24" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  'music':           `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M12 24 L12 8 L27 5 L27 21" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="25" r="3" stroke="#C9A84C" stroke-width="2"/><circle cx="24" cy="22" r="3" stroke="#C9A84C" stroke-width="2"/></svg>`,
+  'church events':   `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><rect x="7" y="13" width="18" height="16" rx="1" stroke="#C9A84C" stroke-width="2"/><path d="M4 15 L16 5 L28 15" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><rect x="14" y="4" width="4" height="6" rx="1" fill="#C9A84C"/><rect x="13" y="1" width="6" height="3" rx="0.5" fill="#C9A84C"/><rect x="13" y="20" width="6" height="9" rx="1" stroke="#C9A84C" stroke-width="1.5"/></svg>`,
+  'fellowship':      `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><circle cx="10" cy="10" r="4" stroke="#C9A84C" stroke-width="2"/><circle cx="22" cy="10" r="4" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="22" r="4" stroke="#C9A84C" stroke-width="2"/><line x1="14" y1="10" x2="18" y2="10" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="14" x2="14" y2="18" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="20" y1="14" x2="18" y2="18" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'community outreach':`<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="9" r="4" stroke="#C9A84C" stroke-width="2"/><path d="M8 28 C8 22 11 19 16 19 C21 19 24 22 24 28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M24 12 L28 10 M24 14 L28 16" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'serving':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M6 18 L26 18" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M10 18 C10 13 13 10 16 10 C19 10 22 13 22 18" stroke="#C9A84C" stroke-width="2"/><line x1="16" y1="6" x2="16" y2="10" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><path d="M9 22 L9 25 C9 26 10 27 11 27 L21 27 C22 27 23 26 23 25 L23 22" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'resting':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M6 20 C6 14 10 9 16 9 C22 9 26 14 26 20" stroke="#C9A84C" stroke-width="2"/><path d="M4 20 L28 20" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M8 20 L8 24 L24 24 L24 20" stroke="#C9A84C" stroke-width="1.5"/><path d="M13 9 C13 7 14 5 16 5 C13 5 11 3 11 5" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+};
+
+function hobbyIcon(name) {
+  return HOBBY_ICONS[name.toLowerCase()] || '';
+}
+
 function renderProfilePage() {
   if (!currentUser) return;
   const name = profileData?.full_name || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Friend';
@@ -5984,7 +6011,7 @@ function renderProfilePage() {
     const matched = stored.filter(h => PRESET_HOBBIES.some(p => p.toLowerCase() === h.toLowerCase()));
     const display = matched.length ? matched : stored.slice(0, 6);
     hobbiesChips.innerHTML = display
-      .map(h => `<span class="prof-hobby-chip">${h}</span>`)
+      .map(h => `<span class="prof-hobby-chip">${hobbyIcon(h)}${h}</span>`)
       .join('');
   }
 
@@ -6284,7 +6311,7 @@ async function openPublicProfile(userId) {
       if (prof.hobbies) {
         const hobbiesEl = document.getElementById('pubHobbies');
         const chips = prof.hobbies.split(',').map(h => h.trim()).filter(Boolean);
-        hobbiesEl.innerHTML = chips.map(h => `<span class="prof-hobby-chip">${h}</span>`).join('');
+        hobbiesEl.innerHTML = chips.map(h => `<span class="prof-hobby-chip">${hobbyIcon(h)}${h}</span>`).join('');
         document.getElementById('pubHobbiesSection').style.display = 'block';
       }
       // Connect tags
@@ -6760,7 +6787,7 @@ function renderHobbyChipsEdit(savedHobbies = '') {
   container.innerHTML = PRESET_HOBBIES.map(hobby => {
     const isSelected = saved.some(s => s === hobby.toLowerCase());
     return `<button type="button" class="ep-hobby-chip${isSelected ? ' selected' : ''}"
-      onclick="this.classList.toggle('selected')">${hobby}</button>`;
+      onclick="this.classList.toggle('selected')">${hobbyIcon(hobby)}${hobby}</button>`;
   }).join('');
 }
 
