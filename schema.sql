@@ -16,10 +16,17 @@ create table if not exists public.profiles (
   city          text,
   avatar_url    text,
   avatar_color  text,
-  role          text not null default 'attendee' check (role in ('attendee','host','admin')),
+  role          text not null default 'attendee' check (role in ('attendee','host','admin','verified')),
   instagram_url text,
   facebook_url  text,
   tiktok_url    text,
+  banner_url              text,
+  bible_verse             text,
+  bible_verse_reference   text,
+  bible_version           text,
+  hot_takes               text,
+  hobbies                 text,
+  connect_tags            text[],
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
@@ -28,6 +35,23 @@ create table if not exists public.profiles (
 alter table public.profiles add column if not exists instagram_url text;
 alter table public.profiles add column if not exists facebook_url  text;
 alter table public.profiles add column if not exists tiktok_url    text;
+
+-- Migration: profile enrichment fields (v2.1+)
+alter table public.profiles add column if not exists banner_url            text;
+alter table public.profiles add column if not exists bible_verse           text;
+alter table public.profiles add column if not exists bible_verse_reference text;
+alter table public.profiles add column if not exists bible_version         text;
+alter table public.profiles add column if not exists hot_takes             text;
+alter table public.profiles add column if not exists hobbies               text;
+alter table public.profiles add column if not exists connect_tags          text[];
+
+-- Migration: allow 'verified' role (v2.2+)
+-- Drop the old constraint and replace it to include 'verified'
+do $$ begin
+  alter table public.profiles drop constraint if exists profiles_role_check;
+exception when others then null; end $$;
+alter table public.profiles add constraint profiles_role_check
+  check (role in ('attendee','host','admin','verified'));
 
 alter table public.profiles enable row level security;
 create policy "Users can read all profiles"  on public.profiles for select using (true);
@@ -588,5 +612,29 @@ alter table public.notifications enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='notifications' and policyname='Service role manages notifications') then
     create policy "Service role manages notifications" on public.notifications for all using (true);
+  end if;
+end $$;
+
+-- ─── USER FOLLOWS (FOLLOW SYSTEM v2.2) ───────────────────────
+create table if not exists public.user_follows (
+  id            uuid primary key default uuid_generate_v4(),
+  follower_id   uuid not null references public.profiles(id) on delete cascade,
+  following_id  uuid not null references public.profiles(id) on delete cascade,
+  created_at    timestamptz not null default now(),
+  unique(follower_id, following_id)
+);
+
+create index if not exists follows_follower_idx  on public.user_follows(follower_id);
+create index if not exists follows_following_idx on public.user_follows(following_id);
+
+alter table public.user_follows enable row level security;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='user_follows' and policyname='Anyone can view follows') then
+    create policy "Anyone can view follows" on public.user_follows for select using (true);
+  end if;
+end $$;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='user_follows' and policyname='Service role manages follows') then
+    create policy "Service role manages follows" on public.user_follows for all using (true);
   end if;
 end $$;
