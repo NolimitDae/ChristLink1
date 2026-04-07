@@ -16,10 +16,17 @@ create table if not exists public.profiles (
   city          text,
   avatar_url    text,
   avatar_color  text,
-  role          text not null default 'attendee' check (role in ('attendee','host','admin')),
+  role          text not null default 'attendee' check (role in ('attendee','host','admin','verified')),
   instagram_url text,
   facebook_url  text,
   tiktok_url    text,
+  banner_url              text,
+  bible_verse             text,
+  bible_verse_reference   text,
+  bible_version           text,
+  hot_takes               text,
+  hobbies                 text,
+  connect_tags            text[],
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
@@ -29,10 +36,35 @@ alter table public.profiles add column if not exists instagram_url text;
 alter table public.profiles add column if not exists facebook_url  text;
 alter table public.profiles add column if not exists tiktok_url    text;
 
+-- Migration: profile enrichment fields (v2.1+)
+alter table public.profiles add column if not exists banner_url            text;
+alter table public.profiles add column if not exists bible_verse           text;
+alter table public.profiles add column if not exists bible_verse_reference text;
+alter table public.profiles add column if not exists bible_version         text;
+alter table public.profiles add column if not exists hot_takes             text;
+alter table public.profiles add column if not exists hobbies               text;
+alter table public.profiles add column if not exists connect_tags          text[];
+
+-- Migration: allow 'verified' role (v2.2+)
+-- Drop the old constraint and replace it to include 'verified'
+do $$ begin
+  alter table public.profiles drop constraint if exists profiles_role_check;
+exception when others then null; end $$;
+alter table public.profiles add constraint profiles_role_check
+  check (role in ('attendee','host','admin','verified'));
+
 alter table public.profiles enable row level security;
-create policy "Users can read all profiles"  on public.profiles for select using (true);
-create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
-create policy "Users can insert own profile" on public.profiles for insert with check (auth.uid() = id);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='profiles' and policyname='Users can read all profiles') then
+    create policy "Users can read all profiles"  on public.profiles for select using (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='profiles' and policyname='Users can update own profile') then
+    create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='profiles' and policyname='Users can insert own profile') then
+    create policy "Users can insert own profile" on public.profiles for insert with check (auth.uid() = id);
+  end if;
+end $$;
 
 -- auto-create profile on signup
 create or replace function public.handle_new_user()
@@ -62,8 +94,14 @@ create table if not exists public.host_stripe_accounts (
 );
 
 alter table public.host_stripe_accounts enable row level security;
-create policy "Hosts can view own account" on public.host_stripe_accounts for select using (auth.uid() = user_id);
-create policy "Service role manages accounts" on public.host_stripe_accounts for all using (true);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='host_stripe_accounts' and policyname='Hosts can view own account') then
+    create policy "Hosts can view own account" on public.host_stripe_accounts for select using (auth.uid() = user_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='host_stripe_accounts' and policyname='Service role manages accounts') then
+    create policy "Service role manages accounts" on public.host_stripe_accounts for all using (true);
+  end if;
+end $$;
 
 -- ─── EVENTS ─────────────────────────────────────────────────
 create table if not exists public.events (
@@ -100,9 +138,17 @@ create table if not exists public.events (
 );
 
 alter table public.events enable row level security;
-create policy "Anyone can view published events" on public.events for select using (status = 'published' or auth.uid() = host_id);
-create policy "Hosts can insert events"          on public.events for insert with check (auth.uid() = host_id);
-create policy "Hosts can update own events"      on public.events for update using (auth.uid() = host_id);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='events' and policyname='Anyone can view published events') then
+    create policy "Anyone can view published events" on public.events for select using (status = 'published' or auth.uid() = host_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='events' and policyname='Hosts can insert events') then
+    create policy "Hosts can insert events" on public.events for insert with check (auth.uid() = host_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='events' and policyname='Hosts can update own events') then
+    create policy "Hosts can update own events" on public.events for update using (auth.uid() = host_id);
+  end if;
+end $$;
 
 -- index for search
 create index if not exists events_city_idx  on public.events(city);
@@ -124,8 +170,14 @@ create table if not exists public.ticket_types (
 );
 
 alter table public.ticket_types enable row level security;
-create policy "Anyone can view ticket types"     on public.ticket_types for select using (true);
-create policy "Service role manages ticket types" on public.ticket_types for all using (true);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='ticket_types' and policyname='Anyone can view ticket types') then
+    create policy "Anyone can view ticket types" on public.ticket_types for select using (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='ticket_types' and policyname='Service role manages ticket types') then
+    create policy "Service role manages ticket types" on public.ticket_types for all using (true);
+  end if;
+end $$;
 
 -- helper to increment sold count
 create or replace function public.increment_tickets_sold(p_ticket_type_id uuid, p_qty integer)
@@ -148,9 +200,17 @@ create table if not exists public.rsvps (
 );
 
 alter table public.rsvps enable row level security;
-create policy "Users can view own RSVPs"   on public.rsvps for select using (auth.uid() = user_id);
-create policy "Users can RSVP"             on public.rsvps for insert with check (auth.uid() = user_id);
-create policy "Users can cancel own RSVPs" on public.rsvps for update using (auth.uid() = user_id);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='rsvps' and policyname='Users can view own RSVPs') then
+    create policy "Users can view own RSVPs" on public.rsvps for select using (auth.uid() = user_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='rsvps' and policyname='Users can RSVP') then
+    create policy "Users can RSVP" on public.rsvps for insert with check (auth.uid() = user_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='rsvps' and policyname='Users can cancel own RSVPs') then
+    create policy "Users can cancel own RSVPs" on public.rsvps for update using (auth.uid() = user_id);
+  end if;
+end $$;
 
 -- ─── TICKETS (paid purchases) ────────────────────────────────
 create table if not exists public.tickets (
@@ -173,8 +233,14 @@ create table if not exists public.tickets (
 );
 
 alter table public.tickets enable row level security;
-create policy "Users can view own tickets" on public.tickets for select using (auth.uid() = user_id);
-create policy "Service role manages tickets" on public.tickets for all using (true);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='tickets' and policyname='Users can view own tickets') then
+    create policy "Users can view own tickets" on public.tickets for select using (auth.uid() = user_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='tickets' and policyname='Service role manages tickets') then
+    create policy "Service role manages tickets" on public.tickets for all using (true);
+  end if;
+end $$;
 
 -- ─── EVENTS VIEW (with host info + ticket types) ─────────────
 -- NOTE: uses explicit column list so e.* expansion stays stable
@@ -216,9 +282,11 @@ create table if not exists public.ticket_checkins (
 );
 
 alter table public.ticket_checkins enable row level security;
-create policy "Hosts can manage checkins" on public.ticket_checkins for all using (
-  auth.uid() = checked_in_by
-);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='ticket_checkins' and policyname='Hosts can manage checkins') then
+    create policy "Hosts can manage checkins" on public.ticket_checkins for all using (auth.uid() = checked_in_by);
+  end if;
+end $$;
 
 -- ─── COMMUNITY POSTS ─────────────────────────────────────────
 create table if not exists public.community_posts (
@@ -230,23 +298,41 @@ create table if not exists public.community_posts (
 );
 
 alter table public.community_posts enable row level security;
-create policy "Anyone can read posts" on public.community_posts for select using (true);
-create policy "Users can create posts" on public.community_posts for insert with check (auth.uid() = author_id);
-create policy "Authors can delete own posts" on public.community_posts for delete using (auth.uid() = author_id);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='community_posts' and policyname='Anyone can read posts') then
+    create policy "Anyone can read posts" on public.community_posts for select using (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='community_posts' and policyname='Users can create posts') then
+    create policy "Users can create posts" on public.community_posts for insert with check (auth.uid() = author_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='community_posts' and policyname='Authors can delete own posts') then
+    create policy "Authors can delete own posts" on public.community_posts for delete using (auth.uid() = author_id);
+  end if;
+end $$;
 
 -- ─── EVENT FORUM POSTS ───────────────────────────────────────
 create table if not exists public.event_forum_posts (
-  id          uuid primary key default uuid_generate_v4(),
-  event_id    uuid not null references public.events(id) on delete cascade,
-  author_id   uuid not null references public.profiles(id) on delete cascade,
-  body        text not null,
-  created_at  timestamptz not null default now()
+  id           uuid primary key default gen_random_uuid(),
+  event_id     uuid not null references public.events(id) on delete cascade,
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  content      text,
+  image_url    text,
+  message_type text not null default 'text',
+  created_at   timestamptz not null default now()
 );
 
 alter table public.event_forum_posts enable row level security;
-create policy "Anyone can read forum posts"       on public.event_forum_posts for select using (true);
-create policy "Authenticated users can post"      on public.event_forum_posts for insert with check (auth.uid() = author_id);
-create policy "Authors can delete own forum posts" on public.event_forum_posts for delete using (auth.uid() = author_id);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Authenticated users can read posts') then
+    create policy "Authenticated users can read posts" on public.event_forum_posts for select using (auth.role() = 'authenticated');
+  end if;
+  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Users insert own posts') then
+    create policy "Users insert own posts" on public.event_forum_posts for insert with check (auth.uid() = user_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Users delete own posts') then
+    create policy "Users delete own posts" on public.event_forum_posts for delete using (auth.uid() = user_id);
+  end if;
+end $$;
 
 -- Migration: add forum_enabled to events if upgrading
 alter table public.events add column if not exists forum_enabled boolean not null default false;
@@ -588,5 +674,29 @@ alter table public.notifications enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='notifications' and policyname='Service role manages notifications') then
     create policy "Service role manages notifications" on public.notifications for all using (true);
+  end if;
+end $$;
+
+-- ─── USER FOLLOWS (FOLLOW SYSTEM v2.2) ───────────────────────
+create table if not exists public.user_follows (
+  id            uuid primary key default uuid_generate_v4(),
+  follower_id   uuid not null references public.profiles(id) on delete cascade,
+  following_id  uuid not null references public.profiles(id) on delete cascade,
+  created_at    timestamptz not null default now(),
+  unique(follower_id, following_id)
+);
+
+create index if not exists follows_follower_idx  on public.user_follows(follower_id);
+create index if not exists follows_following_idx on public.user_follows(following_id);
+
+alter table public.user_follows enable row level security;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='user_follows' and policyname='Anyone can view follows') then
+    create policy "Anyone can view follows" on public.user_follows for select using (true);
+  end if;
+end $$;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='user_follows' and policyname='Service role manages follows') then
+    create policy "Service role manages follows" on public.user_follows for all using (true);
   end if;
 end $$;
