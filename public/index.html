@@ -3794,7 +3794,8 @@ button, a, [onclick],
 
           <!-- QR block -->
           <div style="background:#fff;border-radius:16px;padding:16px;display:inline-flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(0,0,0,.4)">
-            <canvas id="tvQrCanvas"></canvas>
+            <canvas id="tvQrCanvas" style="display:none"></canvas>
+            <img id="tvQrImg" style="display:none;border-radius:4px" alt="QR code">
             <!-- Barcode-style divider -->
             <div style="width:100%;display:flex;gap:1px;align-items:flex-end;height:20px;padding:0 4px">
               <div id="tvBarcodeStrips"></div>
@@ -9056,43 +9057,58 @@ function openTicketViewer(t) {
     );
     document.getElementById('tvTicketCode').textContent = shortCode;
 
-    // QR payload — all fields needed for scanner verification
+    // QR payload — fields needed for scanner verification
     const qrPayload = JSON.stringify({
-      ticketId:   t.id,
-      eventId:    t.event_id,
-      userId:     t.user_id,
-      qty:        t.quantity,
-      code:       shortCode,
-      status:     t.status,
-      event_name: t.event_name || 'Event',
+      ticketId: t.id,
+      eventId:  t.event_id,
+      code:     shortCode,
+      status:   t.status,
     });
 
-    // Render QR — larger size, square in white card
-    const canvas  = document.getElementById('tvQrCanvas');
-    const qrSize  = Math.max(180, Math.min(window.innerWidth - 112, 220));
-    canvas.width  = qrSize;
-    canvas.height = qrSize;
+    // Render QR using toDataURL → img element (more reliable than toCanvas)
+    const qrImg    = document.getElementById('tvQrImg');
+    const canvas   = document.getElementById('tvQrCanvas');
+    const qrSize   = Math.max(180, Math.min(window.innerWidth - 112, 220));
 
-    const drawFallback = () => {
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, qrSize, qrSize);
-      ctx.fillStyle = '#000';
-      ctx.font = `bold ${Math.floor(qrSize / 7)}px monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(shortCode, qrSize / 2, qrSize / 2);
+    const showCodeFallback = () => {
+      // Show a styled code box instead of a broken QR
+      qrImg.style.display  = 'none';
+      canvas.style.display = 'none';
+      let fb = document.getElementById('tvQrFallback');
+      if (!fb) {
+        fb = document.createElement('div');
+        fb.id = 'tvQrFallback';
+        fb.style.cssText = `width:${qrSize}px;height:${qrSize}px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px`;
+        canvas.parentNode.insertBefore(fb, canvas);
+      }
+      fb.style.display = 'flex';
+      fb.innerHTML = `<div style="font-size:13px;color:#555;font-weight:600">Ticket Code</div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:.2em;font-family:monospace;color:#000">${shortCode}</div>`;
     };
 
-    if (typeof QRCode !== 'undefined') {
-      QRCode.toCanvas(canvas, qrPayload, {
-        width: qrSize,
-        margin: 2,
-        color: { dark: '#000000', light: '#FFFFFF' },
-        errorCorrectionLevel: 'M',
-      }, err => { if (err) drawFallback(); });
-    } else {
-      drawFallback();
+    try {
+      if (typeof QRCode !== 'undefined' && typeof QRCode.toDataURL === 'function') {
+        QRCode.toDataURL(qrPayload, {
+          width:                qrSize,
+          margin:               2,
+          color:                { dark: '#000000', light: '#FFFFFF' },
+          errorCorrectionLevel: 'M',
+        }, (err, url) => {
+          if (err || !url) { showCodeFallback(); return; }
+          qrImg.src            = url;
+          qrImg.width          = qrSize;
+          qrImg.height         = qrSize;
+          qrImg.style.display  = 'block';
+          canvas.style.display = 'none';
+          const fb = document.getElementById('tvQrFallback');
+          if (fb) fb.style.display = 'none';
+        });
+      } else {
+        showCodeFallback();
+      }
+    } catch(e) {
+      console.error('[QR]', e);
+      showCodeFallback();
     }
 
     // Apple Wallet — iOS only (pkpass format)
