@@ -332,7 +332,7 @@ app.post('/api/upload-banner', requireAuth, async (req, res) => {
 
 app.patch('/api/profile', requireAuth, async (req, res) => {
   const {
-    full_name, bio, city, avatar_url, avatar_color,
+    full_name, bio, city, avatar_url, avatar_color, avatar_ring_color,
     instagram_url, facebook_url, tiktok_url,
     banner_url, bible_verse, bible_verse_reference, bible_version,
     hot_takes, hobbies, connect_tags,
@@ -343,6 +343,7 @@ app.patch('/api/profile', requireAuth, async (req, res) => {
   if (city                    !== undefined) updates.city                    = city;
   if (avatar_url              !== undefined) updates.avatar_url              = avatar_url;
   if (avatar_color            !== undefined) updates.avatar_color            = avatar_color;
+  if (avatar_ring_color       !== undefined) updates.avatar_ring_color       = avatar_ring_color;
   if (instagram_url           !== undefined) updates.instagram_url           = instagram_url;
   if (facebook_url            !== undefined) updates.facebook_url            = facebook_url;
   if (tiktok_url              !== undefined) updates.tiktok_url              = tiktok_url;

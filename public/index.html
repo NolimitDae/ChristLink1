@@ -3554,6 +3554,13 @@ button, a, [onclick],
         </label>
       </div>
       <div class="av-grid" id="epColorGrid"></div>
+
+      <!-- PROFILE RING -->
+      <div style="margin:14px 0 16px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Profile Ring</div>
+        <div id="epRingGrid" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"></div>
+      </div>
+
       <label class="field-label">Name</label>
       <input type="text" id="epName" class="field" placeholder="Your name" autocomplete="name">
       <label class="field-label">City</label>
@@ -4501,7 +4508,7 @@ let nearMeActive   = false;
 let userLocation   = null;
 let activeFilters  = { type:[], price:[], format:[] };
 let obAvatarColor  = null, obAvatarUrl = null;
-let epAvatarColor  = null, epAvatarUrl = null;
+let epAvatarColor  = null, epAvatarUrl = null, epRingColor = null;
 
 const BIBLE_VERSIONS = [
   { code: 'KJV',  name: 'King James Version (KJV)' },
@@ -5907,6 +5914,10 @@ function renderProfilePage() {
     avEl.textContent = name.charAt(0).toUpperCase();
     avEl.style.background = profileData?.avatar_color || 'linear-gradient(135deg,var(--gold),#6B4A00)';
   }
+  // ── Avatar ring ───────────────────────────────────────────
+  const ringColor = profileData?.avatar_ring_color;
+  avEl.style.outline = ringColor ? `3px solid ${ringColor}` : 'none';
+  avEl.style.outlineOffset = ringColor ? '3px' : '0';
 
   // ── Banner ────────────────────────────────────────────────
   const bannerImg = document.getElementById('profBannerImg');
@@ -6258,6 +6269,9 @@ async function openPublicProfile(userId) {
       avEl.textContent = (prof.full_name || '?').charAt(0).toUpperCase();
       avEl.style.background = prof.avatar_color || 'var(--gold)';
     }
+    const pubRing = prof.avatar_ring_color;
+    avEl.style.outline = pubRing ? `3px solid ${pubRing}` : 'none';
+    avEl.style.outlineOffset = pubRing ? '3px' : '0';
 
     // Name + role
     document.getElementById('pubProfName').textContent = prof.full_name || 'ChristLink Member';
@@ -6924,6 +6938,43 @@ function populateEditProfile() {
     };
     grid.appendChild(btn);
   });
+
+  // Ring color picker
+  epRingColor = profileData?.avatar_ring_color || null;
+  const applyRingToPreview = color => {
+    prev.style.outline = color ? `3px solid ${color}` : 'none';
+    prev.style.outlineOffset = '3px';
+  };
+  applyRingToPreview(epRingColor);
+  const RING_COLORS = [
+    { label: 'None',   value: null,      swatch: 'transparent', border: '2px dashed rgba(255,255,255,.3)' },
+    { label: 'Gold',   value: '#C9A84C', swatch: '#C9A84C',     border: 'none' },
+    { label: 'Purple', value: '#9B5DE5', swatch: '#9B5DE5',     border: 'none' },
+    { label: 'Blue',   value: '#4B96E8', swatch: '#4B96E8',     border: 'none' },
+    { label: 'Green',  value: '#4EC98C', swatch: '#4EC98C',     border: 'none' },
+    { label: 'Pink',   value: '#FF6BAE', swatch: '#FF6BAE',     border: 'none' },
+    { label: 'Red',    value: '#E05050', swatch: '#E05050',     border: 'none' },
+    { label: 'Orange', value: '#F4855F', swatch: '#F4855F',     border: 'none' },
+    { label: 'Cyan',   value: '#00C4D8', swatch: '#00C4D8',     border: 'none' },
+    { label: 'White',  value: '#FFFFFF', swatch: '#FFFFFF',     border: 'none' },
+  ];
+  const ringGrid = document.getElementById('epRingGrid');
+  ringGrid.innerHTML = '';
+  RING_COLORS.forEach(({ label, value, swatch, border }) => {
+    const isSelected = value === epRingColor || (value === null && !epRingColor);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.title = label;
+    btn.style.cssText = `width:32px;height:32px;border-radius:50%;background:${swatch};border:${border};cursor:pointer;touch-action:manipulation;position:relative;box-shadow:${isSelected ? '0 0 0 2px #fff,0 0 0 4px #C9A84C' : '0 0 0 1px rgba(255,255,255,.15)'};transition:box-shadow .15s`;
+    if (value === null) btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"><path d="M2 2L12 12M12 2L2 12" stroke="rgba(255,255,255,.5)" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    btn.onclick = () => {
+      epRingColor = value;
+      ringGrid.querySelectorAll('button').forEach(b => { b.style.boxShadow = '0 0 0 1px rgba(255,255,255,.15)'; });
+      btn.style.boxShadow = '0 0 0 2px #fff,0 0 0 4px #C9A84C';
+      applyRingToPreview(value);
+    };
+    ringGrid.appendChild(btn);
+  });
 }
 
 function epHandlePhoto(input) {
@@ -7003,6 +7054,7 @@ async function saveProfile() {
     city:                  document.getElementById('epCity').value.trim(),
     avatar_url:            avatarUrl,
     avatar_color:          epAvatarColor || profileData?.avatar_color || null,
+    avatar_ring_color:     epRingColor !== undefined ? epRingColor : (profileData?.avatar_ring_color || null),
     instagram_url:         document.getElementById('epInstagram').value.trim() || null,
     facebook_url:          document.getElementById('epFacebook').value.trim()  || null,
     tiktok_url:            document.getElementById('epTikTok').value.trim()    || null,
