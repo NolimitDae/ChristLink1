@@ -5330,7 +5330,8 @@ function makeHostedEventCard(ev) {
 
 function makeTicketCard(t) {
   const el = document.createElement('div');
-  el.style.cssText = 'background:linear-gradient(160deg,#1C1030 0%,#0E0E1C 100%);border:1px solid rgba(201,168,76,.28);border-radius:14px;overflow:visible;margin-bottom:14px;cursor:pointer;position:relative;box-shadow:0 4px 20px rgba(0,0,0,.4),0 0 0 1px rgba(201,168,76,.06) inset';
+  // Chamfered (diagonal) corners — matching classic ticket outline
+  el.style.cssText = 'background:linear-gradient(160deg,#1C1030 0%,#0E0E1C 100%);margin-bottom:16px;cursor:pointer;position:relative;clip-path:polygon(12px 0%,calc(100% - 12px) 0%,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0% calc(100% - 12px),0% 12px);box-shadow:0 0 0 1.5px rgba(201,168,76,.45),0 6px 28px rgba(0,0,0,.5)';
   const fmtDate = t.event_start_date
     ? new Date(t.event_start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
     : 'Date TBD';
@@ -5340,9 +5341,11 @@ function makeTicketCard(t) {
     ? t.stripe_payment_intent.replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase()
     : t.id?.replace(/-/g,'').slice(0,8).toUpperCase() || '—');
   const canRefund = t.status === 'confirmed' && isPaid;
+  // Sawtooth perforation SVG — matches the tear-line on a classic ticket
+  const sawteeth = '0,7 5,1 10,13 15,1 20,13 25,1 30,13 35,1 40,13 45,1 50,13 55,1 60,13 65,1 70,13 75,1 80,13 85,1 90,13 95,1 100,13 105,1 110,13 115,1 120,13 125,1 130,13 135,1 140,13 145,1 150,13 155,1 160,13 165,1 170,13 175,1 180,13 185,1 190,13 195,1 200,13 205,1 210,13 215,1 220,13 225,1 230,13 235,1 240,13 245,1 250,13 255,1 260,13 265,1 270,13 275,1 280,13 285,1 290,13 295,1 300,7';
   el.innerHTML = `
     <!-- TICKET BODY -->
-    <div style="display:flex;gap:12px;padding:14px 16px 14px;align-items:center;position:relative">
+    <div style="display:flex;gap:12px;padding:14px 16px 13px;align-items:center;position:relative">
       <div style="width:52px;height:52px;border-radius:8px;flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#1A0E38,#0F0F1A);display:flex;align-items:center;justify-content:center">
         ${t.event_cover_url ? `<img src="${t.event_cover_url}" style="width:100%;height:100%;object-fit:cover">` : '<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M4 11 C4 9.5 5 9 6 9 L26 9 C27 9 28 9.5 28 11 C28 11 26 12 26 14 C26 16 28 17 28 17 C28 18.5 27 19 26 19 L6 19 C5 19 4 18.5 4 17 C4 17 6 16 6 14 C6 12 4 11 4 11Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>'}
       </div>
@@ -5376,20 +5379,15 @@ function makeTicketCard(t) {
         </button>` : ''}
       </div>` : ''}
     </div>
-    <!-- TICKET PERFORATION + STUB -->
+    <!-- SAWTOOTH PERFORATION (classic ticket tear-line) -->
     ${t.status === 'confirmed' ? `
-    <div style="position:relative;display:flex;align-items:center;margin:0 -1px">
-      <!-- left notch -->
-      <div style="width:18px;height:18px;border-radius:50%;background:var(--bg);border:1px solid rgba(201,168,76,.25);border-left:none;flex-shrink:0;margin-left:-9px"></div>
-      <!-- dashed perforation -->
-      <div style="flex:1;height:1px;background:repeating-linear-gradient(90deg,rgba(201,168,76,.4) 0,rgba(201,168,76,.4) 5px,transparent 5px,transparent 10px)"></div>
-      <!-- right notch -->
-      <div style="width:18px;height:18px;border-radius:50%;background:var(--bg);border:1px solid rgba(201,168,76,.25);border-right:none;flex-shrink:0;margin-right:-9px"></div>
-    </div>
-    <!-- Stub row -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 12px;gap:10px">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;font-family:monospace;text-transform:uppercase">${shortCode}</div>
-      <button class="view-ticket-btn" style="height:34px;padding:0 16px;border-radius:999px;background:linear-gradient(135deg,#C9A84C 0%,#FFE57A 28%,#D4A520 50%,#8B6010 72%,#C9A84C 88%,#FFE57A 100%);color:#000;font-size:12px;font-weight:800;border:none;cursor:pointer;touch-action:manipulation;letter-spacing:.03em;box-shadow:0 2px 12px rgba(201,168,76,.45),inset 0 1px 0 rgba(255,255,255,.4)">
+    <svg width="100%" height="14" viewBox="0 0 300 14" preserveAspectRatio="none" style="display:block;overflow:visible">
+      <polyline points="${sawteeth}" fill="none" stroke="rgba(201,168,76,.55)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>
+    <!-- Stub -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px 12px;gap:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.14em;font-family:monospace">${shortCode}</div>
+      <button class="view-ticket-btn" style="height:33px;padding:0 16px;border-radius:999px;background:linear-gradient(135deg,#C9A84C 0%,#FFE57A 28%,#D4A520 50%,#8B6010 72%,#C9A84C 88%,#FFE57A 100%);color:#000;font-size:12px;font-weight:800;border:none;cursor:pointer;touch-action:manipulation;box-shadow:0 2px 10px rgba(201,168,76,.4),inset 0 1px 0 rgba(255,255,255,.4)">
         View Ticket
       </button>
     </div>` : `
