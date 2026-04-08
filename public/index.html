@@ -125,12 +125,9 @@ img{display:block;max-width:100%}
   padding-left:20px;padding-right:20px;
 }
 /* ── BRAND LOGO ──────────────────────────────────────────── */
-.home-logo-full{width:100%;max-width:340px;margin:0 auto 20px;display:block}
-.home-logo-full svg{width:100%;height:auto}
-.header-logo-mark{width:34px;height:40px;cursor:pointer;flex-shrink:0;display:flex;align-items:center}
-.header-logo-mark svg{width:100%;height:100%}
-.auth-logo-mark{width:64px;height:75px;margin:0 auto 16px;display:block}
-.auth-logo-mark svg{width:100%;height:100%}
+.home-logo-full{width:100%;max-width:320px;margin:0 auto 20px;display:block}
+.header-logo-mark{width:36px;height:36px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;border-radius:50%;overflow:hidden}
+.auth-logo-mark{width:80px;height:80px;margin:0 auto 16px;display:block;border-radius:50%;overflow:hidden}
 .splash-logo{width:80px;height:94px;margin:0 auto 14px;animation:splashPulse 1.5s ease-in-out infinite alternate}
 .splash-wordmark{font-family:Georgia,'Times New Roman',serif;font-size:1.8rem;font-weight:700;color:#C9A84C;text-align:center;letter-spacing:.02em}
 @keyframes splashPulse{from{opacity:.7;transform:scale(.97)}to{opacity:1;transform:scale(1.03)}}
@@ -4300,44 +4297,15 @@ const API_BASE      = '';
 // ═══════════════════════════════════════════════════════════
 // BRAND SVG ASSETS
 // ═══════════════════════════════════════════════════════════
-const LOGO_MARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" fill="none">
-  <path d="M50 8 C27 8 8 27 8 50 C8 73 50 112 50 112 C50 112 92 73 92 50 C92 27 73 8 50 8Z" stroke="#C9A84C" stroke-width="3.5" fill="none"/>
-  <rect x="46" y="18" width="8" height="36" rx="2" fill="#C9A84C"/>
-  <rect x="34" y="28" width="32" height="8" rx="2" fill="#C9A84C"/>
-  <circle cx="36" cy="58" r="5" fill="#C9A84C"/>
-  <path d="M28 75 C28 68 32 64 36 64 C40 64 44 68 44 75" stroke="#C9A84C" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-  <circle cx="50" cy="55" r="5.5" fill="#C9A84C"/>
-  <path d="M41 75 C41 67 45 62 50 62 C55 62 59 67 59 75" stroke="#C9A84C" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-  <circle cx="64" cy="58" r="5" fill="#C9A84C"/>
-  <path d="M56 75 C56 68 60 64 64 64 C68 64 72 68 72 75" stroke="#C9A84C" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-  <ellipse cx="42" cy="82" rx="6" ry="4" stroke="#C9A84C" stroke-width="2" fill="none" transform="rotate(-20 42 82)"/>
-  <ellipse cx="58" cy="82" rx="6" ry="4" stroke="#C9A84C" stroke-width="2" fill="none" transform="rotate(20 58 82)"/>
-</svg>`;
+const LOGO_MARK = `<img src="/logo-mark.jpeg" alt="ChristLink" style="width:100%;height:100%;object-fit:cover;display:block">`;
 
-const LOGO_FULL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 130" fill="none">
-  <defs>
-    <linearGradient id="goldGradFull" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#F0D060"/>
-      <stop offset="50%" stop-color="#C9A84C"/>
-      <stop offset="100%" stop-color="#A07830"/>
-    </linearGradient>
-  </defs>
-  <g transform="translate(0,5) scale(0.85)">
-    <path d="M55 5 C34 5 10 26 10 52 C10 76 55 118 55 118 C55 118 100 76 100 52 C100 26 76 5 55 5Z" stroke="#C9A84C" stroke-width="3" fill="none"/>
-    <rect x="51" y="16" width="7" height="30" rx="1.5" fill="#C9A84C"/>
-    <rect x="38" y="25" width="28" height="7" rx="1.5" fill="#C9A84C"/>
-    <circle cx="40" cy="58" r="4.5" fill="#C9A84C"/>
-    <path d="M32 73 C32 67 36 63 40 63 C44 63 48 67 48 73" stroke="#C9A84C" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <circle cx="55" cy="55" r="5" fill="#C9A84C"/>
-    <path d="M46 73 C46 66 50 61 55 61 C60 61 64 66 64 73" stroke="#C9A84C" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <circle cx="70" cy="58" r="4.5" fill="#C9A84C"/>
-    <path d="M62 73 C62 67 66 63 70 63 C74 63 78 67 78 73" stroke="#C9A84C" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <ellipse cx="45" cy="82" rx="5.5" ry="3.5" stroke="#C9A84C" stroke-width="1.8" fill="none" transform="rotate(-20 45 82)"/>
-    <ellipse cx="62" cy="82" rx="5.5" ry="3.5" stroke="#C9A84C" stroke-width="1.8" fill="none" transform="rotate(20 62 82)"/>
-  </g>
-  <text x="115" y="72" font-family="Georgia,'Times New Roman',serif" font-size="46" font-weight="700" fill="url(#goldGradFull)" letter-spacing="-1">ChristLink</text>
-  <text x="118" y="95" font-family="Georgia,serif" font-size="13" fill="#C9A84C" letter-spacing="5" opacity="0.85">FAITH • COMMUNITY • PURPOSE</text>
-</svg>`;
+const LOGO_FULL = `<div style="text-align:center">
+  <div style="width:150px;height:150px;border-radius:50%;overflow:hidden;margin:0 auto;box-shadow:0 0 32px rgba(201,168,76,0.25)">
+    <img src="/logo-mark.jpeg" alt="ChristLink" style="width:100%;height:100%;object-fit:cover;display:block">
+  </div>
+  <div style="font-family:Georgia,'Times New Roman',serif;font-size:1.9rem;font-weight:700;color:#C9A84C;letter-spacing:.02em;margin-top:14px">ChristLink</div>
+  <div style="font-size:11px;color:#C9A84C;letter-spacing:5px;opacity:.75;margin-top:5px">FAITH • COMMUNITY • PURPOSE</div>
+</div>`;
 
 const ICONS = {
   openToConnect:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 20 C5 14 9 10 14 10 C17 10 19 11.5 20.5 13.5" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="7" r="3" stroke="#C9A84C" stroke-width="2"/><path d="M18 20 C18 17 20 15 23 15 C26 15 28 17 28 20 L28 22 L18 22 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="23" cy="11" r="2.5" stroke="#C9A84C" stroke-width="2"/><path d="M9 20 L9 24 L19 24" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
@@ -4898,7 +4866,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (homeFull) homeFull.innerHTML = LOGO_FULL;
   const authMark = document.getElementById('authLogoMark');
   if (authMark) authMark.innerHTML = LOGO_MARK;
-  document.querySelectorAll('.footer-logo-mark').forEach(el => { el.innerHTML = LOGO_MARK; });
+  document.querySelectorAll('.footer-logo-mark').forEach(el => {
+    el.style.cssText = 'width:16px;height:16px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex';
+    el.innerHTML = `<img src="/logo-mark.jpeg" alt="" style="width:100%;height:100%;object-fit:cover;display:block">`;
+  });
   // ── Inject section icons ──────────────────────────────────
   const hotEl = document.getElementById('editHotTakesIcon');
   if (hotEl) hotEl.innerHTML = icon('prayerRequests', 14);
@@ -6003,7 +5974,10 @@ function renderProfilePage() {
 
   // ── Auth gate logo ────────────────────────────────────────
   const gateLogo = document.getElementById('profGateLogo');
-  if (gateLogo && !gateLogo.innerHTML) gateLogo.innerHTML = LOGO_MARK;
+  if (gateLogo && !gateLogo.innerHTML) {
+    gateLogo.style.cssText = 'width:72px;height:72px;border-radius:50%;overflow:hidden;margin:0 auto';
+    gateLogo.innerHTML = LOGO_MARK;
+  }
 
   // ── Stripe Connect section ────────────────────────────────
   renderStripeConnectStatus();
