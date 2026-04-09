@@ -8,6 +8,6 @@
   "theme_color": "#0A0A0F",
   "orientation": "portrait",
   "icons": [
-    { "src": "/Logo%201.PNG", "sizes": "any", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/christlink-logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }
