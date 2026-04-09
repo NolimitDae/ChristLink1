@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#0A0A0F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="apple-touch-icon" href="/favicon.svg">
+<link rel="icon" type="image/png" href="/Logo%201.PNG">
+<link rel="apple-touch-icon" href="/Logo%201.PNG">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Christ Link — Faith Events Near You</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3750,6 +3750,10 @@ button, a, [onclick],
       <!-- ══ END TICKET CARD ══ -->
 
       <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+        <button id="tvWalletBtn" onclick="addToAppleWallet()" style="width:100%;height:48px;background:#000;color:#fff;border:none;border-radius:var(--r-full);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="3" stroke="#fff" stroke-width="1.8"/><path d="M2 10h20" stroke="#fff" stroke-width="1.8"/><path d="M6 15h4" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Add to Apple Wallet
+        </button>
         <button id="tvRefundBtn" onclick="requestTicketRefund()" style="display:none;width:100%;height:44px;background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.25);border-radius:var(--r-full);font-size:14px;font-weight:600;cursor:pointer">Request Refund</button>
         <button class="btn btn-outline" onclick="closeSheet('ticketViewerSheet')">Close</button>
       </div>
@@ -4267,14 +4271,10 @@ const API_BASE      = '';
 // ═══════════════════════════════════════════════════════════
 // BRAND SVG ASSETS
 // ═══════════════════════════════════════════════════════════
-const LOGO_MARK = `<img src="/logo-mark.jpeg" alt="ChristLink" style="width:100%;height:100%;object-fit:cover;display:block">`;
+const LOGO_MARK = `<img src="/Logo%201.PNG" alt="ChristLink" style="width:100%;height:100%;object-fit:cover;display:block">`;
 
 const LOGO_FULL = `<div style="text-align:center">
-  <div style="width:150px;height:150px;border-radius:50%;overflow:hidden;margin:0 auto;box-shadow:0 0 32px rgba(201,168,76,0.25)">
-    <img src="/logo-mark.jpeg" alt="ChristLink" style="width:100%;height:100%;object-fit:cover;display:block">
-  </div>
-  <div style="font-family:Georgia,'Times New Roman',serif;font-size:1.9rem;font-weight:700;color:#C9A84C;letter-spacing:.02em;margin-top:14px">ChristLink</div>
-  <div style="font-size:11px;color:#C9A84C;letter-spacing:5px;opacity:.75;margin-top:5px">FAITH • COMMUNITY • PURPOSE</div>
+  <img src="/Christ%20link.PNG" alt="ChristLink" style="width:100%;max-width:280px;display:block;margin:0 auto">
 </div>`;
 
 const ICONS = {
@@ -4878,7 +4878,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (authMark) authMark.innerHTML = LOGO_MARK;
   document.querySelectorAll('.footer-logo-mark').forEach(el => {
     el.style.cssText = 'width:16px;height:16px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex';
-    el.innerHTML = `<img src="/logo-mark.jpeg" alt="" style="width:100%;height:100%;object-fit:cover;display:block">`;
+    el.innerHTML = `<img src="/Logo%201.PNG" alt="" style="width:100%;height:100%;object-fit:cover;display:block">`;
   });
   // ── Inject section icons ──────────────────────────────────
   const hotEl = document.getElementById('editHotTakesIcon');
