@@ -16,7 +16,7 @@
 <script src="https://js.stripe.com/v3/"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 /* ═══════════════════════════════════════════════════════════
@@ -3722,16 +3722,6 @@ button, a, [onclick],
           </div>
         </div>
 
-        <!-- TEAR / PERFORATION LINE -->
-        <div style="position:relative;height:24px;background:var(--bg);display:flex;align-items:center">
-          <!-- left notch -->
-          <div style="position:absolute;left:-1px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid rgba(201,168,76,.18);border-left:none"></div>
-          <!-- dashed line -->
-          <div style="flex:1;margin:0 20px;height:1px;background:repeating-linear-gradient(90deg,rgba(201,168,76,.4) 0,rgba(201,168,76,.4) 6px,transparent 6px,transparent 12px)"></div>
-          <!-- right notch -->
-          <div style="position:absolute;right:-1px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid rgba(201,168,76,.18);border-right:none"></div>
-        </div>
-
         <!-- QR STUB -->
         <div style="padding:20px 16px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;background:linear-gradient(170deg,#0D0D1A,#130B28)">
           <!-- Status badge -->
@@ -3739,8 +3729,7 @@ button, a, [onclick],
 
           <!-- QR block -->
           <div style="background:#fff;border-radius:16px;padding:16px;display:inline-flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(0,0,0,.4)">
-            <canvas id="tvQrCanvas" style="display:none"></canvas>
-            <img id="tvQrImg" style="display:none;border-radius:4px" alt="QR code">
+            <div id="tvQrContainer" style="line-height:0;border-radius:4px;overflow:hidden"></div>
             <!-- Barcode-style divider -->
             <div style="width:100%;display:flex;gap:1px;align-items:flex-end;height:20px;padding:0 4px">
               <div id="tvBarcodeStrips"></div>
@@ -3753,37 +3742,6 @@ button, a, [onclick],
 
       </div>
       <!-- ══ END TICKET CARD ══ -->
-
-      <!-- Apple Wallet button (iOS only) -->
-      <div id="tvWalletWrap" style="display:none;margin-top:14px">
-        <div style="background:linear-gradient(135deg,#1a1200,#2a1e00,#1a1200);border:1.5px solid rgba(201,168,76,.45);border-radius:16px;overflow:hidden;margin-bottom:10px;box-shadow:0 4px 20px rgba(201,168,76,.15)">
-          <div style="display:flex;align-items:center;padding:12px 14px;gap:12px">
-            <div style="flex-shrink:0;width:48px;height:48px;display:flex;align-items:center;justify-content:center">
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2" y="12" width="44" height="24" rx="5" fill="url(#goldGrad2)" stroke="rgba(201,168,76,.6)" stroke-width="1"/>
-                <circle cx="2" cy="24" r="5" fill="#0F0F1A"/>
-                <circle cx="46" cy="24" r="5" fill="#0F0F1A"/>
-                <line x1="14" y1="13" x2="14" y2="35" stroke="rgba(0,0,0,.25)" stroke-width="1.5" stroke-dasharray="2 2"/>
-                <rect x="18" y="20" width="14" height="3" rx="1.5" fill="rgba(0,0,0,.35)"/>
-                <rect x="23" y="15" width="3" height="13" rx="1.5" fill="rgba(0,0,0,.35)"/>
-                <rect x="3" y="13" width="41" height="5" rx="2" fill="rgba(255,255,255,.18)"/>
-                <defs><linearGradient id="goldGrad2" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#F5D060"/><stop offset="40%" stop-color="#C9A84C"/><stop offset="70%" stop-color="#E8C84A"/><stop offset="100%" stop-color="#A07820"/></linearGradient></defs>
-              </svg>
-            </div>
-            <div>
-              <div style="font-family:var(--font-display);font-size:16px;font-weight:800;color:#C9A84C;letter-spacing:.02em;line-height:1.1">ChristLink</div>
-              <div style="font-size:11px;color:rgba(201,168,76,.6);margin-top:2px;font-weight:500">Event Ticket Pass</div>
-            </div>
-            <div style="margin-left:auto;opacity:.5">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="#C9A84C"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-            </div>
-          </div>
-        </div>
-        <button id="tvWalletBtn" onclick="addToAppleWallet()" style="width:100%;height:52px;border-radius:var(--r-full);background:#000;border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-          <span style="color:#fff;font-size:15px;font-weight:700">Add to Apple Wallet</span>
-        </button>
-      </div>
 
       <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
         <button id="tvRefundBtn" onclick="requestTicketRefund()" style="display:none;width:100%;height:44px;background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.25);border-radius:var(--r-full);font-size:14px;font-weight:600;cursor:pointer">Request Refund</button>
@@ -9018,55 +8976,28 @@ function openTicketViewer(t) {
       status:   t.status,
     });
 
-    // Render QR using toDataURL → img element (more reliable than toCanvas)
-    const qrImg    = document.getElementById('tvQrImg');
-    const canvas   = document.getElementById('tvQrCanvas');
-    const qrSize   = Math.max(180, Math.min(window.innerWidth - 112, 220));
-
-    const showCodeFallback = () => {
-      // Show a styled code box instead of a broken QR
-      qrImg.style.display  = 'none';
-      canvas.style.display = 'none';
-      let fb = document.getElementById('tvQrFallback');
-      if (!fb) {
-        fb = document.createElement('div');
-        fb.id = 'tvQrFallback';
-        fb.style.cssText = `width:${qrSize}px;height:${qrSize}px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px`;
-        canvas.parentNode.insertBefore(fb, canvas);
-      }
-      fb.style.display = 'flex';
-      fb.innerHTML = `<div style="font-size:13px;color:#555;font-weight:600">Ticket Code</div>
-        <div style="font-size:22px;font-weight:800;letter-spacing:.2em;font-family:monospace;color:#000">${shortCode}</div>`;
-    };
+    // Render QR using qrcodejs (browser-native, no canvas package dependency)
+    const qrContainer = document.getElementById('tvQrContainer');
+    const qrSize      = Math.max(180, Math.min(window.innerWidth - 112, 220));
+    qrContainer.innerHTML = '';
 
     try {
-      if (typeof QRCode !== 'undefined' && typeof QRCode.toDataURL === 'function') {
-        QRCode.toDataURL(qrPayload, {
-          width:                qrSize,
-          margin:               2,
-          color:                { dark: '#000000', light: '#FFFFFF' },
-          errorCorrectionLevel: 'M',
-        }, (err, url) => {
-          if (err || !url) { showCodeFallback(); return; }
-          qrImg.src            = url;
-          qrImg.width          = qrSize;
-          qrImg.height         = qrSize;
-          qrImg.style.display  = 'block';
-          canvas.style.display = 'none';
-          const fb = document.getElementById('tvQrFallback');
-          if (fb) fb.style.display = 'none';
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(qrContainer, {
+          text:         qrPayload,
+          width:        qrSize,
+          height:       qrSize,
+          colorDark:    '#000000',
+          colorLight:   '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M,
         });
       } else {
-        showCodeFallback();
+        qrContainer.innerHTML = `<div style="width:${qrSize}px;height:${qrSize}px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#f5f5f5;border-radius:8px"><div style="font-size:12px;color:#555;font-weight:600">Ticket Code</div><div style="font-size:20px;font-weight:800;letter-spacing:.18em;font-family:monospace;color:#000">${shortCode}</div></div>`;
       }
     } catch(e) {
       console.error('[QR]', e);
-      showCodeFallback();
+      qrContainer.innerHTML = `<div style="width:${qrSize}px;height:${qrSize}px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#f5f5f5;border-radius:8px"><div style="font-size:12px;color:#555;font-weight:600">Ticket Code</div><div style="font-size:20px;font-weight:800;letter-spacing:.18em;font-family:monospace;color:#000">${shortCode}</div></div>`;
     }
-
-    // Apple Wallet — iOS only (pkpass format)
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    document.getElementById('tvWalletWrap').style.display = isIOS ? 'block' : 'none';
 
     // Refund button — show only to event host for confirmed paid tickets
     const refundBtn = document.getElementById('tvRefundBtn');
