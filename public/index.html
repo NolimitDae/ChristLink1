@@ -3266,6 +3266,12 @@ button, a, [onclick],
         <label class="field-label">Email Address</label>
         <input type="email" id="authEmail" class="field" placeholder="you@example.com" autocomplete="email" enterkeyhint="go" inputmode="email"
           onkeydown="if(event.key==='Enter')sendOtp()">
+        <div id="tosGroup" style="display:none;margin:14px 0 4px">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--muted2);line-height:1.4">
+            <input type="checkbox" id="tosCheck" style="margin-top:2px;accent-color:var(--gold);width:16px;height:16px;flex-shrink:0">
+            <span>I have read and agree to the <button type="button" onclick="showFooterPage('terms')" style="background:none;border:none;padding:0;color:var(--gold);font-size:13px;font-weight:600;cursor:pointer;text-decoration:underline">Terms of Service</button></span>
+          </label>
+        </div>
         <div class="error-msg" id="err-email"></div>
         <button class="btn btn-gold" id="sendOtpBtn" onclick="sendOtp()">Send Verification Code →</button>
       </div>
@@ -4785,6 +4791,7 @@ function setAuthMode(mode) {
   document.getElementById('tab-signin').classList.toggle('active', mode === 'signin');
   document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
   document.getElementById('nameGroup').style.display = mode === 'signup' ? 'block' : 'none';
+  document.getElementById('tosGroup').style.display  = mode === 'signup' ? 'block' : 'none';
   document.getElementById('authTitle').textContent = mode === 'signup' ? 'Join ChristLink' : 'Welcome Back';
   clearErr('err-email');
 }
@@ -4803,6 +4810,9 @@ async function sendOtp() {
   clearErr('err-email');
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     showErr('err-email','Please enter a valid email address.'); return;
+  }
+  if (authMode === 'signup' && !document.getElementById('tosCheck').checked) {
+    showErr('err-email','Please agree to the Terms of Service to continue.'); return;
   }
   const btn = document.getElementById('sendOtpBtn');
   btn.disabled = true;
