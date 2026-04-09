@@ -1461,12 +1461,13 @@ select.field {
 /* Hobby chips */
 .prof-hobbies-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .prof-hobby-chip{
-  display:inline-flex;align-items:center;gap:5px;
+  display:inline-flex;align-items:center;gap:8px;
   background:var(--surface3);border:1px solid var(--border2);
   border-radius:999px;padding:6px 13px;
   font-size:12px;font-weight:600;color:var(--text);
   transition:background .18s;
 }
+.prof-hobby-chip svg{flex-shrink:0;display:block}
 /* Connect pills */
 .prof-connect-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
 .prof-connect-pill{
@@ -3032,6 +3033,24 @@ button, a, [onclick],
         <div class="prof-connect-grid" id="profConnectGrid"></div>
       </div>
 
+      <!-- Prayer Request -->
+      <div class="prof-section" id="profPrayerSection" style="display:none">
+        <div class="prof-section-title">
+          <svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M10 22 L7 12 C6.5 10 7.5 8 9 8 C10 8 11 8.5 11.5 9.5 L14 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 22 L25 12 C25.5 10 24.5 8 23 8 C22 8 21 8.5 20.5 9.5 L18 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 22 C10 25 12.5 27 16 27 C19.5 27 22 25 22 22 L22 16 C22 14.5 21 13.5 19.5 13.5 L18 16 L16 18 L14 16 L12.5 13.5 C11 13.5 10 14.5 10 16 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>
+          Prayer Request
+        </div>
+        <div style="font-size:14px;line-height:1.7;color:var(--text)" id="profPrayerText"></div>
+      </div>
+
+      <!-- Latest Testimony -->
+      <div class="prof-section" id="profTestimonySection" style="display:none">
+        <div class="prof-section-title">
+          <svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M16 4 L19 12 L28 12 L21 18 L23.5 26 L16 21 L8.5 26 L11 18 L4 12 L13 12 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>
+          Latest Testimony
+        </div>
+        <div style="font-size:14px;line-height:1.7;color:var(--text)" id="profTestimonyText"></div>
+      </div>
+
       <!-- Hosted Events preview -->
       <div id="profHostedEventsSection" style="display:none;margin-bottom:12px">
         <div class="prof-section-header">
@@ -3563,6 +3582,26 @@ button, a, [onclick],
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px"><svg width="14" height="14" viewBox="0 0 32 32" fill="none" style="margin-right:5px;vertical-align:middle"><path d="M6 14 L6 12 C6 10 8 9 10 10 L14 12 L18 10 C20 9 22 10 22 12 L22 14" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M4 14 L28 14 L26 22 L6 22 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="16" y1="16" x2="16" y2="20" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>Open to Connect</div>
       <div class="connect-tags-grid" id="epConnectTags"></div>
 
+      <!-- PRAYER REQUEST -->
+      <div style="margin-top:20px">
+        <div class="edit-section-label" style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">
+          <svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M10 22 L7 12 C6.5 10 7.5 8 9 8 C10 8 11 8.5 11.5 9.5 L14 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 22 L25 12 C25.5 10 24.5 8 23 8 C22 8 21 8.5 20.5 9.5 L18 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 22 C10 25 12.5 27 16 27 C19.5 27 22 25 22 22 L22 16 C22 14.5 21 13.5 19.5 13.5 L18 16 L16 18 L14 16 L12.5 13.5 C11 13.5 10 14.5 10 16 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>
+          Prayer Request
+        </div>
+        <textarea id="epPrayerRequest" class="field" rows="3" maxlength="400" placeholder="Share a prayer request with the community…" oninput="document.getElementById('epPrayerCharCount').textContent=this.value.length+'/400'" style="resize:vertical"></textarea>
+        <div id="epPrayerCharCount" style="font-size:11px;color:var(--muted);text-align:right;margin-top:3px">0/400</div>
+      </div>
+
+      <!-- TESTIMONY -->
+      <div style="margin-top:16px">
+        <div class="edit-section-label" style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">
+          <svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M16 4 L19 12 L28 12 L21 18 L23.5 26 L16 21 L8.5 26 L11 18 L4 12 L13 12 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>
+          Latest Testimony
+        </div>
+        <textarea id="epTestimony" class="field" rows="3" maxlength="600" placeholder="Share what God has done in your life…" oninput="document.getElementById('epTestimonyCharCount').textContent=this.value.length+'/600'" style="resize:vertical"></textarea>
+        <div id="epTestimonyCharCount" style="font-size:11px;color:var(--muted);text-align:right;margin-top:3px">0/600</div>
+      </div>
+
       <div class="error-msg" id="epErr"></div>
       <button class="btn btn-gold" id="epSaveBtn" onclick="saveProfile()" style="margin-top:18px">Save Changes</button>
     </div>
@@ -3916,6 +3955,27 @@ button, a, [onclick],
           Open to Connect
         </div>
         <div class="connect-tags-display" id="pubConnectTags"></div>
+      </div>
+
+      <!-- Prayer Request -->
+      <div class="pub-section" id="pubPrayerSection" style="display:none">
+        <div class="pub-section-title">
+          <svg width="12" height="12" viewBox="0 0 32 32" fill="none" style="margin-right:5px"><path d="M10 22 L7 12 C6.5 10 7.5 8 9 8 C10 8 11 8.5 11.5 9.5 L14 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 22 L25 12 C25.5 10 24.5 8 23 8 C22 8 21 8.5 20.5 9.5 L18 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 22 C10 25 12.5 27 16 27 C19.5 27 22 25 22 22 L22 16 C22 14.5 21 13.5 19.5 13.5 L18 16 L16 18 L14 16 L12.5 13.5 C11 13.5 10 14.5 10 16 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>
+          Prayer Request
+        </div>
+        <div style="font-size:14px;line-height:1.7;color:var(--text);margin-bottom:10px" id="pubPrayerText"></div>
+        <button class="btn btn-outline btn-sm" id="pubPrayingBtn" onclick="togglePrayerSupport()" style="display:none">
+          🙏 Praying for you · <span id="pubPrayerCount">0</span>
+        </button>
+      </div>
+
+      <!-- Latest Testimony -->
+      <div class="pub-section" id="pubTestimonySection" style="display:none">
+        <div class="pub-section-title">
+          <svg width="12" height="12" viewBox="0 0 32 32" fill="none" style="margin-right:5px"><path d="M16 4 L19 12 L28 12 L21 18 L23.5 26 L16 21 L8.5 26 L11 18 L4 12 L13 12 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>
+          Latest Testimony
+        </div>
+        <div style="font-size:14px;line-height:1.7;color:var(--text)" id="pubTestimonyText"></div>
       </div>
 
       <!-- Hosted Events -->
@@ -4279,16 +4339,18 @@ const LOGO_FULL = `<div style="text-align:center">
 
 const ICONS = {
   openToConnect:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 20 C5 14 9 10 14 10 C17 10 19 11.5 20.5 13.5" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="7" r="3" stroke="#C9A84C" stroke-width="2"/><path d="M18 20 C18 17 20 15 23 15 C26 15 28 17 28 20 L28 22 L18 22 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="23" cy="11" r="2.5" stroke="#C9A84C" stroke-width="2"/><path d="M9 20 L9 24 L19 24" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
-  prayerPartners:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 6 L10 18 C10 21 12.5 23 16 23 C19.5 23 22 21 22 18 L22 6" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M10 10 C10 10 8 9 7 11 C6 13 7 15 9 15" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M22 10 C22 10 24 9 25 11 C26 13 25 15 23 15" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M13 6 C13 4.3 14.3 3 16 3 C17.7 3 19 4.3 19 6" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M13 27 L16 23 L19 27" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="1" x2="16" y2="3" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="22" y1="3" x2="21" y2="4.5" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="10" y1="3" x2="11" y2="4.5" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  prayerPartners:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 22 L7 12 C6.5 10 7.5 8 9 8 C10 8 11 8.5 11.5 9.5 L14 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 22 L25 12 C25.5 10 24.5 8 23 8 C22 8 21 8.5 20.5 9.5 L18 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 22 C10 25 12.5 27 16 27 C19.5 27 22 25 22 22 L22 16 C22 14.5 21 13.5 19.5 13.5 L18 16 L16 18 L14 16 L12.5 13.5 C11 13.5 10 14.5 10 16 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>`,
   bibleStudy:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6 C6 6 10 5 16 7 C22 5 26 6 26 6 L26 26 C26 26 22 25 16 27 C10 25 6 26 6 26 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M16 7 L16 27" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M11 12 L14 12" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><path d="M11 15 L14 15" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="21" y1="9" x2="21" y2="15" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="11" x2="23" y2="11" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
   meetupAtEvents:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="9" r="3" stroke="#C9A84C" stroke-width="2"/><circle cx="21" cy="9" r="3" stroke="#C9A84C" stroke-width="2"/><path d="M5 24 C5 19 7.5 15 11 15" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M27 24 C27 19 24.5 15 21 15" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M13 24 C13 20 14.5 17 16 17 C17.5 17 19 20 19 24" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="13" r="3" stroke="#C9A84C" stroke-width="2"/><path d="M14 27 C14.5 25.5 15.2 25 16 25 C16.8 25 17.5 25.5 18 27" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  worshipTeam:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4 L20 22" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M20 4 L28 7 L28 14 L20 11 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="17" cy="22" r="3" stroke="#C9A84C" stroke-width="2"/><path d="M4 8 Q7 5 8 10 Q9 15 6 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M4 5 Q9 1 10 10 Q11 18 5 20" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`,
+  worshipTeam:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="12" y="4" width="8" height="14" rx="4" stroke="#C9A84C" stroke-width="2"/><path d="M8 16 C8 22 24 22 24 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="22" x2="16" y2="28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="28" x2="21" y2="28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
   volunteering:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 14 L6 12 C6 10 8 9 10 10 L14 12 L18 10 C20 9 22 10 22 12 L22 14" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M4 14 L28 14 L26 22 L6 22 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="16" y1="16" x2="16" y2="20" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="18" x2="18" y2="18" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M10 22 L10 26 M22 22 L22 26" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
   justChatting:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 6 C5 5 6 4 7 4 L22 4 C23 4 24 5 24 6 L24 16 C24 17 23 18 22 18 L14 18 L9 23 L9 18 L7 18 C6 18 5 17 5 16 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M14 20 C14 19 15 18.5 16 18.5 L25 18.5 C26 18.5 27 19.5 27 20.5 L27 26 L24 24 L16 24 C15 24 14 23 14 22 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="11" cy="11" r="1" fill="#C9A84C"/><circle cx="15" cy="11" r="1" fill="#C9A84C"/><circle cx="19" cy="11" r="1" fill="#C9A84C"/></svg>`,
   dailyVerse:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 5 C7 5 11 4 16 6 C21 4 25 5 25 5 L25 24 C25 24 21 23 16 25 C11 23 7 24 7 24 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M16 6 L16 25" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="1" x2="16" y2="3.5" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="20" y1="2" x2="19" y2="4" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="2" x2="13" y2="4" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="23" y1="4" x2="21.5" y2="5.5" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="4" x2="10.5" y2="5.5" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="20" y1="9" x2="20" y2="14" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="11" x2="22" y2="11" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
   events:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="7" width="24" height="22" rx="3" stroke="#C9A84C" stroke-width="2"/><path d="M4 13 L28 13" stroke="#C9A84C" stroke-width="2"/><line x1="10" y1="4" x2="10" y2="10" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="22" y1="4" x2="22" y2="10" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="17" x2="16" y2="22" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="13.5" y1="19.5" x2="18.5" y2="19.5" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><rect x="7" y="17" width="3" height="3" rx="0.5" stroke="#C9A84C" stroke-width="1.5"/><rect x="22" y="17" width="3" height="3" rx="0.5" stroke="#C9A84C" stroke-width="1.5"/><rect x="7" y="23" width="3" height="3" rx="0.5" stroke="#C9A84C" stroke-width="1.5"/><rect x="22" y="23" width="3" height="3" rx="0.5" stroke="#C9A84C" stroke-width="1.5"/></svg>`,
   giveSupport:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 27 C16 27 5 20 5 13 C5 9.5 7.5 7 11 7 C13 7 14.8 8 16 9.5 C17.2 8 19 7 21 7 C24.5 7 27 9.5 27 13 C27 20 16 27 16 27Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M10 23 L7 26 C6 27 7 29 8.5 28 L20 22" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M20 18 L23 16 C24.5 15 26 16.5 25 18 L20 22 L10 23" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   community:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="8" r="3.5" stroke="#C9A84C" stroke-width="2"/><circle cx="7" cy="13" r="3" stroke="#C9A84C" stroke-width="2"/><circle cx="25" cy="13" r="3" stroke="#C9A84C" stroke-width="2"/><path d="M10 27 C10 22 12.5 19 16 19 C19.5 19 22 22 22 27" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M4 27 C4 23 5.5 20.5 7 19.5" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M28 27 C28 23 26.5 20.5 25 19.5" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M14 5 C14 3.5 15 3 16 3.5 C17 3 18 3.5 18 5 C18 7 16 8.5 16 8.5 C16 8.5 14 7 14 5Z" stroke="#C9A84C" stroke-width="1.5" fill="none"/></svg>`,
+  fellowship:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="7" r="3" stroke="#C9A84C" stroke-width="2"/><circle cx="7" cy="18" r="3" stroke="#C9A84C" stroke-width="2"/><circle cx="25" cy="18" r="3" stroke="#C9A84C" stroke-width="2"/><path d="M16 10 L16 14" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M9.5 20 L13.5 15.5" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><path d="M22.5 20 L18.5 15.5" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><path d="M4 27 C4 23 5.5 21 7 21" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M28 27 C28 23 26.5 21 25 21" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M11 27 C11 23.5 13 22 16 22 C19 22 21 23.5 21 27" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  newFriends:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="9" r="4" stroke="#C9A84C" stroke-width="2"/><path d="M4 27 C4 21.5 7 18 11 18" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M16 27 C16 22.5 18 19.5 22 19.5 C26 19.5 28 22.5 28 27" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><circle cx="22" cy="14" r="3.5" stroke="#C9A84C" stroke-width="2"/><line x1="22" y1="8" x2="22" y2="5" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="19.5" y1="6.5" x2="24.5" y2="6.5" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
   myProfile:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="11" r="5" stroke="#C9A84C" stroke-width="2"/><path d="M7 27 C7 21.5 11 17 16 17 C21 17 25 21.5 25 27" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="24" r="5" fill="#0a0a14" stroke="#C9A84C" stroke-width="1.5"/><path d="M24 20 C22 20 20.5 21.5 20.5 23 C20.5 25 24 28 24 28 C24 28 27.5 25 27.5 23 C27.5 21.5 26 20 24 20Z" stroke="#C9A84C" stroke-width="1.5" fill="none"/><circle cx="24" cy="23" r="1" fill="#C9A84C"/></svg>`,
   notifications:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 4 C11 4 8 8 8 13 L8 20 L5 23 L27 23 L24 20 L24 13 C24 8 21 4 16 4Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M13 23 C13 24.7 14.3 26 16 26 C17.7 26 19 24.7 19 23" stroke="#C9A84C" stroke-width="2"/><circle cx="23" cy="7" r="4" fill="#C9A84C"/></svg>`,
   bible:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 5 C6 5 10 4 16 6 C22 4 26 5 26 5 L26 25 C26 25 22 24 16 26 C10 24 6 25 6 25 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M16 6 L16 26" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><circle cx="22" cy="22" r="4" fill="#0a0a14" stroke="#C9A84C" stroke-width="2"/><line x1="25" y1="25" x2="28" y2="28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="20.5" x2="21" y2="23.5" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="19.5" y1="22" x2="22.5" y2="22" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
@@ -4406,8 +4468,10 @@ const CONNECT_TAGS = [
   { id: 'worship',    iconName: 'worshipTeam',     label: 'Worship Team' },
   { id: 'volunteer',  iconName: 'volunteering',    label: 'Volunteering' },
   { id: 'chat',       iconName: 'justChatting',    label: 'Just Chatting' },
-  { id: 'mentorship', iconName: 'community',       label: 'Mentorship' },
-  { id: 'family',     iconName: 'giveSupport',     label: 'Family & Parenting' },
+  { id: 'mentorship',   iconName: 'community',       label: 'Mentorship' },
+  { id: 'family',       iconName: 'giveSupport',     label: 'Family & Parenting' },
+  { id: 'fellowship',   iconName: 'fellowship',      label: 'Fellowship' },
+  { id: 'new-friends',  iconName: 'newFriends',      label: 'New Friends' },
 ];
 
 const AVATAR_COLORS = [
@@ -5787,13 +5851,13 @@ const PRESET_HOBBIES = [
 ];
 
 const HOBBY_ICONS = {
-  'roller skating': `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><ellipse cx="16" cy="22" rx="10" ry="5" stroke="#C9A84C" stroke-width="2"/><path d="M10 22 L12 14 L20 14 L22 22" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><circle cx="11" cy="27" r="2" stroke="#C9A84C" stroke-width="1.5"/><circle cx="21" cy="27" r="2" stroke="#C9A84C" stroke-width="1.5"/><path d="M13 14 L15 9 L19 9" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'roller skating': `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M8 19 L8 11 Q8 8 11 8 L17 8 Q20 8 21 10 L23 15 L23 19" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><rect x="6" y="19" width="19" height="3" rx="1" stroke="#C9A84C" stroke-width="1.5"/><circle cx="11" cy="25.5" r="3" stroke="#C9A84C" stroke-width="2"/><circle cx="21" cy="25.5" r="3" stroke="#C9A84C" stroke-width="2"/></svg>`,
   'swimming':        `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M4 20 C7 17 9 23 12 20 C15 17 17 23 20 20 C23 17 25 23 28 20" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M4 25 C7 22 9 28 12 25 C15 22 17 28 20 25 C23 22 25 28 28 25" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><circle cx="22" cy="10" r="3" stroke="#C9A84C" stroke-width="2"/><path d="M10 15 L16 10 L22 13" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   'hiking':          `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M6 28 L12 16 L16 20 L22 10 L28 28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="7" r="3" stroke="#C9A84C" stroke-width="1.5"/><path d="M8 28 L8 22" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
   'reading':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M6 6 C6 6 10 5 16 8 C22 5 26 6 26 6 L26 26 C26 26 22 25 16 28 C10 25 6 26 6 26 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="16" y1="8" x2="16" y2="28" stroke="#C9A84C" stroke-width="1.5"/></svg>`,
-  'praying':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M12 6 L12 18 C12 21 14 23 16 23 C18 23 20 21 20 18 L20 6" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M10 10 L12 10 M20 10 L22 10" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><path d="M13 27 C13 25 16 24 16 24 C16 24 19 25 19 27" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'praying':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M10 22 L7 12 C6.5 10 7.5 8 9 8 C10 8 11 8.5 11.5 9.5 L14 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 22 L25 12 C25.5 10 24.5 8 23 8 C22 8 21 8.5 20.5 9.5 L18 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 22 C10 25 12.5 27 16 27 C19.5 27 22 25 22 22 L22 16 C22 14.5 21 13.5 19.5 13.5 L18 16 L16 18 L14 16 L12.5 13.5 C11 13.5 10 14.5 10 16 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>`,
   'bible study':     `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><rect x="5" y="5" width="22" height="26" rx="2" stroke="#C9A84C" stroke-width="2"/><path d="M5 10 L27 10" stroke="#C9A84C" stroke-width="1.5"/><rect x="14" y="3" width="4" height="28" rx="1" fill="#C9A84C" opacity="0.18"/><line x1="9" y1="16" x2="23" y2="16" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="21" x2="19" y2="21" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  'worship':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M16 6 C12 6 8 9 8 13 C8 19 16 26 16 26 C16 26 24 19 24 13 C24 9 20 6 16 6Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><rect x="14.5" y="10" width="3" height="10" rx="1" fill="#C9A84C"/><rect x="11" y="13.5" width="10" height="3" rx="1" fill="#C9A84C"/></svg>`,
+  'worship':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><rect x="12" y="4" width="8" height="14" rx="4" stroke="#C9A84C" stroke-width="2"/><path d="M8 16 C8 22 24 22 24 16" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="22" x2="16" y2="28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="28" x2="21" y2="28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
   'volunteering':    `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M16 7 C14 4 9 4 9 9 C9 13 13 16 16 19 C19 16 23 13 23 9 C23 4 18 4 16 7Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M10 22 L8 28 L16 25 L24 28 L22 22" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   'mentorship':      `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><circle cx="11" cy="10" r="4" stroke="#C9A84C" stroke-width="2"/><circle cx="22" cy="8" r="3" stroke="#C9A84C" stroke-width="1.5"/><path d="M4 26 C4 21 7 19 11 19 C15 19 18 21 18 26" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M20 17 C22 16 28 17 28 22" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   'fitness':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><rect x="3" y="14" width="4" height="4" rx="1" stroke="#C9A84C" stroke-width="1.5"/><rect x="25" y="14" width="4" height="4" rx="1" stroke="#C9A84C" stroke-width="1.5"/><rect x="7" y="11" width="4" height="10" rx="1" stroke="#C9A84C" stroke-width="1.5"/><rect x="21" y="11" width="4" height="10" rx="1" stroke="#C9A84C" stroke-width="1.5"/><line x1="11" y1="16" x2="21" y2="16" stroke="#C9A84C" stroke-width="2.5" stroke-linecap="round"/></svg>`,
@@ -5806,7 +5870,7 @@ const HOBBY_ICONS = {
   'fellowship':      `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><circle cx="10" cy="10" r="4" stroke="#C9A84C" stroke-width="2"/><circle cx="22" cy="10" r="4" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="22" r="4" stroke="#C9A84C" stroke-width="2"/><line x1="14" y1="10" x2="18" y2="10" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="14" x2="14" y2="18" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><line x1="20" y1="14" x2="18" y2="18" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   'community outreach':`<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="9" r="4" stroke="#C9A84C" stroke-width="2"/><path d="M8 28 C8 22 11 19 16 19 C21 19 24 22 24 28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M24 12 L28 10 M24 14 L28 16" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   'serving':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M6 18 L26 18" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M10 18 C10 13 13 10 16 10 C19 10 22 13 22 18" stroke="#C9A84C" stroke-width="2"/><line x1="16" y1="6" x2="16" y2="10" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/><path d="M9 22 L9 25 C9 26 10 27 11 27 L21 27 C22 27 23 26 23 25 L23 22" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  'resting':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M6 20 C6 14 10 9 16 9 C22 9 26 14 26 20" stroke="#C9A84C" stroke-width="2"/><path d="M4 20 L28 20" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><path d="M8 20 L8 24 L24 24 L24 20" stroke="#C9A84C" stroke-width="1.5"/><path d="M13 9 C13 7 14 5 16 5 C13 5 11 3 11 5" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'resting':         `<svg width="13" height="13" viewBox="0 0 32 32" fill="none"><rect x="3" y="18" width="26" height="8" rx="2" stroke="#C9A84C" stroke-width="2"/><path d="M3 22 L3 15 C3 13.5 4 13 5 13 L16 13 L16 22" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M16 13 L16 18 C16 18 19 18 22 18 C24 18 26 16.5 26 14.5 C26 12.5 24.5 11 22 11 L18 11 C17 11 16 11.5 16 13 Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><line x1="3" y1="26" x2="3" y2="29" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/><line x1="29" y1="26" x2="29" y2="29" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>`,
 };
 
 function hobbyIcon(name) {
@@ -5965,6 +6029,26 @@ function renderProfilePage() {
     connectSection.style.display = 'block';
   } else {
     connectSection.style.display = 'none';
+  }
+
+  // ── Prayer Request ────────────────────────────────────────
+  const prayerSection = document.getElementById('profPrayerSection');
+  const prayerText    = document.getElementById('profPrayerText');
+  if (profileData?.prayer_request) {
+    prayerText.textContent = profileData.prayer_request;
+    prayerSection.style.display = 'block';
+  } else {
+    prayerSection.style.display = 'none';
+  }
+
+  // ── Latest Testimony ──────────────────────────────────────
+  const testimonySection = document.getElementById('profTestimonySection');
+  const testimonyText    = document.getElementById('profTestimonyText');
+  if (profileData?.testimony) {
+    testimonyText.textContent = profileData.testimony;
+    testimonySection.style.display = 'block';
+  } else {
+    testimonySection.style.display = 'none';
   }
 
   // ── About (bio fallback) ──────────────────────────────────
@@ -6153,7 +6237,7 @@ async function openPublicProfile(userId) {
   const content = document.getElementById('pubProfContent');
   const errEl   = document.getElementById('pubProfErr');
   loading.style.display = 'block'; content.style.display = 'none'; errEl.style.display = 'none';
-  ['pubBibleSection','pubHotTakesSection','pubHobbiesSection','pubConnectSection'].forEach(id => {
+  ['pubBibleSection','pubHotTakesSection','pubHobbiesSection','pubConnectSection','pubPrayerSection','pubTestimonySection'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = 'none';
   });
   document.getElementById('pubProfBannerImg').style.display = 'none';
@@ -6257,6 +6341,25 @@ async function openPublicProfile(userId) {
           .join('');
         document.getElementById('pubConnectSection').style.display = 'block';
       }
+      // Prayer Request
+      if (prof.prayer_request) {
+        document.getElementById('pubPrayerText').textContent = prof.prayer_request;
+        const supporters = Array.isArray(prof.prayer_supporters) ? prof.prayer_supporters : [];
+        document.getElementById('pubPrayerCount').textContent = supporters.length;
+        const prayBtn = document.getElementById('pubPrayingBtn');
+        if (prayBtn && currentUser) {
+          prayBtn.style.display = 'inline-flex';
+          const isSupporting = supporters.includes(currentUser.id);
+          prayBtn.innerHTML = `🙏 Praying for you · <span id="pubPrayerCount">${supporters.length}</span>`;
+          prayBtn.style.borderColor = isSupporting ? 'var(--gold)' : '';
+        }
+        document.getElementById('pubPrayerSection').style.display = 'block';
+      }
+      // Latest Testimony
+      if (prof.testimony) {
+        document.getElementById('pubTestimonyText').textContent = prof.testimony;
+        document.getElementById('pubTestimonySection').style.display = 'block';
+      }
     }
 
     // Hosted events list
@@ -6293,6 +6396,28 @@ function _updateFollowBtn(isFollowing) {
     btn.style.cssText = 'width:100%;height:40px;font-size:14px;font-weight:700;border-radius:var(--r-full);background:var(--gold);border:none;color:#000;cursor:pointer';
   }
   btn.dataset.following = isFollowing ? '1' : '0';
+}
+
+async function togglePrayerSupport() {
+  if (!currentUser) { openSheet('authSheet'); return; }
+  const targetId = _pubProfUserId;
+  if (!targetId || targetId === currentUser.id) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/profile/prayer-support`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${currentSession?.access_token}` },
+      body: JSON.stringify({ target_user_id: targetId }),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || 'failed');
+    const countEl = document.getElementById('pubPrayerCount');
+    if (countEl) countEl.textContent = d.prayer_supporters.length;
+    const btn = document.getElementById('pubPrayingBtn');
+    if (btn) btn.style.borderColor = d.supporting ? 'var(--gold)' : '';
+    showToast(d.supporting ? 'Praying for them! 🙏' : 'Prayer support removed', 'success');
+  } catch {
+    showToast('Could not update. Try again.', 'error');
+  }
 }
 
 async function toggleFollow() {
@@ -6813,6 +6938,13 @@ function populateEditProfile() {
   // Render hobby preset chips
   renderHobbyChipsEdit(profileData?.hobbies || '');
   renderConnectTagsEdit(profileData?.connect_tags || []);
+  // Prayer Request + Testimony
+  const pr = profileData?.prayer_request || '';
+  const ts = profileData?.testimony || '';
+  document.getElementById('epPrayerRequest').value = pr;
+  document.getElementById('epPrayerCharCount').textContent = pr.length + '/400';
+  document.getElementById('epTestimony').value = ts;
+  document.getElementById('epTestimonyCharCount').textContent = ts.length + '/600';
   // Banner
   const bannerUrl = profileData?.banner_url || null;
   window._epBannerUrl = bannerUrl;
@@ -6984,6 +7116,8 @@ async function saveProfile() {
     hot_takes:             document.getElementById('epHotTakes').value.trim()   || null,
     hobbies:               getSelectedHobbies() || null,
     connect_tags:          getSelectedConnectTags(),
+    prayer_request:        document.getElementById('epPrayerRequest').value.trim() || null,
+    testimony:             document.getElementById('epTestimony').value.trim()     || null,
   };
 
   try {

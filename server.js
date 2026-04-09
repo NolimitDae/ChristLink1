@@ -266,7 +266,7 @@ app.get('/api/profile/public/:userId', async (req, res) => {
 
     const [profileRes, followersRes, followingRes] = await Promise.all([
       supabaseAdmin.from('profiles')
-        .select('id, full_name, avatar_url, avatar_color, banner_url, bio, city, role, created_at, instagram_url, facebook_url, tiktok_url, bible_verse, bible_verse_reference, bible_version, hot_takes, hobbies, connect_tags')
+        .select('id, full_name, avatar_url, avatar_color, avatar_ring_color, banner_url, bio, city, role, created_at, instagram_url, facebook_url, tiktok_url, bible_verse, bible_verse_reference, bible_version, hot_takes, hobbies, connect_tags, prayer_request, testimony, prayer_supporters')
         .eq('id', targetId).single(),
       supabaseAdmin.from('user_follows').select('*', { count: 'exact', head: true }).eq('following_id', targetId),
       supabaseAdmin.from('user_follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetId),
@@ -335,7 +335,7 @@ app.patch('/api/profile', requireAuth, async (req, res) => {
     full_name, bio, city, avatar_url, avatar_color, avatar_ring_color,
     instagram_url, facebook_url, tiktok_url,
     banner_url, bible_verse, bible_verse_reference, bible_version,
-    hot_takes, hobbies, connect_tags,
+    hot_takes, hobbies, connect_tags, prayer_request, testimony,
   } = req.body;
   const updates = {};
   if (full_name               !== undefined) updates.full_name               = full_name;
@@ -354,6 +354,8 @@ app.patch('/api/profile', requireAuth, async (req, res) => {
   if (hot_takes               !== undefined) updates.hot_takes               = hot_takes;
   if (hobbies                 !== undefined) updates.hobbies                 = hobbies;
   if (connect_tags            !== undefined) updates.connect_tags            = Array.isArray(connect_tags) ? connect_tags : [];
+  if (prayer_request          !== undefined) updates.prayer_request          = prayer_request;
+  if (testimony               !== undefined) updates.testimony               = testimony;
   updates.updated_at = new Date().toISOString();
   // Try update first (profile should exist from signup trigger)
   let { data, error } = await supabaseAdmin
@@ -368,6 +370,25 @@ app.patch('/api/profile', requireAuth, async (req, res) => {
     return res.json(insert.data);
   }
   res.json(data);
+});
+
+// Toggle prayer support for another user's prayer request
+app.post('/api/profile/prayer-support', requireAuth, async (req, res) => {
+  const { target_user_id } = req.body;
+  if (!target_user_id) return res.status(400).json({ error: 'target_user_id required' });
+  if (target_user_id === req.userId) return res.status(400).json({ error: 'Cannot support your own prayer' });
+  const { data: profile } = await supabaseAdmin
+    .from('profiles').select('prayer_supporters').eq('id', target_user_id).single();
+  const supporters = Array.isArray(profile?.prayer_supporters) ? profile.prayer_supporters : [];
+  const alreadySupporting = supporters.includes(req.userId);
+  const updated = alreadySupporting
+    ? supporters.filter(id => id !== req.userId)
+    : [...supporters, req.userId];
+  const { data, error } = await supabaseAdmin
+    .from('profiles').update({ prayer_supporters: updated }).eq('id', target_user_id)
+    .select('prayer_supporters').single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ prayer_supporters: data.prayer_supporters, supporting: !alreadySupporting });
 });
 
 // Upload avatar via server (bypasses Supabase storage RLS)
