@@ -3223,6 +3223,10 @@ button, a, [onclick],
       <div class="detail-price-sub" id="detailPriceSub">Open to all</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;flex:1 1 0;min-width:0">
+      <button id="detailInviteBtn" onclick="openInviteSheet()" style="display:none;width:100%;font-size:13px;font-weight:700;color:var(--gold);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:var(--r-full);padding:11px;cursor:pointer;align-items:center;justify-content:center;gap:7px;letter-spacing:.01em">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="16" y1="11" x2="22" y2="11"/><line x1="19" y1="8" x2="19" y2="14"/></svg>
+        Send Invites
+      </button>
       <button class="detail-rsvp-btn" id="detailRsvpBtn" onclick="handleRsvp()">Reserve My Spot →</button>
       <button id="detailCancelRsvpBtn" onclick="cancelRsvp()" style="display:none;width:100%;font-size:13px;font-weight:600;color:var(--muted2);background:transparent;border:1px solid var(--border);border-radius:var(--r-full);padding:9px;cursor:pointer;transition:all .2s">Cancel RSVP</button>
     </div>
@@ -3232,6 +3236,31 @@ button, a, [onclick],
 <!-- ═══════════════════════════════════════════════════
      OVERLAYS / SHEETS
 ═══════════════════════════════════════════════════ -->
+
+<!-- INVITE FOLLOWERS SHEET -->
+<div class="sheet-overlay" id="inviteSheet" onclick="if(event.target===this)closeSheet('inviteSheet')">
+  <div class="sheet" style="max-height:88vh;display:flex;flex-direction:column;padding:0">
+    <div class="sheet-handle" style="margin:10px auto 0;flex-shrink:0"></div>
+    <div class="sheet-header" style="flex-shrink:0">
+      <div>
+        <div class="sheet-title">Send Invites</div>
+        <div id="inviteEventName" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet('inviteSheet')">×</button>
+    </div>
+    <div style="padding:0 16px 10px;flex-shrink:0">
+      <div style="position:relative">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="inviteSearchInput" type="text" placeholder="Search followers…" oninput="filterInviteList(this.value)" style="width:100%;padding:10px 12px 10px 36px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-full);font-size:14px;color:var(--text);box-sizing:border-box;outline:none">
+      </div>
+    </div>
+    <div id="inviteList" style="flex:1;overflow-y:auto;padding:0 16px 8px"></div>
+    <div style="padding:12px 16px 32px;border-top:1px solid var(--border);flex-shrink:0">
+      <div id="inviteSelectedCount" style="font-size:13px;color:var(--muted2);text-align:center;margin-bottom:10px">No followers selected</div>
+      <button id="inviteSendBtn" onclick="sendInvites()" disabled style="width:100%;height:48px;background:linear-gradient(135deg,#C9A84C,#8B6010);color:#000;font-size:15px;font-weight:700;border:none;border-radius:var(--r-full);cursor:pointer;opacity:.45;transition:opacity .2s">Send Invites</button>
+    </div>
+  </div>
+</div>
 
 <!-- ATTENDEES SHEET -->
 <div class="sheet-overlay" id="attendeesSheet" onclick="if(event.target===this)closeSheet('attendeesSheet')">
@@ -7635,6 +7664,16 @@ function viewDetail(ev) {
   // Retry once after 800ms in case auth token wasn't ready yet
   setTimeout(checkRsvpState, 800);
 
+  // Show invite button if current user is the host (retry for auth timing)
+  function checkHostInviteBtn() {
+    const inviteBtn = document.getElementById('detailInviteBtn');
+    if (!inviteBtn) return;
+    const isHost = currentUser?.id && ev.host_id && currentUser.id === ev.host_id;
+    inviteBtn.style.display = isHost ? 'flex' : 'none';
+  }
+  checkHostInviteBtn();
+  setTimeout(checkHostInviteBtn, 800);
+
   goTo('event-detail');
 }
 
@@ -9291,7 +9330,13 @@ async function openNotifSheet() {
       return;
     }
 
-    const typeIcon = { ticket_sale: '<svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M4 11 C4 9.5 5 9 6 9 L26 9 C27 9 28 9.5 28 11 C28 11 26 12 26 14 C26 16 28 17 28 17 C28 18.5 27 19 26 19 L6 19 C5 19 4 18.5 4 17 C4 17 6 16 6 14 C6 12 4 11 4 11Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>', refund_request: '<svg width="18" height="18" viewBox="0 0 32 32" fill="none"><rect x="3" y="9" width="26" height="15" rx="2" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="16.5" r="3.5" stroke="#C9A84C" stroke-width="1.5"/></svg>', refund_approved: '<svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="#4EC98C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>', refund_denied: '<svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="#E05050" stroke-width="2" stroke-linecap="round"/></svg>' };
+    const typeIcon = {
+      ticket_sale:   '<svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M4 11 C4 9.5 5 9 6 9 L26 9 C27 9 28 9.5 28 11 C28 11 26 12 26 14 C26 16 28 17 28 17 C28 18.5 27 19 26 19 L6 19 C5 19 4 18.5 4 17 C4 17 6 16 6 14 C6 12 4 11 4 11Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/></svg>',
+      refund_request: '<svg width="18" height="18" viewBox="0 0 32 32" fill="none"><rect x="3" y="9" width="26" height="15" rx="2" stroke="#C9A84C" stroke-width="2"/><circle cx="16" cy="16.5" r="3.5" stroke="#C9A84C" stroke-width="1.5"/></svg>',
+      refund_approved:'<svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="#4EC98C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      refund_denied:  '<svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="#E05050" stroke-width="2" stroke-linecap="round"/></svg>',
+      event_invite:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="16" y1="11" x2="22" y2="11"/><line x1="19" y1="8" x2="19" y2="14"/></svg>'
+    };
     list.innerHTML = notifications.map(n => {
       const ago = (() => {
         const d = Math.floor((Date.now() - new Date(n.created_at)) / 60000);
@@ -9311,6 +9356,9 @@ async function openNotifSheet() {
               <button onclick="handleRefundRequest('${n.data.refund_request_id}','approve',this)" style="padding:7px 18px;background:rgba(78,201,140,.1);color:#4EC98C;border:1px solid rgba(78,201,140,.3);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">Approve</button>
               <button onclick="handleRefundRequest('${n.data.refund_request_id}','deny',this)" style="padding:7px 18px;background:rgba(239,68,68,.07);color:#ef4444;border:1px solid rgba(239,68,68,.2);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">Deny</button>
             </div>` : ''}
+          ${n.type === 'event_invite' && n.data?.event_id ? `
+            <button onclick="viewEventFromNotif('${n.data.event_id}')" style="margin-top:9px;padding:7px 18px;background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.25);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">View Event →</button>
+          ` : ''}
         </div>
       </div>`;
     }).join('');
@@ -9351,6 +9399,113 @@ async function handleRefundRequest(requestId, action, btn) {
 document.addEventListener('click', () => {
   document.querySelectorAll('.ticket-dropdown').forEach(d => { d.style.display = 'none'; });
 });
+
+// ═══════════════════════════════════════════════════════════
+// SEND INVITES
+// ═══════════════════════════════════════════════════════════
+let _inviteFollowers = [];
+let _inviteSelected  = new Set();
+
+async function openInviteSheet() {
+  if (!currentUser) { openAuth('signin'); return; }
+  if (!selectedEvent) return;
+  _inviteSelected.clear();
+  _inviteFollowers = [];
+  const searchEl = document.getElementById('inviteSearchInput');
+  if (searchEl) searchEl.value = '';
+  const nameEl = document.getElementById('inviteEventName');
+  if (nameEl) nameEl.textContent = selectedEvent.name || '';
+  _updateInviteFooter();
+  document.getElementById('inviteList').innerHTML =
+    '<div style="text-align:center;padding:36px;color:var(--muted);font-size:14px">Loading followers…</div>';
+  openSheet('inviteSheet');
+  try {
+    const res  = await fetch(`${API_BASE}/api/followers`, {
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` }
+    });
+    const data = await res.json();
+    _inviteFollowers = data.followers || [];
+    _renderInviteList(_inviteFollowers);
+  } catch {
+    document.getElementById('inviteList').innerHTML =
+      '<div style="text-align:center;padding:36px;color:var(--muted);font-size:14px">Could not load followers.</div>';
+  }
+}
+
+function _renderInviteList(list) {
+  const el = document.getElementById('inviteList');
+  if (!list.length) {
+    el.innerHTML = '<div style="text-align:center;padding:48px 24px;color:var(--muted);font-size:14px;line-height:1.6">' +
+      (_inviteFollowers.length ? 'No followers match your search.' : 'You have no followers yet.') + '</div>';
+    return;
+  }
+  el.innerHTML = list.map(f => {
+    const sel      = _inviteSelected.has(f.id);
+    const initials = (f.full_name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const av       = f.avatar_url
+      ? `<img src="${f.avatar_url}" style="width:100%;height:100%;object-fit:cover">`
+      : initials;
+    return `<div onclick="toggleInvitee('${f.id}')" style="display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:var(--r-md);margin-bottom:2px;cursor:pointer;background:${sel ? 'rgba(201,168,76,.09)' : 'transparent'};transition:background .15s">
+      <div style="width:42px;height:42px;border-radius:50%;background:${f.avatar_color || 'linear-gradient(135deg,var(--gold),#6B4A00)'};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#0A0A0F;flex-shrink:0;overflow:hidden">${av}</div>
+      <div style="flex:1;font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.full_name || 'Unknown'}</div>
+      <div style="width:22px;height:22px;border-radius:50%;border:2px solid ${sel ? 'var(--gold)' : 'var(--border)'};background:${sel ? 'var(--gold)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">
+        ${sel ? '<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 3.5" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterInviteList(q) {
+  const filtered = q.trim()
+    ? _inviteFollowers.filter(f => (f.full_name || '').toLowerCase().includes(q.toLowerCase()))
+    : _inviteFollowers;
+  _renderInviteList(filtered);
+}
+
+function toggleInvitee(userId) {
+  _inviteSelected.has(userId) ? _inviteSelected.delete(userId) : _inviteSelected.add(userId);
+  _updateInviteFooter();
+  filterInviteList(document.getElementById('inviteSearchInput')?.value || '');
+}
+
+function _updateInviteFooter() {
+  const n       = _inviteSelected.size;
+  const countEl = document.getElementById('inviteSelectedCount');
+  const sendBtn = document.getElementById('inviteSendBtn');
+  if (countEl) countEl.textContent = n === 0 ? 'No followers selected' : `${n} follower${n > 1 ? 's' : ''} selected`;
+  if (sendBtn) { sendBtn.disabled = n === 0; sendBtn.style.opacity = n === 0 ? '.45' : '1'; }
+}
+
+async function sendInvites() {
+  if (!_inviteSelected.size || !selectedEvent) return;
+  const btn = document.getElementById('inviteSendBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const res  = await fetch(`${API_BASE}/api/events/${selectedEvent.id}/invite`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
+      body:    JSON.stringify({ followerIds: [..._inviteSelected] })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to send invites');
+    closeSheet('inviteSheet');
+    showToast(`Invited ${data.sent} follower${data.sent > 1 ? 's' : ''}!`, 'success');
+  } catch (e) {
+    showToast(e.message || 'Could not send invites', 'error');
+    btn.disabled = false; btn.textContent = orig; btn.style.opacity = '1';
+  }
+}
+
+async function viewEventFromNotif(eventId) {
+  closeSheet('notifSheet');
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${eventId}`);
+    const ev  = await res.json();
+    if (ev?.id) { viewDetail(ev); goTo('event-detail'); }
+    else showToast('Event not found', 'error');
+  } catch { showToast('Could not load event', 'error'); }
+}
 
 // ═══════════════════════════════════════════════════════════
 // TICKET SCANNER — FOR HOSTS

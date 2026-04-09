@@ -310,6 +310,25 @@ app.delete('/api/follow/:userId', requireAuth, async (req, res) => {
   res.json({ following: false });
 });
 
+// GET /api/followers — current user's followers list (for invite picker)
+app.get('/api/followers', requireAuth, async (req, res) => {
+  try {
+    const { data: follows, error } = await supabaseAdmin
+      .from('user_follows')
+      .select('follower_id')
+      .eq('following_id', req.userId);
+    if (error) return res.status(500).json({ error: error.message });
+    if (!follows || follows.length === 0) return res.json({ followers: [] });
+    const ids = follows.map(f => f.follower_id);
+    const { data: profiles, error: pErr } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name, avatar_url, avatar_color')
+      .in('id', ids);
+    if (pErr) return res.status(500).json({ error: pErr.message });
+    res.json({ followers: profiles || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // POST /api/upload-banner — same dataUrl pattern as upload-avatar
 app.post('/api/upload-banner', requireAuth, async (req, res) => {
   const { dataUrl } = req.body;
@@ -1926,6 +1945,35 @@ app.patch('/api/notifications/read-all', requireAuth, async (req, res) => {
   await supabaseAdmin.from('notifications')
     .update({ read: true }).eq('user_id', req.userId).eq('read', false);
   res.json({ success: true });
+});
+
+// POST /api/events/:eventId/invite — host sends event invites to selected followers
+app.post('/api/events/:eventId/invite', requireAuth, async (req, res) => {
+  const { eventId } = req.params;
+  const { followerIds } = req.body;
+  if (!Array.isArray(followerIds) || followerIds.length === 0)
+    return res.status(400).json({ error: 'No followers selected.' });
+  if (followerIds.length > 100)
+    return res.status(400).json({ error: 'Cannot invite more than 100 people at once.' });
+  try {
+    const { data: ev, error } = await supabaseAdmin
+      .from('events').select('id, name, host_id').eq('id', eventId).single();
+    if (error || !ev) return res.status(404).json({ error: 'Event not found.' });
+    if (ev.host_id !== req.userId) return res.status(403).json({ error: 'Only the host can send invites.' });
+    const { data: host } = await supabaseAdmin
+      .from('profiles').select('full_name').eq('id', req.userId).single();
+    const hostName = host?.full_name || 'Someone';
+    await supabaseAdmin.from('notifications').insert(
+      followerIds.map(uid => ({
+        user_id: uid,
+        type: 'event_invite',
+        title: `${hostName} invited you to an event`,
+        body: ev.name,
+        data: { event_id: ev.id, event_name: ev.name }
+      }))
+    );
+    res.json({ sent: followerIds.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // GET /api/refund-requests — host fetches refund requests for their events
