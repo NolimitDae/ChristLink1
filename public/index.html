@@ -7935,6 +7935,12 @@ async function processPayment() {
       document.getElementById('detailRsvpBtn').textContent = 'Tickets Purchased!';
       document.getElementById('detailRsvpBtn').classList.add('confirmed');
       document.getElementById('detailCancelRsvpBtn').style.display = 'none';
+      // Update remaining count immediately
+      if (selectedEvent?.ticket_types?.[selectedTicketTypeIdx]) {
+        selectedEvent.ticket_types[selectedTicketTypeIdx].sold =
+          (selectedEvent.ticket_types[selectedTicketTypeIdx].sold || 0) + currentQty;
+        renderTicketTypeSelector(selectedEvent.ticket_types);
+      }
       fetchMyTickets();
       const whoGoingEl = document.getElementById('detailWhoGoing');
       const countEl    = document.getElementById('detailAttendanceCount');
@@ -7970,6 +7976,12 @@ async function processPayment() {
       document.getElementById('detailRsvpBtn').textContent = 'Tickets Purchased!';
       document.getElementById('detailRsvpBtn').classList.add('confirmed');
       document.getElementById('detailCancelRsvpBtn').style.display = 'none';
+      // Update remaining count immediately
+      if (selectedEvent?.ticket_types?.[selectedTicketTypeIdx]) {
+        selectedEvent.ticket_types[selectedTicketTypeIdx].sold =
+          (selectedEvent.ticket_types[selectedTicketTypeIdx].sold || 0) + currentQty;
+        renderTicketTypeSelector(selectedEvent.ticket_types);
+      }
       // Refresh profile ticket count + list immediately
       fetchMyTickets();
       // Re-fetch after 2.5s to catch webhook-confirmed status
