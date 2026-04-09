@@ -4453,13 +4453,49 @@ const AVATAR_COLORS = [
 
 const EVENT_TYPES = ['Worship','Bible Study','Retreat','Youth','Prayer','Fellowship','Conference','Concert','Outreach'];
 
-const VERSES = [
+const VERSES_POOL = [
   {t:'"I can do all things through Christ who strengthens me."',r:'— Philippians 4:13'},
   {t:'"For God so loved the world that he gave his one and only Son."',r:'— John 3:16'},
   {t:'"The Lord is my shepherd, I lack nothing."',r:'— Psalm 23:1'},
   {t:'"Trust in the Lord with all your heart."',r:'— Proverbs 3:5'},
   {t:'"Be still, and know that I am God."',r:'— Psalm 46:10'},
+  {t:'"The Lord your God is with you, the Mighty Warrior who saves."',r:'— Zephaniah 3:17'},
+  {t:'"I am the way and the truth and the life."',r:'— John 14:6'},
+  {t:'"Fear not, for I am with you; be not dismayed, for I am your God."',r:'— Isaiah 41:10'},
+  {t:'"Cast all your anxiety on him because he cares for you."',r:'— 1 Peter 5:7'},
+  {t:'"But seek first his kingdom and his righteousness."',r:'— Matthew 6:33'},
+  {t:'"Your word is a lamp for my feet, a light on my path."',r:'— Psalm 119:105'},
+  {t:'"The name of the Lord is a fortified tower; the righteous run to it and are safe."',r:'— Proverbs 18:10'},
+  {t:'"For I know the plans I have for you, plans to prosper you and not to harm you."',r:'— Jeremiah 29:11'},
+  {t:'"Come to me, all you who are weary and burdened, and I will give you rest."',r:'— Matthew 11:28'},
+  {t:'"With God all things are possible."',r:'— Matthew 19:26'},
+  {t:'"The joy of the Lord is your strength."',r:'— Nehemiah 8:10'},
+  {t:'"Love is patient, love is kind. It does not envy, it does not boast."',r:'— 1 Corinthians 13:4'},
+  {t:'"Be strong and courageous. Do not be afraid; do not be discouraged."',r:'— Joshua 1:9'},
+  {t:'"He heals the brokenhearted and binds up their wounds."',r:'— Psalm 147:3'},
+  {t:'"And we know that in all things God works for the good of those who love him."',r:'— Romans 8:28'},
+  {t:'"Delight yourself in the Lord, and he will give you the desires of your heart."',r:'— Psalm 37:4'},
+  {t:'"Do not be anxious about anything, but in every situation, by prayer and petition, present your requests to God."',r:'— Philippians 4:6'},
+  {t:'"Create in me a pure heart, O God, and renew a steadfast spirit within me."',r:'— Psalm 51:10'},
+  {t:'"I am the resurrection and the life. The one who believes in me will live."',r:'— John 11:25'},
+  {t:'"No weapon forged against you will prevail."',r:'— Isaiah 54:17'},
+  {t:'"Greater is he that is in you, than he that is in the world."',r:'— 1 John 4:4'},
+  {t:'"The Lord bless you and keep you; the Lord make his face shine on you."',r:'— Numbers 6:24–25'},
+  {t:'"Walk by faith, not by sight."',r:'— 2 Corinthians 5:7'},
+  {t:'"Let everything that has breath praise the Lord."',r:'— Psalm 150:6'},
+  {t:'"Give thanks to the Lord, for he is good; his love endures forever."',r:'— Psalm 107:1'},
+  {t:'"Those who hope in the Lord will renew their strength."',r:'— Isaiah 40:31'},
+  {t:'"A friend loves at all times, and a brother is born for a time of adversity."',r:'— Proverbs 17:17'},
+  {t:'"This is the day the Lord has made; we will rejoice and be glad in it."',r:'— Psalm 118:24'},
+  {t:'"Let your light shine before others, that they may see your good deeds."',r:'— Matthew 5:16'},
+  {t:'"My grace is sufficient for you, for my power is made perfect in weakness."',r:'— 2 Corinthians 12:9'},
 ];
+
+// Pick today's 5 verses using day-of-year as offset so they change daily
+const _today = new Date();
+const _doy   = Math.floor((_today - new Date(_today.getFullYear(), 0, 0)) / 86400000);
+const _start = (_doy * 5) % VERSES_POOL.length;
+const VERSES  = Array.from({length: 5}, (_, i) => VERSES_POOL[(_start + i) % VERSES_POOL.length]);
 
 // ═══════════════════════════════════════════════════════════
 // SUPABASE AUTH
