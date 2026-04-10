@@ -569,6 +569,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   overflow: hidden;
   background: #0a0a0f;
   z-index: 999;
+  padding-top: 0 !important;
 }
 #page-forum.active,
 #page-forum[style*="display: flex"],
@@ -626,6 +627,21 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   margin-top: 1px;
 }
 .forum-topbar-actions { display: flex; gap: 6px; }
+.forum-back-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  margin-right: 2px;
+}
+.forum-back-btn:active { opacity: 0.6; }
 .forum-hdr-btn {
   width: 32px;
   height: 32px;
@@ -747,24 +763,43 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 }
 .forum-bubble {
   padding: 9px 13px;
-  border-radius: 20px;
+  border-radius: 18px;
   font-size: 14px;
   line-height: 1.5;
   word-break: break-word;
   cursor: default;
 }
+/* Others (left) — tail side is left */
 .forum-msg-row:not(.own) .forum-bubble {
   background: #1c1c2e;
   border: 0.5px solid rgba(255,255,255,0.08);
   color: rgba(255,255,255,0.9);
+  border-bottom-left-radius: 4px; /* solo/first default */
+}
+.forum-msg-row:not(.own) .forum-bubble.b-mid,
+.forum-msg-row:not(.own) .forum-bubble.b-last {
+  border-top-left-radius: 4px;
+}
+.forum-msg-row:not(.own) .forum-bubble.b-mid {
   border-bottom-left-radius: 4px;
 }
+.forum-msg-row:not(.own) .forum-bubble.b-last {
+  border-bottom-left-radius: 4px;
+}
+/* Own (right) — tail side is right */
 .forum-msg-row.own .forum-bubble {
   background: #c9a227;
   color: #0a0a0f;
   font-weight: 500;
   border-bottom-right-radius: 4px;
   cursor: pointer;
+}
+.forum-msg-row.own .forum-bubble.b-mid,
+.forum-msg-row.own .forum-bubble.b-last {
+  border-top-right-radius: 4px;
+}
+.forum-msg-row.own .forum-bubble.b-mid {
+  border-bottom-right-radius: 4px;
 }
 .forum-msg-meta {
   display: flex;
@@ -4053,6 +4088,9 @@ button, a, [onclick],
 <div class="page" id="page-forum">
   <!-- Top bar -->
   <div class="forum-topbar">
+    <button class="forum-back-btn" onclick="closeForum()" aria-label="Back">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
     <div class="forum-group-av" id="forumGroupAv">
       <img id="forumGroupAvImg"
         src=""
@@ -6715,48 +6753,70 @@ function renderForumMessages(posts) {
       </div>`;
     return;
   }
+
+  // Preprocess: determine group position for each post (first/mid/last/solo)
+  const getDate = p => new Date(p.created_at).toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+  const annotated = posts.map((post, i) => {
+    const prev = posts[i - 1];
+    const next = posts[i + 1];
+    const d    = getDate(post);
+    const isFirst = !prev || prev.user_id !== post.user_id || getDate(prev) !== d || prev.type === 'system';
+    const isLast  = !next || next.user_id !== post.user_id || getDate(next) !== d || next.type === 'system';
+    let pos = isFirst && isLast ? 'solo' : isFirst ? 'first' : isLast ? 'last' : 'mid';
+    return { ...post, _d: d, _isFirst: isFirst, _isLast: isLast, _pos: pos };
+  });
+
   let html        = '';
   let lastDateStr = '';
-  let prevUserId  = null;
-  posts.forEach(post => {
-    const postUserId = post.user_id;
-    const isOwn     = postUserId === currentUser?.id;
-    const name      = post.profiles?.full_name || 'Member';
-    const avUrl     = post.profiles?.avatar_url;
-    const avColor   = post.profiles?.avatar_color || '#2d2d44';
-    const avInitial = name.charAt(0).toUpperCase();
-    const ts        = new Date(post.created_at);
-    const dateStr   = ts.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
-    const timeStr   = ts.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
-    const isConsec  = prevUserId === postUserId;
-    const isOpt     = post.id?.startsWith('opt-');
-    prevUserId = postUserId;
-    if (dateStr !== lastDateStr) {
-      lastDateStr = dateStr;
-      prevUserId  = null;
-      html += `<div class="forum-date-sep"><span>${escapeHtml(dateStr)}</span></div>`;
+  annotated.forEach(post => {
+    if (post._d !== lastDateStr) {
+      lastDateStr = post._d;
+      html += `<div class="forum-date-sep"><span>${escapeHtml(post._d)}</span></div>`;
     }
     if (post.type === 'system') {
       html += `<div class="forum-system-msg"><span>${escapeHtml(post.content)}</span></div>`;
       return;
     }
+    const isOwn     = post.user_id === currentUser?.id;
+    const name      = post.profiles?.full_name || 'Member';
+    const avUrl     = post.profiles?.avatar_url;
+    const avColor   = post.profiles?.avatar_color || '#2d2d44';
+    const avInitial = name.charAt(0).toUpperCase();
+    const ts        = new Date(post.created_at);
+    const timeStr   = ts.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    const isOpt     = post.id?.startsWith('opt-');
+
+    // Avatar: show only on the LAST message of a group (Telegram/WhatsApp style)
     const avHtml = !isOwn
-      ? (!isConsec
+      ? (post._isLast
           ? (avUrl
               ? `<div class="forum-msg-av"><img src="${escapeHtml(avUrl)}" alt=""></div>`
               : `<div class="forum-msg-av" style="background:${avColor}">${avInitial}</div>`)
           : `<div style="width:28px;flex-shrink:0"></div>`)
       : '';
+
     const tickHtml = isOwn ? `<span class="forum-msg-tick${isOpt ? '' : ' seen'}" style="display:inline-flex"><svg width="14" height="10" viewBox="0 0 20 12" fill="none"><path d="M1 6L4.5 10L10 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 6L10.5 10L16 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : '';
     const delHtml  = isOwn && !isOpt
       ? `<button class="forum-msg-del" id="fdel-${post.id}" onclick="forumDeletePost('${post.id}')">Delete</button>`
       : '';
+
+    // Name: only on first of group; time: only on last of group
+    const nameHtml = !isOwn && post._isFirst
+      ? `<div class="forum-msg-name">${escapeHtml(name)}</div>`
+      : '';
+    const metaHtml = post._isLast
+      ? `<div class="forum-msg-meta"><span class="forum-msg-time">${timeStr}</span>${tickHtml}${delHtml}</div>`
+      : (delHtml ? `<div class="forum-msg-meta">${delHtml}</div>` : '');
+
+    // Spacing: tighter within a group, looser between groups
+    const mb = post._isLast ? '8px' : '2px';
+
     html += `
-      <div class="forum-msg-row${isOwn ? ' own' : ''}" data-id="${post.id}" style="margin-bottom:${isConsec ? '1px' : '4px'}">
+      <div class="forum-msg-row${isOwn ? ' own' : ''}" data-id="${post.id}" style="margin-bottom:${mb}">
         ${!isOwn ? avHtml : ''}
         <div class="forum-msg-body">
-          ${!isOwn && !isConsec ? `<div class="forum-msg-name">${escapeHtml(name)}</div>` : ''}
-          <div class="forum-bubble"
+          ${nameHtml}
+          <div class="forum-bubble b-${post._pos}"
             onclick="${isOwn ? `forumBubbleTap('${post.id}')` : ''}"
             style="opacity:${isOpt ? '0.6' : '1'}">
             ${post.image_url
@@ -6766,11 +6826,7 @@ function renderForumMessages(posts) {
               : ''}
             ${escapeHtml(post.content || '')}
           </div>
-          <div class="forum-msg-meta">
-            <span class="forum-msg-time">${timeStr}</span>
-            ${tickHtml}
-            ${delHtml}
-          </div>
+          ${metaHtml}
         </div>
       </div>`;
   });
