@@ -880,7 +880,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   border: none;
   outline: none;
   resize: none;
-  color: rgba(255,255,255,0.9);
+  color: rgba(255,255,255,0.9) !important;
   font-size: 15px;
   line-height: 1.4;
   font-family: var(--font-body, -apple-system, sans-serif);
@@ -888,12 +888,13 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   max-height: 110px;
   overflow-y: auto;
   padding: 9px 0;
-  -webkit-text-fill-color: rgba(255,255,255,0.9);
+  -webkit-text-fill-color: rgba(255,255,255,0.9) !important;
   caret-color: #c9a227;
+  color-scheme: dark;
 }
 .forum-textarea::placeholder {
-  color: rgba(255,255,255,0.28);
-  -webkit-text-fill-color: rgba(255,255,255,0.28);
+  color: rgba(255,255,255,0.28) !important;
+  -webkit-text-fill-color: rgba(255,255,255,0.28) !important;
 }
 .forum-textarea::-webkit-scrollbar { width: 0; }
 .forum-emoji-btn {
