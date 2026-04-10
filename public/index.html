@@ -1106,10 +1106,11 @@ select.field {
 .detail-meta-sub{font-size:12px;color:var(--muted2)}
 
 .detail-sticky{
-  position:fixed;bottom:calc(var(--tab-h) + var(--safe-b));left:0;right:0;
-  padding:14px 20px;background:rgba(10,10,15,.97);
-  backdrop-filter:blur(20px);border-top:1px solid var(--border);
-  display:flex;align-items:center;gap:14px;z-index:300;
+  position:static;
+  padding:14px 20px calc(var(--tab-h) + var(--safe-b) + 14px);
+  background:rgba(10,10,15,.97);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:14px;
 }
 .detail-price-block{flex:0 0 auto}
 .detail-price-big{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--gold)}
@@ -2004,8 +2005,7 @@ input[type="datetime-local"] {
   to   { transform: translateY(0); opacity: 1; }
 }
 #page-event-detail.active .detail-sticky {
-  animation: stickySlideUp 0.4s cubic-bezier(.175,.885,.32,1.275) both;
-  animation-delay: 0.3s;
+  animation: none;
 }
 
 /* ── PARALLAX HERO CROSS ─────────────────────────────────── */
@@ -4072,28 +4072,6 @@ button, a, [onclick],
   </div>
   <!-- Input bar -->
   <div class="forum-input-bar" id="forumInputBar">
-    <!-- Image preview bar (hidden until image selected) -->
-    <div id="forumImagePreview" style="display:none;position:absolute;bottom:100%;left:0;right:0;background:#0d0d1a;border-top:0.5px solid rgba(255,255,255,0.08);padding:10px 14px;align-items:center;gap:10px">
-      <img id="forumImageThumb" src="" alt="preview"
-        style="width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7)" id="forumImageName">image.jpg</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.35)">Tap × to remove</div>
-      </div>
-      <button onclick="forumClearImage()"
-        style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.6);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">×</button>
-    </div>
-    <!-- Hidden file input -->
-    <input type="file" id="forumImageInput" accept="image/*" style="display:none"
-      onchange="forumHandleImageSelect(this)">
-    <!-- Image attach button -->
-    <button class="forum-attach-btn" onclick="document.getElementById('forumImageInput').click()" title="Send image">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round">
-        <rect x="3" y="3" width="18" height="18" rx="3"/>
-        <circle cx="8.5" cy="8.5" r="1.5"/>
-        <polyline points="21 15 16 10 5 21"/>
-      </svg>
-    </button>
     <div class="forum-input-wrap">
       <textarea
         class="forum-textarea"
@@ -4103,7 +4081,6 @@ button, a, [onclick],
         maxlength="1000"
         oninput="forumTextareaInput(this)"
         onkeydown="forumTextareaKeydown(event)"></textarea>
-      <button class="forum-emoji-btn"><svg width="18" height="18" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="12" stroke="#C9A84C" stroke-width="2"/><circle cx="11.5" cy="13.5" r="1.5" fill="#C9A84C"/><circle cx="20.5" cy="13.5" r="1.5" fill="#C9A84C"/><path d="M10.5 19 C11.5 22 14 23.5 16 23.5 C18 23.5 20.5 22 21.5 19" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg></button>
     </div>
     <button class="forum-send-btn" id="forumSendBtn" onclick="submitForumPost()" disabled>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0a0a0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -6642,10 +6619,13 @@ function openForum(event) {
   forumPolling = setInterval(loadForumPosts, 8000);
   if (window.visualViewport) {
     window._forumVVH = () => {
-      const bar    = document.getElementById('forumInputBar');
-      if (!bar) return;
-      const offset = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
-      bar.style.transform = offset > 40 ? `translateY(-${offset}px)` : '';
+      const page = document.getElementById('page-forum');
+      if (!page) return;
+      const h = window.visualViewport.height;
+      page.style.height = h + 'px';
+      page.style.maxHeight = h + 'px';
+      const msgs = document.getElementById('forumMessages');
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
     };
     window.visualViewport.addEventListener('resize', window._forumVVH);
     window.visualViewport.addEventListener('scroll', window._forumVVH);
@@ -6665,8 +6645,8 @@ function closeForum() {
     window.visualViewport.removeEventListener('scroll', window._forumVVH);
     delete window._forumVVH;
   }
-  const bar = document.getElementById('forumInputBar');
-  if (bar) bar.style.transform = '';
+  const page = document.getElementById('page-forum');
+  if (page) { page.style.height = ''; page.style.maxHeight = ''; }
   if (selectedEvent?.id) goTo('event-detail');
   else goTo('home');
 }
