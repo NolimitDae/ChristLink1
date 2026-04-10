@@ -553,7 +553,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
   const {
     name, description, cover_url, gallery_urls, event_type, age_group, format,
     denomination, tags, is_paid, absorb_stripe_fee,
-    start_date, end_date, venue_name, address, city, state, zip, online_url, max_capacity,
+    start_date, end_date, sales_cutoff, venue_name, address, city, state, zip, online_url, max_capacity,
     forum_enabled, publish_at,
   } = req.body;
   if (!name) return res.status(400).json({ error: 'Event name is required.' });
@@ -573,6 +573,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
     is_paid: is_paid || false,
     absorb_stripe_fee: absorb_stripe_fee !== false,
     start_date: start_date || null, end_date: end_date || null,
+    sales_cutoff: sales_cutoff || end_date || null,
     venue_name, address, city, state, zip, online_url,
     max_capacity: max_capacity || null,
     forum_enabled: forum_enabled !== false,
@@ -591,7 +592,7 @@ app.patch('/api/events/:id', requireAuth, async (req, res) => {
   if (!ev) return res.status(404).json({ error: 'Event not found or not yours.' });
   const allowed = [
     'name','description','event_type','age_group','format','denomination','tags',
-    'start_date','end_date','venue_name','address','city','state','zip','online_url',
+    'start_date','end_date','sales_cutoff','venue_name','address','city','state','zip','online_url',
     'max_capacity','gallery_urls','forum_enabled',
   ];
   const updates = {};
@@ -1088,8 +1089,10 @@ app.get('/api/my-rsvps', requireAuth, async (req, res) => {
 app.post('/api/rsvp', requireAuth, async (req, res) => {
   const { eventId } = req.body;
   if (!eventId) return res.status(400).json({ error: 'Event ID required.' });
-  const { data: ev } = await supabaseAdmin.from('events').select('id, max_capacity, status').eq('id', eventId).single();
+  const { data: ev } = await supabaseAdmin.from('events').select('id, max_capacity, status, end_date, sales_cutoff').eq('id', eventId).single();
   if (!ev || ev.status !== 'published') return res.status(404).json({ error: 'Event not found.' });
+  const cutoff = ev.sales_cutoff || ev.end_date;
+  if (cutoff && new Date() > new Date(cutoff)) return res.status(400).json({ error: 'RSVPs for this event are now closed.' });
   if (ev.max_capacity) {
     const { count } = await supabaseAdmin.from('rsvps').select('*', { count: 'exact' })
       .eq('event_id', eventId).eq('status', 'confirmed');
@@ -1310,7 +1313,7 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
     // ── 1. Fetch event using admin client (bypasses RLS) ──────────
     const { data: ev, error: evErr } = await supabaseAdmin
       .from('events')
-      .select('id, name, status, is_paid, absorb_stripe_fee, host_id, max_capacity')
+      .select('id, name, status, is_paid, absorb_stripe_fee, host_id, max_capacity, end_date, sales_cutoff')
       .eq('id', eventId)
       .single();
 
@@ -1321,6 +1324,10 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
 
     if (ev.status !== 'published')
       return res.status(400).json({ error: 'This event is not currently available for ticket purchases.' });
+
+    const ticketCutoff = ev.sales_cutoff || ev.end_date;
+    if (ticketCutoff && new Date() > new Date(ticketCutoff))
+      return res.status(400).json({ error: 'Ticket sales for this event are now closed.' });
 
     if (!ev.is_paid)
       return res.status(400).json({ error: 'This is a free event — use RSVP instead.' });

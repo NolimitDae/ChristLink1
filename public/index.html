@@ -2746,7 +2746,11 @@ button, a, [onclick],
         </div>
 
         <label class="field-label">End Date & Time</label>
-        <input type="datetime-local" id="evEndDate" class="field">
+        <input type="datetime-local" id="evEndDate" class="field" oninput="if(!document.getElementById('evSalesCutoff').dataset.edited)document.getElementById('evSalesCutoff').value=this.value">
+
+        <label class="field-label">Sales & RSVP Cutoff <span style="font-size:11px;color:var(--muted);font-weight:400">(defaults to end time)</span></label>
+        <input type="datetime-local" id="evSalesCutoff" class="field" oninput="this.dataset.edited='1'">
+        <div class="field-note">Sales and RSVPs automatically close at this time</div>
 
         <label class="field-label">Max Capacity (optional)</label>
         <input type="number" id="evCapacity" class="field" placeholder="Leave blank for unlimited" min="1">
@@ -4339,6 +4343,11 @@ button, a, [onclick],
       <input type="datetime-local" id="eeeEndDate" class="field"
         style="width:100%;max-width:100%;box-sizing:border-box">
 
+      <label class="field-label">Sales & RSVP Cutoff <span style="font-size:11px;color:var(--muted);font-weight:400">(defaults to end time)</span></label>
+      <input type="datetime-local" id="eeeSalesCutoff" class="field"
+        style="width:100%;max-width:100%;box-sizing:border-box">
+      <div class="field-note">Sales and RSVPs automatically close at this time</div>
+
       <!-- VENUE -->
       <label class="field-label">Venue Name</label>
       <input type="text" id="eeeVenue" class="field" placeholder="First Baptist Church">
@@ -5628,8 +5637,9 @@ function openEditEventSheet(ev) {
   document.getElementById('eeeAgeGroup').value       = ev.age_group    || 'All Ages';
   document.getElementById('eeeDenomination').value   = ev.denomination || '';
   document.getElementById('eeeDesc').value           = ev.description  || '';
-  document.getElementById('eeeStartDate').value      = ev.start_date   ? ev.start_date.slice(0,16) : '';
-  document.getElementById('eeeEndDate').value        = ev.end_date     ? ev.end_date.slice(0,16)   : '';
+  document.getElementById('eeeStartDate').value      = ev.start_date    ? ev.start_date.slice(0,16)    : '';
+  document.getElementById('eeeEndDate').value        = ev.end_date      ? ev.end_date.slice(0,16)      : '';
+  document.getElementById('eeeSalesCutoff').value    = ev.sales_cutoff  ? ev.sales_cutoff.slice(0,16)  : (ev.end_date ? ev.end_date.slice(0,16) : '');
   document.getElementById('eeeVenue').value          = ev.venue_name   || '';
   document.getElementById('eeeAddress').value        = ev.address      || '';
   document.getElementById('eeeCity').value           = ev.city         || '';
@@ -5859,8 +5869,9 @@ async function saveEditEvent() {
       age_group:     document.getElementById('eeeAgeGroup').value,
       denomination:  document.getElementById('eeeDenomination').value.trim() || null,
       description:   document.getElementById('eeeDesc').value.trim(),
-      start_date:    document.getElementById('eeeStartDate').value || null,
-      end_date:      document.getElementById('eeeEndDate').value   || null,
+      start_date:    document.getElementById('eeeStartDate').value    || null,
+      end_date:      document.getElementById('eeeEndDate').value      || null,
+      sales_cutoff:  document.getElementById('eeeSalesCutoff').value  || document.getElementById('eeeEndDate').value || null,
       venue_name:    document.getElementById('eeeVenue').value.trim(),
       address:       document.getElementById('eeeAddress').value.trim(),
       city:          document.getElementById('eeeCity').value.trim(),
@@ -7821,6 +7832,19 @@ function viewDetail(ev) {
   rsvpBtn.classList.remove('confirmed');
   document.getElementById('detailCancelRsvpBtn').style.display = 'none';
 
+  // Cutoff check — disable RSVP/Buy if sales window has closed
+  const cutoffTime = ev.sales_cutoff || ev.end_date;
+  if (cutoffTime && new Date() > new Date(cutoffTime)) {
+    rsvpBtn.disabled = true;
+    rsvpBtn.textContent = 'Sales Closed';
+    rsvpBtn.style.opacity = '0.5';
+    rsvpBtn.style.cursor = 'not-allowed';
+  } else {
+    rsvpBtn.disabled = false;
+    rsvpBtn.style.opacity = '';
+    rsvpBtn.style.cursor = '';
+  }
+
   // Who's Going — always load from API so paid ticket holders appear too
   // Start hidden; loadInlineAttendees will show it if there are attendees
   document.getElementById('detailWhoGoing').style.display = 'none';
@@ -8863,6 +8887,7 @@ async function publishEvent() {
       body: JSON.stringify({
         name, description:desc, cover_url:coverUrl, gallery_urls:galleryUrls, event_type:eventType,
         format, is_paid:isPaid, start_date:startDate||null, end_date:endDate||null,
+        sales_cutoff: document.getElementById('evSalesCutoff').value || endDate || null,
         venue_name:venueName, address, city, state, max_capacity:capacity?parseInt(capacity):null,
         online_url:onlineUrl||null,
         forum_enabled: document.getElementById('evForumEnabled')?.checked || false,

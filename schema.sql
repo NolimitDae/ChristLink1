@@ -121,6 +121,7 @@ create table if not exists public.events (
   listing_payment_id text,
   start_date        timestamptz,
   end_date          timestamptz,
+  sales_cutoff      timestamptz,
   venue_name        text,
   address           text,
   city              text,
@@ -700,3 +701,7 @@ do $$ begin
     create policy "Service role manages follows" on public.user_follows for all using (true);
   end if;
 end $$;
+
+-- Migration: add sales_cutoff to events
+-- Run in Supabase SQL editor:
+-- alter table public.events add column if not exists sales_cutoff timestamptz;
