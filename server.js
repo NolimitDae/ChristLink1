@@ -329,6 +329,38 @@ app.get('/api/followers', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/followers/:userId — list of users following this person
+app.get('/api/followers/:userId', async (req, res) => {
+  try {
+    const { data: follows, error } = await supabaseAdmin
+      .from('user_follows').select('follower_id')
+      .eq('following_id', req.params.userId)
+      .order('created_at', { ascending: false }).limit(200);
+    if (error) return res.status(500).json({ error: error.message });
+    if (!follows || follows.length === 0) return res.json({ users: [] });
+    const ids = follows.map(f => f.follower_id);
+    const { data: profiles } = await supabaseAdmin
+      .from('profiles').select('id, full_name, avatar_url, avatar_color, city, role').in('id', ids);
+    res.json({ users: profiles || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/following/:userId — list of users this person follows
+app.get('/api/following/:userId', async (req, res) => {
+  try {
+    const { data: follows, error } = await supabaseAdmin
+      .from('user_follows').select('following_id')
+      .eq('follower_id', req.params.userId)
+      .order('created_at', { ascending: false }).limit(200);
+    if (error) return res.status(500).json({ error: error.message });
+    if (!follows || follows.length === 0) return res.json({ users: [] });
+    const ids = follows.map(f => f.following_id);
+    const { data: profiles } = await supabaseAdmin
+      .from('profiles').select('id, full_name, avatar_url, avatar_color, city, role').in('id', ids);
+    res.json({ users: profiles || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // POST /api/upload-banner — same dataUrl pattern as upload-avatar
 app.post('/api/upload-banner', requireAuth, async (req, res) => {
   const { dataUrl } = req.body;
