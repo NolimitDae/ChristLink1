@@ -6702,15 +6702,24 @@ function openForum(event) {
       const page = document.getElementById('page-forum');
       if (!page) return;
       const vv = window.visualViewport;
-      page.style.height = vv.height + 'px';
-      page.style.maxHeight = vv.height + 'px';
-      page.style.top = (vv.offsetTop || 0) + 'px';
-      const msgs = document.getElementById('forumMessages');
-      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+      // Only override height when keyboard is actually open (viewport shrinks by >150px)
+      const kbOpen = (window.innerHeight - vv.height) > 150;
+      if (kbOpen) {
+        page.style.height = vv.height + 'px';
+        page.style.maxHeight = vv.height + 'px';
+        page.style.top = (vv.offsetTop || 0) + 'px';
+        const msgs = document.getElementById('forumMessages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+      } else {
+        // Keyboard closed — let CSS 100dvh handle the height
+        page.style.height = '';
+        page.style.maxHeight = '';
+        page.style.top = '';
+      }
     };
     window.visualViewport.addEventListener('resize', window._forumVVH);
     window.visualViewport.addEventListener('scroll', window._forumVVH);
-    window._forumVVH();
+    // Don't call immediately — let CSS 100dvh handle initial layout
   }
 }
 
