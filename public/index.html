@@ -843,7 +843,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 .forum-empty-text { font-size: 14px; color: rgba(255,255,255,0.35); line-height: 1.6; }
 .forum-input-bar {
   position: absolute;
-  bottom: 0;
+  bottom: 36px;
   left: 0;
   right: 0;
   display: flex;
@@ -6671,13 +6671,14 @@ function forumRelayout() {
   const topH     = topbar.getBoundingClientRect().height || 64;
   const pinnedH  = (pinned  && pinned.style.display  !== 'none') ? (pinned.getBoundingClientRect().height  || 0) : 0;
   const previewH = (preview && preview.style.display !== 'none') ? (preview.getBoundingClientRect().height || 0) : 0;
-  const inputH   = inputBar.getBoundingClientRect().height || 70;
+  const inputH      = inputBar.getBoundingClientRect().height || 70;
+  const inputOffset = 36; // bottom offset applied to input bar in CSS
   msgs.style.top    = (topH + pinnedH) + 'px';
-  msgs.style.bottom = (inputH + previewH) + 'px';
+  msgs.style.bottom = (inputH + previewH + inputOffset) + 'px';
   // Position image preview just above input bar
   if (preview) {
     preview.style.position = 'absolute';
-    preview.style.bottom   = inputH + 'px';
+    preview.style.bottom   = (inputH + inputOffset) + 'px';
     preview.style.left     = '0';
     preview.style.right    = '0';
     preview.style.zIndex   = '19';
