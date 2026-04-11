@@ -563,11 +563,12 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: 50dvh;
   overflow: hidden;
   background: #0a0a0f;
   z-index: 999;
   padding: 0 !important;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.8);
 }
 #page-forum.active,
 #page-forum[style*="display: block"],
@@ -6732,22 +6733,6 @@ function openForum(event) {
   clearInterval(forumPolling);
   forumPolling = setInterval(loadForumPosts, 8000);
   forumRelayout();
-  if (window.visualViewport) {
-    window._forumVVH = () => {
-      const page = document.getElementById('page-forum');
-      if (!page) return;
-      const vv = window.visualViewport;
-      const kbHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      page.style.bottom = kbHeight > 100 ? kbHeight + 'px' : '';
-      forumRelayout();
-      if (kbHeight > 100) {
-        const msgs = document.getElementById('forumMessages');
-        if (msgs) msgs.scrollTop = msgs.scrollHeight;
-      }
-    };
-    window.visualViewport.addEventListener('resize', window._forumVVH);
-    window.visualViewport.addEventListener('scroll', window._forumVVH);
-  }
 }
 
 function openEventForum() {
@@ -6758,13 +6743,6 @@ function openEventForum() {
 function closeForum() {
   clearInterval(forumPolling);
   forumPolling = null;
-  if (window.visualViewport && window._forumVVH) {
-    window.visualViewport.removeEventListener('resize', window._forumVVH);
-    window.visualViewport.removeEventListener('scroll', window._forumVVH);
-    delete window._forumVVH;
-  }
-  const page = document.getElementById('page-forum');
-  if (page) { page.style.bottom = ''; page.style.top = ''; }
   const msgs = document.getElementById('forumMessages');
   if (msgs) { msgs.style.top = ''; msgs.style.bottom = ''; }
   if (selectedEvent?.id) goTo('event-detail');
