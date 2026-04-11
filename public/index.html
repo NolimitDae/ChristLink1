@@ -844,7 +844,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 .forum-empty-text { font-size: 14px; color: rgba(255,255,255,0.35); line-height: 1.6; }
 .forum-input-bar {
   position: absolute;
-  bottom: 36px;
+  bottom: 0;
   left: 0;
   right: 0;
   display: flex;
@@ -6674,13 +6674,12 @@ function forumRelayout() {
   const pinnedH  = (pinned  && pinned.style.display  !== 'none') ? (pinned.getBoundingClientRect().height  || 0) : 0;
   const previewH = (preview && preview.style.display !== 'none') ? (preview.getBoundingClientRect().height || 0) : 0;
   const inputH      = inputBar.getBoundingClientRect().height || 70;
-  const inputOffset = 36; // bottom offset applied to input bar in CSS
   msgs.style.top    = (topH + pinnedH) + 'px';
-  msgs.style.bottom = (inputH + previewH + inputOffset) + 'px';
+  msgs.style.bottom = (inputH + previewH) + 'px';
   // Position image preview just above input bar
   if (preview) {
     preview.style.position = 'absolute';
-    preview.style.bottom   = (inputH + inputOffset) + 'px';
+    preview.style.bottom   = inputH + 'px';
     preview.style.left     = '0';
     preview.style.right    = '0';
     preview.style.zIndex   = '19';
@@ -6691,6 +6690,23 @@ let forumEventId  = null;
 let forumEventObj = null;
 let forumPosts    = [];
 let forumPolling  = null;
+
+function _forumVVResize() {
+  const fp = document.getElementById('page-forum');
+  if (!fp || fp.style.display === 'none' || !fp.style.display) return;
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const visH      = Math.round(vv.height);
+  const keyboardH = window.innerHeight - visH;
+  if (keyboardH > 80) {
+    // Keyboard is open — shrink forum to exactly fill the space above it
+    fp.style.height = visH + 'px';
+  } else {
+    // Keyboard dismissed — back to half screen
+    fp.style.height = Math.round(window.innerHeight * 0.5) + 'px';
+  }
+  forumRelayout();
+}
 
 function openForum(event) {
   if (typeof event === 'string') {
@@ -6729,11 +6745,15 @@ function openForum(event) {
   document.getElementById('forumSendBtn').disabled = true;
   document.getElementById('forumPinnedBar').style.display = 'none';
   goTo('forum');
-  // Enforce half-screen height via JS so it overrides any active-class styles
+  // Enforce half-screen height; visualViewport will shrink it to fit when keyboard opens
   const fp = document.getElementById('page-forum');
   if (fp) {
     fp.style.display = 'block';
     fp.style.height  = Math.round(window.innerHeight * 0.5) + 'px';
+  }
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', _forumVVResize);
+    window.visualViewport.addEventListener('resize', _forumVVResize);
   }
   loadForumPosts();
   clearInterval(forumPolling);
@@ -6749,6 +6769,7 @@ function openEventForum() {
 function closeForum() {
   clearInterval(forumPolling);
   forumPolling = null;
+  if (window.visualViewport) window.visualViewport.removeEventListener('resize', _forumVVResize);
   const fp = document.getElementById('page-forum');
   if (fp) { fp.style.height = ''; fp.style.display = ''; }
   const msgs = document.getElementById('forumMessages');
