@@ -563,7 +563,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   top: 0;
   left: 0;
   right: 0;
-  height: 50dvh;
+  height: 50vh;
   overflow: hidden;
   background: #0a0a0f;
   z-index: 999;
@@ -6729,6 +6729,12 @@ function openForum(event) {
   document.getElementById('forumSendBtn').disabled = true;
   document.getElementById('forumPinnedBar').style.display = 'none';
   goTo('forum');
+  // Enforce half-screen height via JS so it overrides any active-class styles
+  const fp = document.getElementById('page-forum');
+  if (fp) {
+    fp.style.display = 'block';
+    fp.style.height  = Math.round(window.innerHeight * 0.5) + 'px';
+  }
   loadForumPosts();
   clearInterval(forumPolling);
   forumPolling = setInterval(loadForumPosts, 8000);
@@ -6743,6 +6749,8 @@ function openEventForum() {
 function closeForum() {
   clearInterval(forumPolling);
   forumPolling = null;
+  const fp = document.getElementById('page-forum');
+  if (fp) { fp.style.height = ''; fp.style.display = ''; }
   const msgs = document.getElementById('forumMessages');
   if (msgs) { msgs.style.top = ''; msgs.style.bottom = ''; }
   if (selectedEvent?.id) goTo('event-detail');
