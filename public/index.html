@@ -559,7 +559,6 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
    ═══════════════════════════════════════════════ */
 #page-forum {
   display: none;
-  flex-direction: column;
   position: fixed;
   top: 0;
   left: 0;
@@ -568,14 +567,20 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   overflow: hidden;
   background: #0a0a0f;
   z-index: 999;
-  padding-top: 0 !important;
+  padding: 0 !important;
 }
 #page-forum.active,
+#page-forum[style*="display: block"],
+#page-forum[style*="display:block"],
 #page-forum[style*="display: flex"],
 #page-forum[style*="display:flex"] {
-  display: flex !important;
+  display: block !important;
 }
 .forum-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -686,7 +691,11 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   white-space: nowrap;
 }
 .forum-messages {
-  flex: 1;
+  position: absolute;
+  top: 64px; /* below topbar */
+  left: 0;
+  right: 0;
+  bottom: 70px; /* above input bar */
   overflow-y: auto;
   overflow-x: hidden;
   padding: 14px 12px 10px;
@@ -835,17 +844,18 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 .forum-empty-icon { font-size: 40px; opacity: 0.4; }
 .forum-empty-text { font-size: 14px; color: rgba(255,255,255,0.35); line-height: 1.6; }
 .forum-input-bar {
-  position: relative;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: flex-end;
   gap: 8px;
   padding: 10px 12px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
   background: #0d0d1a;
   border-top: 0.5px solid rgba(255,255,255,0.08);
-  flex-shrink: 0;
-  z-index: 10;
-  transition: transform 0.1s ease;
+  z-index: 20;
 }
 .forum-attach-btn {
   width: 36px;
@@ -6651,6 +6661,31 @@ function _eventRowHTML(ev) {
 }
 
 // ── EVENT FORUM (GROUP CHAT) ──────────────────────────────────
+
+// Measure actual element heights and position messages area correctly
+function forumRelayout() {
+  const topbar  = document.querySelector('.forum-topbar');
+  const pinned  = document.getElementById('forumPinnedBar');
+  const preview = document.getElementById('forumImagePreview');
+  const inputBar = document.getElementById('forumInputBar');
+  const msgs    = document.getElementById('forumMessages');
+  if (!msgs || !topbar || !inputBar) return;
+  const topH     = topbar.getBoundingClientRect().height || 64;
+  const pinnedH  = (pinned  && pinned.style.display  !== 'none') ? (pinned.getBoundingClientRect().height  || 0) : 0;
+  const previewH = (preview && preview.style.display !== 'none') ? (preview.getBoundingClientRect().height || 0) : 0;
+  const inputH   = inputBar.getBoundingClientRect().height || 70;
+  msgs.style.top    = (topH + pinnedH) + 'px';
+  msgs.style.bottom = (inputH + previewH) + 'px';
+  // Position image preview just above input bar
+  if (preview) {
+    preview.style.position = 'absolute';
+    preview.style.bottom   = inputH + 'px';
+    preview.style.left     = '0';
+    preview.style.right    = '0';
+    preview.style.zIndex   = '19';
+  }
+}
+
 let forumEventId  = null;
 let forumEventObj = null;
 let forumPosts    = [];
@@ -6696,14 +6731,15 @@ function openForum(event) {
   loadForumPosts();
   clearInterval(forumPolling);
   forumPolling = setInterval(loadForumPosts, 8000);
+  forumRelayout();
   if (window.visualViewport) {
     window._forumVVH = () => {
       const page = document.getElementById('page-forum');
       if (!page) return;
       const vv = window.visualViewport;
-      // Push page up by keyboard height so input bar stays above keyboard
       const kbHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       page.style.bottom = kbHeight > 100 ? kbHeight + 'px' : '';
+      forumRelayout();
       if (kbHeight > 100) {
         const msgs = document.getElementById('forumMessages');
         if (msgs) msgs.scrollTop = msgs.scrollHeight;
@@ -6729,6 +6765,8 @@ function closeForum() {
   }
   const page = document.getElementById('page-forum');
   if (page) { page.style.bottom = ''; page.style.top = ''; }
+  const msgs = document.getElementById('forumMessages');
+  if (msgs) { msgs.style.top = ''; msgs.style.bottom = ''; }
   if (selectedEvent?.id) goTo('event-detail');
   else goTo('home');
 }
