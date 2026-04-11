@@ -4165,9 +4165,10 @@ button, a, [onclick],
       </svg>
     </button>
   </div>
-  <!-- Hidden file input for photo selection -->
-  <input type="file" id="forumImageInput" accept="image/*" style="display:none" onchange="forumHandleImageSelect(this)">
+  <!-- file input moved outside fixed container — see below -->
 </div>
+<!-- Hidden file input outside fixed forum container (iOS Safari requires this) -->
+<input type="file" id="forumImageInput" accept="image/*" style="display:none;position:absolute;left:-9999px" onchange="forumHandleImageSelect(this)">
 
 <!-- ═══════════════════════════════════════════════════
      ADMIN DASHBOARD PAGE
@@ -6968,6 +6969,7 @@ function forumHandleImageSelect(input) {
     if (thumb)   thumb.src = e.target.result;
     if (name)    name.textContent = file.name;
     document.getElementById('forumSendBtn').disabled = false;
+    forumRelayout();
   };
   reader.readAsDataURL(file);
 }
@@ -6980,6 +6982,7 @@ function forumClearImage() {
   if (input) input.value = '';
   const ta = document.getElementById('forumTextarea');
   document.getElementById('forumSendBtn').disabled = !ta?.value.trim();
+  forumRelayout();
 }
 
 async function forumUploadImage(file) {
