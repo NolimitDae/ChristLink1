@@ -563,7 +563,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   top: 0;
   left: 0;
   right: 0;
-  height: 60vh;
+  height: 70vh;
   min-height: 0 !important;
   overflow: hidden;
   touch-action: none;
@@ -6705,7 +6705,7 @@ function _forumVVResize() {
     fp.style.height = visH + 'px';
   } else {
     // Keyboard dismissed — back to half screen
-    fp.style.height = Math.round(window.innerHeight * 0.6) + 'px';
+    fp.style.height = Math.round(window.innerHeight * 0.7) + 'px';
   }
   forumRelayout();
 }
@@ -6751,7 +6751,7 @@ function openForum(event) {
   const fp = document.getElementById('page-forum');
   if (fp) {
     fp.style.display = 'block';
-    fp.style.height  = Math.round(window.innerHeight * 0.6) + 'px';
+    fp.style.height  = Math.round(window.innerHeight * 0.7) + 'px';
   }
   if (window.visualViewport) {
     window.visualViewport.removeEventListener('resize', _forumVVResize);
