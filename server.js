@@ -483,6 +483,26 @@ app.post('/api/upload-event-image', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Upload forum image via server (bypasses Supabase storage RLS)
+app.post('/api/upload-forum-image', requireAuth, async (req, res) => {
+  const { dataUrl } = req.body;
+  if (!dataUrl || !dataUrl.startsWith('data:')) return res.status(400).json({ error: 'Invalid image data.' });
+  try {
+    const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
+    const mimeType = matches[1];
+    const buffer   = Buffer.from(matches[2], 'base64');
+    const ext      = mimeType.includes('png') ? 'png' : 'jpg';
+    const path     = `forum/${req.userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: upErr } = await supabaseAdmin.storage
+      .from('event-images')
+      .upload(path, buffer, { upsert: false, contentType: mimeType });
+    if (upErr) return res.status(400).json({ error: upErr.message });
+    const { data: { publicUrl } } = supabaseAdmin.storage.from('event-images').getPublicUrl(path);
+    res.json({ url: publicUrl });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ════════════════════════════════════════════════════════════
 // EVENTS
 // ════════════════════════════════════════════════════════════

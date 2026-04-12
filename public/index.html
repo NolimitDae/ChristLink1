@@ -7009,14 +7009,24 @@ function forumClearImage() {
 }
 
 async function forumUploadImage(file) {
-  const ext      = file.name.split('.').pop().toLowerCase() || 'jpg';
-  const filename = `${forumEventId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  const { data, error } = await supabase.storage
-    .from('forum-images')
-    .upload(filename, file, { contentType: file.type, upsert: false });
-  if (error) throw new Error('Image upload failed: ' + error.message);
-  const { data: { publicUrl } } = supabase.storage.from('forum-images').getPublicUrl(filename);
-  return publicUrl;
+  // _forumPendingImage.dataUrl already read by FileReader — reuse it
+  const dataUrl = _forumPendingImage?.dataUrl || await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  const upRes = await fetch(`${API_BASE}/api/upload-forum-image`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession.access_token}` },
+    body:    JSON.stringify({ dataUrl }),
+  });
+  if (!upRes.ok) {
+    const err = await upRes.json().catch(() => ({}));
+    throw new Error(err.error || 'Upload failed');
+  }
+  const { url } = await upRes.json();
+  return url;
 }
 
 async function forumDeletePost(postId) {
