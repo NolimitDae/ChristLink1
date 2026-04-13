@@ -370,6 +370,7 @@ app.post('/api/upload-banner', requireAuth, async (req, res) => {
     if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
     const mimeType = matches[1];
     const buffer   = Buffer.from(matches[2], 'base64');
+    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
     const ext      = mimeType.includes('png') ? 'png' : 'jpg';
     const path     = `banners/${req.userId}/banner.${ext}`;
     const { error: upErr } = await supabaseAdmin.storage
@@ -451,6 +452,7 @@ app.post('/api/upload-avatar', requireAuth, async (req, res) => {
     if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
     const mimeType = matches[1];
     const buffer   = Buffer.from(matches[2], 'base64');
+    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
     const ext      = mimeType.includes('png') ? 'png' : 'jpg';
     const path     = `avatars/${req.userId}/avatar-${Date.now()}.${ext}`;
     const { error: upErr } = await supabaseAdmin.storage
@@ -471,6 +473,7 @@ app.post('/api/upload-event-image', requireAuth, async (req, res) => {
     if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
     const mimeType = matches[1];
     const buffer   = Buffer.from(matches[2], 'base64');
+    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
     const ext      = mimeType.includes('png') ? 'png' : 'jpg';
     const suffix   = type === 'cover' ? 'cover' : `gallery-${Math.random().toString(36).slice(2)}`;
     const path     = `events/${req.userId}/${Date.now()}-${suffix}.${ext}`;
@@ -492,6 +495,7 @@ app.post('/api/upload-forum-image', requireAuth, async (req, res) => {
     if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
     const mimeType = matches[1];
     const buffer   = Buffer.from(matches[2], 'base64');
+    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
     const ext      = mimeType.includes('png') ? 'png' : 'jpg';
     const path     = `forum/${req.userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { error: upErr } = await supabaseAdmin.storage
@@ -1326,8 +1330,11 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
 
 app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res) => {
   const { eventId, ticketTypeId, qty = 1, buyerEmail } = req.body;
+  const parsedQty = parseInt(qty, 10);
   if (!eventId || !ticketTypeId)
     return res.status(400).json({ error: 'Event ID and ticket type required.' });
+  if (!parsedQty || parsedQty < 1 || parsedQty > 20)
+    return res.status(400).json({ error: 'Quantity must be between 1 and 20.' });
 
   try {
     // ── 1. Fetch event using admin client (bypasses RLS) ──────────
