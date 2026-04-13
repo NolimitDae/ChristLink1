@@ -3391,10 +3391,14 @@ button, a, [onclick],
         <label class="field-label">Email Address</label>
         <input type="email" id="authEmail" class="field" placeholder="you@example.com" autocomplete="email" enterkeyhint="go" inputmode="email"
           onkeydown="if(event.key==='Enter')sendOtp()">
-        <div id="tosGroup" style="display:none;margin:14px 0 18px">
+        <div id="tosGroup" style="display:none;margin:14px 0 18px;flex-direction:column;gap:10px">
           <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--muted2);line-height:1.4">
             <input type="checkbox" id="tosCheck" style="margin-top:2px;accent-color:var(--gold);width:16px;height:16px;flex-shrink:0">
             <span>I have read and agree to the <button type="button" onclick="showFooterPage('terms')" style="background:none;border:none;padding:0;color:var(--gold);font-size:13px;font-weight:600;cursor:pointer;text-decoration:underline">Terms of Service</button></span>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--muted2);line-height:1.4">
+            <input type="checkbox" id="privacyCheck" style="margin-top:2px;accent-color:var(--gold);width:16px;height:16px;flex-shrink:0">
+            <span>I have read and agree to the <button type="button" onclick="showFooterPage('privacy')" style="background:none;border:none;padding:0;color:var(--gold);font-size:13px;font-weight:600;cursor:pointer;text-decoration:underline">Privacy Policy</button></span>
           </label>
         </div>
         <div class="error-msg" id="err-email"></div>
@@ -4930,7 +4934,7 @@ function setAuthMode(mode) {
   document.getElementById('tab-signin').classList.toggle('active', mode === 'signin');
   document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
   document.getElementById('nameGroup').style.display = mode === 'signup' ? 'block' : 'none';
-  document.getElementById('tosGroup').style.display  = mode === 'signup' ? 'block' : 'none';
+  document.getElementById('tosGroup').style.display  = mode === 'signup' ? 'flex' : 'none';
   document.getElementById('authTitle').textContent = mode === 'signup' ? 'Join ChristLink' : 'Welcome Back';
   clearErr('err-email');
 }
@@ -4952,6 +4956,9 @@ async function sendOtp() {
   }
   if (authMode === 'signup' && !document.getElementById('tosCheck').checked) {
     showErr('err-email','Please agree to the Terms of Service to continue.'); return;
+  }
+  if (authMode === 'signup' && !document.getElementById('privacyCheck').checked) {
+    showErr('err-email','Please agree to the Privacy Policy to continue.'); return;
   }
   const btn = document.getElementById('sendOtpBtn');
   btn.disabled = true;
@@ -9330,8 +9337,45 @@ function goVerse(i) {
 // ═══════════════════════════════════════════════════════════
 const FOOTER_PAGES = {
   about:{title:'About Christ Link',body:'<p style="color:var(--muted2);line-height:1.8;font-size:15px;margin-bottom:14px">Christ Link was built to solve a simple problem — believers couldn\'t easily find or host faith-based events in their city.</p><p style="color:var(--muted2);line-height:1.8;font-size:15px">We connect ministries, churches, and community leaders with the people they serve. Built with faith. Powered by community.</p>'},
-  privacy:{title:'Privacy Policy',body:'<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px"><strong style="color:var(--text)">Data we collect:</strong> Email, name, and event activity. Payment info is handled entirely by Stripe — we never store card details.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px"><strong style="color:var(--text)">How we use it:</strong> To verify your account and send event confirmations. We never sell your data.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px"><strong style="color:var(--text)">Your rights:</strong> Delete your account at any time by contacting us.</p>'},
-  terms:{title:'Terms of Service',body:'<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px">Use Christ Link only for legitimate faith-based events. Misuse results in account removal.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:12px">The $19.99 listing fee for paid events is non-refundable once an event is live.</p><p style="color:var(--muted2);line-height:1.8;font-size:14px">Christ Link takes 7% of each ticket sale. Payouts go to hosts via Stripe Connect.</p>'},
+  privacy:{title:'Privacy Policy',body:`
+<p style="color:var(--muted2);font-size:12px;margin-bottom:16px">Effective: April 2025 &nbsp;·&nbsp; ChristLink, operated by NolimitDae LLC</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">We take your privacy seriously. This policy explains what data we collect, how we use it, and your rights.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">1. Information We Collect</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px"><strong style="color:var(--text)">Account info:</strong> Your name and email address when you sign up.<br><strong style="color:var(--text)">Profile info:</strong> Any bio, city, photo, or social links you choose to add.<br><strong style="color:var(--text)">Event activity:</strong> Events you host, attend, or RSVP to.<br><strong style="color:var(--text)">Forum & community posts:</strong> Messages you send inside event forums or community features.<br><strong style="color:var(--text)">Payment info:</strong> We never store your card details. All payment processing is handled by Stripe, Inc. See <a href="https://stripe.com/privacy" target="_blank" style="color:var(--gold)">stripe.com/privacy</a>.<br><strong style="color:var(--text)">Device info:</strong> Browser type and general location (city-level) for fraud prevention.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">2. How We Use Your Information</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">· To create and manage your account<br>· To send event confirmations and ticket receipts to your email<br>· To process payments and payouts through Stripe<br>· To display your profile to other ChristLink users<br>· To improve the platform and prevent abuse<br><br>We <strong style="color:var(--text)">never sell your personal data</strong> to third parties.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">3. Third-Party Services</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px"><strong style="color:var(--text)">Supabase</strong> — database and authentication hosting (US-based)<br><strong style="color:var(--text)">Stripe</strong> — payment processing and host payouts<br><strong style="color:var(--text)">Railway</strong> — server hosting<br>Each service has its own privacy policy. We share only the minimum data necessary for these services to function.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">4. Data Retention</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">We retain your account data for as long as your account is active. Event forum posts expire 30 days after the event ends. You may request deletion of your account and associated data at any time.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">5. Your Rights</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">You have the right to access, correct, or delete your personal data. To exercise these rights, email us at <strong style="color:var(--text)">info@christlinksocial.com</strong>. We will respond within 30 days.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">6. Children's Privacy</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">ChristLink is not directed to children under 13. We do not knowingly collect data from children under 13.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">7. Changes to This Policy</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">We may update this policy from time to time. We will notify users of significant changes via email or an in-app notice.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">8. Contact</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px">Questions? Email us at <strong style="color:var(--text)">info@christlinksocial.com</strong></p>`},
+  terms:{title:'Terms of Service',body:`
+<p style="color:var(--muted2);font-size:12px;margin-bottom:16px">Effective: April 2025 &nbsp;·&nbsp; ChristLink, operated by NolimitDae LLC</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">1. Acceptance</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">By creating an account you agree to these Terms. If you do not agree, do not use ChristLink.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">2. Permitted Use</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">ChristLink is a platform for faith-based events. You agree to use it only for lawful, legitimate purposes. You may not post fraudulent events, harass other users, or misrepresent your identity. Violation results in immediate account removal.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">3. Event Listing Fees</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">Hosting a paid event requires a one-time $19.99 listing fee. This fee is non-refundable once your event is published.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">4. Platform Fee</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">ChristLink retains 7% of each ticket sale as a platform fee. Payouts to hosts are processed via Stripe Connect after Stripe's standard processing fees.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">5. Refunds</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">Ticket refunds are at the discretion of the event host. ChristLink facilitates refund requests but does not guarantee refunds. The platform fee is non-refundable.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">6. Content</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">You retain ownership of content you post. By posting, you grant ChristLink a license to display it on the platform. You are solely responsible for content you submit.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">7. Limitation of Liability</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">ChristLink is a marketplace platform. We are not responsible for the conduct of event hosts or attendees. To the fullest extent permitted by law, our liability is limited to the amount you paid us in the 12 months prior to any claim.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">8. Changes</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px;margin-bottom:14px">We may update these Terms. Continued use of the platform after changes constitutes acceptance.</p>
+<p style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">9. Contact</p>
+<p style="color:var(--muted2);line-height:1.8;font-size:14px">Questions? Email <strong style="color:var(--text)">info@christlinksocial.com</strong></p>`},
   contact:{title:'Contact Us',body:'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;margin-bottom:12px"><div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">General</div><div>info@christlinksocial.com</div></div><div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;margin-bottom:12px"><div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Host Support</div><div>info@christlinksocial.com</div></div>'},
 };
 function showFooterPage(key) {
