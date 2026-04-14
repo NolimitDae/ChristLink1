@@ -2439,9 +2439,55 @@ button, a, [onclick],
 </nav>
 
 <!-- ═══════════════════════════════════════════════════
+     LANDING PAGE
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-landing" style="min-height:100vh;display:none;flex-direction:column;align-items:center;background:linear-gradient(180deg,#0d0d1a 0%,#0a0a0f 100%);padding:0;overflow-x:hidden">
+  <!-- Nav -->
+  <div style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;box-sizing:border-box;max-width:480px;margin:0 auto">
+    <img src="/Header.png" alt="ChristLink" style="height:36px;object-fit:contain">
+    <button onclick="openAuth('signin')" style="background:none;border:1px solid rgba(201,168,76,.4);color:var(--gold);font-size:13px;font-weight:600;padding:8px 16px;border-radius:20px;cursor:pointer">Sign In</button>
+  </div>
+  <!-- Hero -->
+  <div style="text-align:center;padding:40px 24px 32px;max-width:420px;margin:0 auto">
+    <div style="width:72px;height:72px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px">
+      <svg width="38" height="38" viewBox="0 0 32 32" fill="none">
+        <path d="M9 21 L9 11 C9 10 9.8 9.2 10.8 9.2 C11.8 9.2 12.5 10 12.5 11 L12.5 8 C12.5 7.2 13.2 6.5 14 6.5 C14.8 6.5 15.5 7.2 15.5 8 L15.5 7 C15.5 6.2 16.2 5.5 17 5.5 C17.8 5.5 18.5 6.2 18.5 7 L18.5 8 C18.5 7.2 19.2 6.5 20 6.5 C20.8 6.5 21.5 7.2 21.5 8 L21.5 11 C22.5 10 23.5 10 23.5 11 L23.5 19 C23.5 22 21 24.5 18 24.5 L14 24.5 C11 24.5 9 22.5 9 21Z" stroke="#C9A84C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="16" y1="24.5" x2="16" y2="29" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="13.5" y1="27" x2="18.5" y2="27" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h1 style="font-size:28px;font-weight:800;color:#fff;margin:0 0 12px;line-height:1.2;letter-spacing:-0.5px">Faith Events,<br>Made Simple.</h1>
+    <p style="font-size:15px;color:rgba(255,255,255,0.5);line-height:1.6;margin:0 0 32px">Discover and host Christian events in your city. Connect with believers who share your faith.</p>
+    <button onclick="openAuth('signup')" style="width:100%;background:linear-gradient(135deg,#c9a227,#f5d678);color:#0a0a0f;font-size:16px;font-weight:700;padding:16px;border-radius:14px;border:none;cursor:pointer;margin-bottom:12px">Get Started — It's Free</button>
+    <button onclick="document.getElementById('tabbar').style.display='';document.getElementById('topnav').style.display='';document.getElementById('page-landing').classList.remove('active');document.getElementById('page-landing').style.display='none';goTo('browse')" style="width:100%;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);font-size:14px;font-weight:600;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);cursor:pointer">Browse Events First →</button>
+  </div>
+  <!-- Features -->
+  <div style="width:100%;max-width:480px;padding:0 20px 60px;box-sizing:border-box;margin:0 auto">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:32px">
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 12px;text-align:center">
+        <div style="font-size:22px;margin-bottom:8px">🗓️</div>
+        <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Find Events</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);line-height:1.4">Worship nights, conferences & more</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 12px;text-align:center">
+        <div style="font-size:22px;margin-bottom:8px">✝️</div>
+        <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Host Events</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);line-height:1.4">Sell tickets & manage attendees</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 12px;text-align:center">
+        <div style="font-size:22px;margin-bottom:8px">🙏</div>
+        <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Connect</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);line-height:1.4">Share & pray with the community</div>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:12px;color:rgba(255,255,255,0.25)">© 2025 ChristLink · Built with faith</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
      HOME PAGE
 ═══════════════════════════════════════════════════ -->
-<div class="page active" id="page-home">
+<div class="page" id="page-home">
 
   <!-- Hero -->
   <div class="hero">
@@ -4198,6 +4244,7 @@ button, a, [onclick],
     <button class="admin-tab" onclick="switchAdminTab('users',this)">Users</button>
     <button class="admin-tab" onclick="switchAdminTab('activity',this)">Activity</button>
     <button class="admin-tab" onclick="switchAdminTab('manage',this)">Manage</button>
+    <button class="admin-tab" onclick="switchAdminTab('community',this)">Community</button>
   </div>
   <!-- Panel container -->
   <div id="adminPanels" style="padding:20px;padding-bottom:80px">
@@ -4263,6 +4310,22 @@ button, a, [onclick],
         </select>
       </div>
       <div id="adminUserTable"></div>
+    </div>
+    <!-- COMMUNITY PANEL -->
+    <div id="admin-panel-community" class="admin-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="admin-section-title" style="margin:0">Community Posts</div>
+        <button id="adminDelPostsBtn" onclick="adminDeleteSelectedPosts()" style="display:none;background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Delete Selected</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted2);cursor:pointer">
+          <input type="checkbox" id="adminSelectAllPosts" onchange="adminToggleSelectAllPosts(this.checked)" style="accent-color:var(--gold)">
+          Select all
+        </label>
+      </div>
+      <div id="adminPostsList" style="display:flex;flex-direction:column;gap:10px">
+        <div style="text-align:center;padding:30px;color:var(--muted2);font-size:14px">Loading…</div>
+      </div>
     </div>
   </div>
 </div>
@@ -4664,6 +4727,17 @@ sb.auth.onAuthStateChange((event, session) => {
   syncAuthUI();
   if (currentUser) { fetchProfile(); fetchNotifCount(); startNotifPoll(); }
   else stopNotifPoll();
+  if (currentUser) {
+    // User just logged in — hide landing, show home
+    const lp = document.getElementById('page-landing');
+    if (lp && lp.classList.contains('active')) {
+      lp.classList.remove('active');
+      lp.style.display = 'none';
+      document.getElementById('tabbar').style.display = '';
+      document.getElementById('topnav').style.display = '';
+      goTo('home');
+    }
+  }
 });
 
 (async () => {
@@ -4671,7 +4745,22 @@ sb.auth.onAuthStateChange((event, session) => {
   currentSession = session;
   currentUser    = session?.user || null;
   syncAuthUI();
-  if (currentUser) { fetchProfile(); fetchNotifCount(); startNotifPoll(); }
+  if (currentUser) {
+    fetchProfile(); fetchNotifCount(); startNotifPoll();
+  } else {
+    // Show landing page to logged-out visitors (skip if deep-link param present)
+    const hasDeepLink = window.location.search.includes('connect_return') ||
+                        window.location.search.includes('listing_success') ||
+                        window.location.search.includes('reauth');
+    if (!hasDeepLink) {
+      document.getElementById('page-home').classList.remove('active');
+      const lp = document.getElementById('page-landing');
+      lp.classList.add('active');
+      lp.style.display = 'flex';
+      document.getElementById('tabbar').style.display = 'none';
+      document.getElementById('topnav').style.display = 'none';
+    }
+  }
 })();
 
 function syncAuthUI() {
@@ -9134,8 +9223,8 @@ function makeCommunityPost(p) {
   const replyCount = p.reply_count || 0;
 
   const avHTML = p.profiles?.avatar_url
-    ? `<div class="feed-av" style="background:transparent;overflow:hidden;padding:0"><img src="${p.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
-    : `<div class="feed-av" style="background:${p.profiles?.avatar_color||'var(--gold)'}">${initial}</div>`;
+    ? `<div class="feed-av" style="background:transparent;overflow:hidden;padding:0;cursor:pointer" onclick="openPublicProfile('${p.author_id}')"><img src="${p.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
+    : `<div class="feed-av" style="background:${p.profiles?.avatar_color||'var(--gold)'};cursor:pointer" onclick="openPublicProfile('${p.author_id}')">${initial}</div>`;
 
   const ownerActions = isOwn ? `
     <div style="display:flex;gap:12px;margin-left:auto">
@@ -9148,7 +9237,7 @@ function makeCommunityPost(p) {
       ${avHTML}
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px">
-          <div class="feed-name">${escapeHtml(name)}</div>
+          <div class="feed-name" style="cursor:pointer" onclick="openPublicProfile('${p.author_id}')">${escapeHtml(name)}</div>
           ${ownerActions}
         </div>
         <div class="feed-time">${formatTimeAgo(p.created_at)}</div>
@@ -9156,7 +9245,7 @@ function makeCommunityPost(p) {
     </div>
     <div class="feed-body" id="post-body-${p.id}" style="white-space:pre-wrap">${escapeHtml(p.body)}</div>
     <div class="feed-reactions">
-      <button class="reaction-btn" data-post-id="${p.id}" onclick="amenPost('${p.id}',this)"><svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M10 6 L10 18 C10 21 12.5 23 16 23 C19.5 23 22 21 22 18 L22 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 10 C8 9 7 11 7 13 C7 15 9 15 9 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 10 C24 9 25 11 25 13 C25 15 23 15 23 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 27 L16 23 L19 27" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Amen <span>${p.amen_count||0}</span></button>
+      <button class="reaction-btn" data-post-id="${p.id}" onclick="amenPost('${p.id}',this)"><svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M9 20 L9 11 C9 10.2 9.6 9.5 10.5 9.5 C11.4 9.5 12 10.2 12 11 L12 8.5 C12 7.7 12.6 7 13.5 7 C14.4 7 15 7.7 15 8.5 L15 7.5 C15 6.7 15.6 6 16.5 6 C17.4 6 18 6.7 18 7.5 L18 8.5 C18 7.7 18.6 7 19.5 7 C20.4 7 21 7.7 21 8.5 L21 11 C21.5 10.4 22 10.2 22.5 10.5 C23 10.8 23 11.5 23 12 L23 18 C23 21.3 20.3 24 17 24 L15 24 C11.7 24 9 21.3 9 18 Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="24" x2="16" y2="29" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="13.5" y1="27" x2="18.5" y2="27" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Amen <span>${p.amen_count||0}</span></button>
       <button class="reply-toggle-btn ${replyCount > 0 ? 'has-replies' : ''}" id="reply-toggle-${p.id}" onclick="toggleReplies('${p.id}', this)">
         <svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M5 6 C5 5 6 4 7 4 L22 4 C23 4 24 5 24 6 L24 16 C24 17 23 18 22 18 L14 18 L9 23 L9 18 L7 18 C6 18 5 17 5 16 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>${replyCount > 0 ? replyCount + ' repl' + (replyCount === 1 ? 'y' : 'ies') : 'Reply'}
       </button>
@@ -10608,6 +10697,7 @@ function switchAdminTab(tab, btn) {
 }
 
 function loadAdminPanel(tab) {
+  if (tab === 'community') { loadAdminCommunityPosts(); return; }
   if (_adminLoaded[tab]) return;
   _adminLoaded[tab] = true;
   switch(tab) {
@@ -10622,6 +10712,68 @@ function loadAdminPanel(tab) {
 
 function adminHeaders() {
   return { 'Authorization': `Bearer ${currentSession?.access_token}` };
+}
+
+async function loadAdminCommunityPosts() {
+  const list = document.getElementById('adminPostsList');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted2);font-size:14px"><div class="spinner spinner-gold" style="margin:0 auto 10px"></div>Loading…</div>';
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/posts`, {
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` }
+    });
+    const data = await res.json();
+    const posts = data.posts || [];
+    if (!posts.length) {
+      list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted2);font-size:14px">No posts yet.</div>';
+      return;
+    }
+    list.innerHTML = posts.map(p => `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;display:flex;gap:12px;align-items:flex-start">
+        <input type="checkbox" class="admin-post-check" data-id="${p.id}" onchange="adminPostCheckChange()" style="margin-top:3px;accent-color:var(--gold);flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${escapeHtml(p.profiles?.full_name || 'Unknown')}</div>
+            <div style="font-size:11px;color:var(--muted2)">${formatTimeAgo(p.created_at)}</div>
+          </div>
+          <div style="font-size:13px;color:var(--muted2);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${escapeHtml(p.body || '')}</div>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--red);font-size:13px">Failed to load posts.</div>';
+  }
+}
+
+function adminPostCheckChange() {
+  const checks = document.querySelectorAll('.admin-post-check:checked');
+  const btn = document.getElementById('adminDelPostsBtn');
+  if (btn) btn.style.display = checks.length > 0 ? 'block' : 'none';
+}
+
+function adminToggleSelectAllPosts(checked) {
+  document.querySelectorAll('.admin-post-check').forEach(c => { c.checked = checked; });
+  adminPostCheckChange();
+}
+
+async function adminDeleteSelectedPosts() {
+  const checks = [...document.querySelectorAll('.admin-post-check:checked')];
+  if (!checks.length) return;
+  if (!confirm(`Delete ${checks.length} post${checks.length > 1 ? 's' : ''}?`)) return;
+  const btn = document.getElementById('adminDelPostsBtn');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+  let failed = 0;
+  for (const c of checks) {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/posts/${c.dataset.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${currentSession?.access_token}` }
+      });
+      if (!res.ok) failed++;
+    } catch { failed++; }
+  }
+  btn.disabled = false;
+  showToast(failed ? `Deleted with ${failed} error(s).` : 'Posts deleted.', failed ? 'error' : 'success');
+  loadAdminCommunityPosts();
 }
 
 async function loadAdminOverview() {
