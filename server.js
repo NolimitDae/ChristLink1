@@ -2708,6 +2708,27 @@ app.delete('/api/admin/events/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// List all community posts for admin moderation
+app.get('/api/admin/posts', requireAdmin, async (req, res) => {
+  try {
+    const limit  = Math.min(parseInt(req.query.limit) || 50, 200);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    const { data: posts, error } = await supabaseAdmin
+      .from('community_posts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (error) return res.status(500).json({ error: error.message });
+    if (!posts?.length) return res.json({ posts: [] });
+    const ids = [...new Set(posts.map(p => p.author_id).filter(Boolean))];
+    const { data: profiles } = ids.length
+      ? await supabaseAdmin.from('profiles').select('id, full_name, avatar_url, avatar_color').in('id', ids)
+      : { data: [] };
+    const pm = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+    res.json({ posts: posts.map(p => ({ ...p, profiles: pm[p.author_id] || null })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Delete community post (admin moderation)
 app.delete('/api/admin/posts/:id', requireAdmin, async (req, res) => {
   try {
