@@ -4871,7 +4871,7 @@ function goTo(page) {
   if (curr?.id === 'page-browse') browseReady = false;
   // Stop forum polling when leaving the forum page
   if (curr?.id === 'page-forum') { clearInterval(forumPolling); forumPolling = null; }
-  curr.classList.remove('active');
+  if (curr) curr.classList.remove('active');
   // Slide-in for drill-down pages, fade-up for top-level
   const slidePages = ['event-detail', 'forum'];
   next.classList.remove('slide-in');
