@@ -4747,6 +4747,7 @@ sb.auth.onAuthStateChange((event, session) => {
   syncAuthUI();
   if (currentUser) {
     fetchProfile(); fetchNotifCount(); startNotifPoll();
+    if (!document.querySelector('.page.active')) goTo('home');
   } else {
     // Show landing page to logged-out visitors (skip if deep-link param present)
     const hasDeepLink = window.location.search.includes('connect_return') ||
