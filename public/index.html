@@ -2445,7 +2445,8 @@ button, a, [onclick],
   <!-- Nav -->
   <div style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;box-sizing:border-box;max-width:480px;margin:0 auto">
     <img src="/Header.png" alt="ChristLink" style="height:36px;object-fit:contain">
-    <button onclick="openAuth('signin')" style="background:none;border:1px solid rgba(201,168,76,.4);color:var(--gold);font-size:13px;font-weight:600;padding:8px 16px;border-radius:20px;cursor:pointer">Sign In</button>
+    <button id="landingBackBtn" onclick="hideLandingPage()" style="display:none;background:none;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);font-size:13px;font-weight:600;padding:8px 16px;border-radius:20px;cursor:pointer">← Back</button>
+    <button id="landingSignInBtn" onclick="openAuth('signin')" style="background:none;border:1px solid rgba(201,168,76,.4);color:var(--gold);font-size:13px;font-weight:600;padding:8px 16px;border-radius:20px;cursor:pointer">Sign In</button>
   </div>
   <!-- Hero -->
   <div style="text-align:center;padding:40px 24px 32px;max-width:420px;margin:0 auto">
@@ -2586,7 +2587,7 @@ button, a, [onclick],
     </div>
     <div class="footer-tagline">Faith events, made simple.</div>
     <div class="footer-links">
-      <a onclick="showFooterPage('about')">About</a>
+      <a onclick="showLandingPage()">About</a>
       <a onclick="showFooterPage('privacy')">Privacy</a>
       <a onclick="showFooterPage('terms')">Terms</a>
       <a onclick="showFooterPage('contact')">Contact</a>
@@ -9473,6 +9474,34 @@ function showFooterPage(key) {
   document.getElementById('footerSheetTitle').textContent = p.title;
   document.getElementById('footerSheetBody').innerHTML   = p.body;
   openSheet('footerSheet');
+}
+
+function showLandingPage() {
+  document.querySelectorAll('.page.active').forEach(p => p.classList.remove('active'));
+  const lp = document.getElementById('page-landing');
+  lp.classList.add('active');
+  lp.style.display = 'flex';
+  document.getElementById('tabbar').style.display = 'none';
+  document.getElementById('topnav').style.display = 'none';
+  if (currentUser) {
+    document.getElementById('landingBackBtn').style.display = '';
+    document.getElementById('landingSignInBtn').style.display = 'none';
+  } else {
+    document.getElementById('landingBackBtn').style.display = 'none';
+    document.getElementById('landingSignInBtn').style.display = '';
+  }
+  lp.scrollTop = 0;
+}
+
+function hideLandingPage() {
+  const lp = document.getElementById('page-landing');
+  lp.classList.remove('active');
+  lp.style.display = 'none';
+  document.getElementById('landingBackBtn').style.display = 'none';
+  document.getElementById('landingSignInBtn').style.display = '';
+  document.getElementById('tabbar').style.display = '';
+  document.getElementById('topnav').style.display = '';
+  goTo('home');
 }
 
 // ═══════════════════════════════════════════════════════════
