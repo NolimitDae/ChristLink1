@@ -2443,7 +2443,7 @@ button, a, [onclick],
 ═══════════════════════════════════════════════════ -->
 <div class="page" id="page-landing" style="min-height:100vh;display:none;flex-direction:column;align-items:center;background:linear-gradient(180deg,#0d0d1a 0%,#0a0a0f 100%);padding:0;overflow-x:hidden">
   <!-- Nav -->
-  <div style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;box-sizing:border-box;max-width:480px;margin:0 auto">
+  <div id="landingNavSection" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;box-sizing:border-box;max-width:480px;margin:0 auto">
     <img src="/Header.png" alt="ChristLink" style="height:36px;object-fit:contain">
     <button id="landingBackBtn" onclick="hideLandingPage()" style="display:none;background:none;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);font-size:13px;font-weight:600;padding:8px 16px;border-radius:20px;cursor:pointer">← Back</button>
     <button id="landingSignInBtn" onclick="openAuth('signin')" style="background:none;border:1px solid rgba(201,168,76,.4);color:var(--gold);font-size:13px;font-weight:600;padding:8px 16px;border-radius:20px;cursor:pointer">Sign In</button>
@@ -4781,6 +4781,12 @@ sb.auth.onAuthStateChange((event, session) => {
     if (lp && lp.classList.contains('active')) {
       lp.classList.remove('active');
       lp.style.display = 'none';
+      lp.style.overflowY = '';
+      lp.style.height = '';
+      lp.style.minHeight = '';
+      lp.style.paddingTop = '0';
+      document.body.style.overflow = '';
+      document.getElementById('landingNavSection').style.display = '';
       document.getElementById('tabbar').style.display = '';
       document.getElementById('topnav').style.display = '';
       goTo('home');
@@ -4806,6 +4812,10 @@ sb.auth.onAuthStateChange((event, session) => {
       const lp = document.getElementById('page-landing');
       lp.classList.add('active');
       lp.style.display = 'flex';
+      lp.style.overflowY = 'auto';
+      lp.style.height = '100vh';
+      lp.style.minHeight = '0';
+      document.body.style.overflow = 'hidden';
       document.getElementById('tabbar').style.display = 'none';
       document.getElementById('topnav').style.display = 'none';
     }
@@ -9546,14 +9556,23 @@ function showLandingPage() {
   const lp = document.getElementById('page-landing');
   lp.classList.add('active');
   lp.style.display = 'flex';
+  lp.style.overflowY = 'auto';
+  lp.style.height = '100vh';
+  lp.style.minHeight = '0';
   document.getElementById('tabbar').style.display = 'none';
-  document.getElementById('topnav').style.display = 'none';
+  document.body.style.overflow = 'hidden';
+
   if (currentUser) {
-    document.getElementById('landingBackBtn').style.display = '';
-    document.getElementById('landingSignInBtn').style.display = 'none';
+    // Keep topnav — hide the landing page's own nav row
+    document.getElementById('landingNavSection').style.display = 'none';
+    lp.style.paddingTop = 'calc(var(--nav-h) + var(--safe-t))';
   } else {
+    // Non-logged-in: hide topnav, show landing nav
+    document.getElementById('topnav').style.display = 'none';
+    document.getElementById('landingNavSection').style.display = '';
     document.getElementById('landingBackBtn').style.display = 'none';
     document.getElementById('landingSignInBtn').style.display = '';
+    lp.style.paddingTop = '0';
   }
   lp.scrollTop = 0;
 }
@@ -9562,10 +9581,16 @@ function hideLandingPage() {
   const lp = document.getElementById('page-landing');
   lp.classList.remove('active');
   lp.style.display = 'none';
+  lp.style.overflowY = '';
+  lp.style.height = '';
+  lp.style.minHeight = '';
+  lp.style.paddingTop = '0';
+  document.getElementById('landingNavSection').style.display = '';
   document.getElementById('landingBackBtn').style.display = 'none';
   document.getElementById('landingSignInBtn').style.display = '';
   document.getElementById('tabbar').style.display = '';
   document.getElementById('topnav').style.display = '';
+  document.body.style.overflow = '';
   goTo('home');
 }
 
