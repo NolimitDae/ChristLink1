@@ -2376,7 +2376,7 @@ button, a, [onclick],
      TOP NAV
 ═══════════════════════════════════════════════════ -->
 <header id="topnav">
-  <div class="header-logo-mark" onclick="goTo('home')" aria-label="ChristLink — Home" id="headerLogoMark"></div>
+  <div class="header-logo-mark" onclick="document.getElementById('page-landing').classList.contains('active') && currentUser ? hideLandingPage() : goTo('home')" aria-label="ChristLink — Home" id="headerLogoMark"></div>
   <nav class="nav-desktop-links" id="desktopLinks">
     <a href="javascript:void(0)" onclick="goTo('browse')" data-page="browse">Explore</a>
     <a href="javascript:void(0)" onclick="goTo('community')" data-page="community">Community</a>
@@ -2449,22 +2449,24 @@ button, a, [onclick],
     <button id="landingSignInBtn" onclick="openAuth('signin')" style="background:none;border:1px solid rgba(201,168,76,.4);color:var(--gold);font-size:13px;font-weight:600;padding:8px 16px;border-radius:20px;cursor:pointer">Sign In</button>
   </div>
   <!-- Hero -->
-  <div style="text-align:center;padding:40px 24px 32px;max-width:420px;margin:0 auto">
-    <div style="width:72px;height:72px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px">
+  <div style="text-align:center;padding:24px 24px 20px;max-width:420px;margin:0 auto">
+    <div style="width:64px;height:64px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
       <svg width="38" height="38" viewBox="0 0 32 32" fill="none">
         <path d="M9 21 L9 11 C9 10 9.8 9.2 10.8 9.2 C11.8 9.2 12.5 10 12.5 11 L12.5 8 C12.5 7.2 13.2 6.5 14 6.5 C14.8 6.5 15.5 7.2 15.5 8 L15.5 7 C15.5 6.2 16.2 5.5 17 5.5 C17.8 5.5 18.5 6.2 18.5 7 L18.5 8 C18.5 7.2 19.2 6.5 20 6.5 C20.8 6.5 21.5 7.2 21.5 8 L21.5 11 C22.5 10 23.5 10 23.5 11 L23.5 19 C23.5 22 21 24.5 18 24.5 L14 24.5 C11 24.5 9 22.5 9 21Z" stroke="#C9A84C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         <line x1="16" y1="24.5" x2="16" y2="29" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/>
         <line x1="13.5" y1="27" x2="18.5" y2="27" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
     </div>
-    <h1 style="font-size:28px;font-weight:800;color:#fff;margin:0 0 12px;line-height:1.2;letter-spacing:-0.5px">Faith Events,<br>Made Simple.</h1>
-    <p style="font-size:15px;color:rgba(255,255,255,0.5);line-height:1.6;margin:0 0 32px">Discover and host Christian events in your city. Connect with believers who share your faith.</p>
-    <button onclick="openAuth('signup')" style="width:100%;background:linear-gradient(135deg,#c9a227,#f5d678);color:#0a0a0f;font-size:16px;font-weight:700;padding:16px;border-radius:14px;border:none;cursor:pointer;margin-bottom:12px">Get Started — It's Free</button>
-    <button onclick="document.getElementById('tabbar').style.display='';document.getElementById('topnav').style.display='';document.getElementById('page-landing').classList.remove('active');document.getElementById('page-landing').style.display='none';goTo('browse')" style="width:100%;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);font-size:14px;font-weight:600;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);cursor:pointer">Browse Events First →</button>
+    <h1 style="font-size:26px;font-weight:800;color:#fff;margin:0 0 10px;line-height:1.2;letter-spacing:-0.5px">Faith Events,<br>Made Simple.</h1>
+    <p style="font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;margin:0 0 20px">Discover and host Christian events in your city. Connect with believers who share your faith.</p>
+    <div id="landingCtaSection">
+      <button onclick="openAuth('signup')" style="width:100%;background:linear-gradient(135deg,#c9a227,#f5d678);color:#0a0a0f;font-size:16px;font-weight:700;padding:14px;border-radius:14px;border:none;cursor:pointer;margin-bottom:10px">Get Started — It's Free</button>
+      <button onclick="hideLandingPage();goTo('browse')" style="width:100%;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);font-size:14px;font-weight:600;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);cursor:pointer">Browse Events First →</button>
+    </div>
   </div>
   <!-- Features -->
-  <div style="width:100%;max-width:480px;padding:0 20px 60px;box-sizing:border-box;margin:0 auto">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:32px">
+  <div style="width:100%;max-width:480px;padding:0 20px 24px;box-sizing:border-box;margin:0 auto">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
       <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 12px;text-align:center">
         <div style="font-size:22px;margin-bottom:8px">🗓️</div>
         <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Find Events</div>
@@ -4781,12 +4783,13 @@ sb.auth.onAuthStateChange((event, session) => {
     if (lp && lp.classList.contains('active')) {
       lp.classList.remove('active');
       lp.style.display = 'none';
-      lp.style.overflowY = '';
+      lp.style.overflow = '';
       lp.style.height = '';
       lp.style.minHeight = '';
       lp.style.paddingTop = '0';
       document.body.style.overflow = '';
       document.getElementById('landingNavSection').style.display = '';
+      document.getElementById('landingCtaSection').style.display = '';
       document.getElementById('tabbar').style.display = '';
       document.getElementById('topnav').style.display = '';
       goTo('home');
@@ -4812,10 +4815,11 @@ sb.auth.onAuthStateChange((event, session) => {
       const lp = document.getElementById('page-landing');
       lp.classList.add('active');
       lp.style.display = 'flex';
-      lp.style.overflowY = 'auto';
+      lp.style.overflow = 'hidden';
       lp.style.height = '100vh';
       lp.style.minHeight = '0';
       document.body.style.overflow = 'hidden';
+      _landingSwipeInit(lp);
       document.getElementById('tabbar').style.display = 'none';
       document.getElementById('topnav').style.display = 'none';
     }
@@ -9556,42 +9560,66 @@ function showLandingPage() {
   const lp = document.getElementById('page-landing');
   lp.classList.add('active');
   lp.style.display = 'flex';
-  lp.style.overflowY = 'auto';
+  lp.style.overflow = 'hidden';
   lp.style.height = '100vh';
   lp.style.minHeight = '0';
   document.getElementById('tabbar').style.display = 'none';
   document.body.style.overflow = 'hidden';
 
   if (currentUser) {
-    // Keep topnav — hide the landing page's own nav row
+    // Keep topnav — hide landing's own nav row and CTAs (already in app)
     document.getElementById('landingNavSection').style.display = 'none';
+    document.getElementById('landingCtaSection').style.display = 'none';
     lp.style.paddingTop = 'calc(var(--nav-h) + var(--safe-t))';
   } else {
-    // Non-logged-in: hide topnav, show landing nav
     document.getElementById('topnav').style.display = 'none';
     document.getElementById('landingNavSection').style.display = '';
+    document.getElementById('landingCtaSection').style.display = '';
     document.getElementById('landingBackBtn').style.display = 'none';
     document.getElementById('landingSignInBtn').style.display = '';
     lp.style.paddingTop = '0';
   }
   lp.scrollTop = 0;
+  _landingSwipeInit(lp);
 }
 
 function hideLandingPage() {
   const lp = document.getElementById('page-landing');
   lp.classList.remove('active');
   lp.style.display = 'none';
-  lp.style.overflowY = '';
+  lp.style.overflow = '';
   lp.style.height = '';
   lp.style.minHeight = '';
   lp.style.paddingTop = '0';
   document.getElementById('landingNavSection').style.display = '';
+  document.getElementById('landingCtaSection').style.display = '';
   document.getElementById('landingBackBtn').style.display = 'none';
   document.getElementById('landingSignInBtn').style.display = '';
   document.getElementById('tabbar').style.display = '';
   document.getElementById('topnav').style.display = '';
   document.body.style.overflow = '';
+  _landingSwipeDestroy(lp);
   goTo('home');
+}
+
+// ── Swipe-right-to-go-back for landing page ───────────────
+let _lsTouchX = 0, _lsTouchY = 0;
+function _landingSwipeStart(e) {
+  _lsTouchX = e.touches[0].clientX;
+  _lsTouchY = e.touches[0].clientY;
+}
+function _landingSwipeEnd(e) {
+  const dx = e.changedTouches[0].clientX - _lsTouchX;
+  const dy = Math.abs(e.changedTouches[0].clientY - _lsTouchY);
+  if (dx > 60 && dy < 80) hideLandingPage();
+}
+function _landingSwipeInit(el) {
+  el.addEventListener('touchstart', _landingSwipeStart, { passive: true });
+  el.addEventListener('touchend',   _landingSwipeEnd,   { passive: true });
+}
+function _landingSwipeDestroy(el) {
+  el.removeEventListener('touchstart', _landingSwipeStart);
+  el.removeEventListener('touchend',   _landingSwipeEnd);
 }
 
 // ═══════════════════════════════════════════════════════════
