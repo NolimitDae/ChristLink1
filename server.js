@@ -1288,22 +1288,55 @@ app.post('/api/tax-estimate', requireAuth, async (req, res) => {
 });
 
 app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) => {
-  const { paymentMethodId, eventId, hostEmail } = req.body;
-  if (!paymentMethodId || !eventId) return res.status(400).json({ error: 'Payment method and event ID required.' });
+  const { paymentMethodId, eventId, hostEmail, promoCode } = req.body;
+  if (!eventId) return res.status(400).json({ error: 'Event ID required.' });
+  if (!paymentMethodId) return res.status(400).json({ error: 'Payment method required.' });
   const { data: ev } = await supabaseAdmin.from('events').select('id, name, listing_fee_paid')
     .eq('id', eventId).eq('host_id', req.userId).single();
   if (!ev) return res.status(404).json({ error: 'Event not found or not yours.' });
   if (ev.listing_fee_paid) return res.status(400).json({ error: 'Listing fee already paid.' });
+
+  // Apply promo code if provided
+  let chargeAmount = HOST_LISTING_FEE;
+  let appliedPromoId = null;
+  if (promoCode) {
+    const { data: promo } = await supabaseAdmin
+      .from('listing_promo_codes')
+      .select('*')
+      .eq('code', promoCode.toUpperCase().trim())
+      .eq('active', true)
+      .single();
+    if (promo && !(promo.expires_at && new Date() > new Date(promo.expires_at))
+              && (promo.max_uses === null || promo.uses_count < promo.max_uses)) {
+      const discountCents = promo.discount_type === 'percent'
+        ? Math.round(HOST_LISTING_FEE * (promo.discount_value / 100))
+        : Math.min(Math.round(promo.discount_value * 100), HOST_LISTING_FEE);
+      chargeAmount = Math.max(0, HOST_LISTING_FEE - discountCents);
+      appliedPromoId = promo.id;
+    }
+  }
+
+  // Free after discount — skip Stripe entirely
+  if (chargeAmount === 0) {
+    await supabaseAdmin.from('events').update({ listing_fee_paid: true, listing_payment_id: 'promo_free' }).eq('id', eventId);
+    if (appliedPromoId) {
+      const { data: pc } = await supabaseAdmin.from('listing_promo_codes').select('uses_count').eq('id', appliedPromoId).single();
+      await supabaseAdmin.from('listing_promo_codes').update({ uses_count: (pc?.uses_count || 0) + 1 }).eq('id', appliedPromoId);
+    }
+    await new Promise(r => setTimeout(r, 300));
+    return res.json({ success: true, intentId: 'promo_free' });
+  }
+
   try {
     const intent = await stripe.paymentIntents.create({
-      amount:               HOST_LISTING_FEE,
+      amount:               chargeAmount,
       currency:             'usd',
       payment_method_types: ['card'],
       payment_method:       paymentMethodId,
       confirm:              true,
       receipt_email:        hostEmail || req.user.email,
       description:          `Christ Link listing fee — ${ev.name}`,
-      metadata:             { type: 'listing_fee', event_id: eventId, host_id: req.userId },
+      metadata:             { type: 'listing_fee', event_id: eventId, host_id: req.userId, promo_id: appliedPromoId || '' },
       return_url:           `${process.env.APP_URL}/?listing_success=1`,
     }, { idempotencyKey: `listing-fee-${eventId}-${paymentMethodId.slice(-12)}` });
     if (intent.status === 'succeeded') {
@@ -1311,7 +1344,10 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
         .from('events')
         .update({ listing_fee_paid: true, listing_payment_id: intent.id })
         .eq('id', eventId);
-      // Small delay to ensure DB commit propagates before frontend calls /publish
+      if (appliedPromoId) {
+        const { data: pc } = await supabaseAdmin.from('listing_promo_codes').select('uses_count').eq('id', appliedPromoId).single();
+        await supabaseAdmin.from('listing_promo_codes').update({ uses_count: (pc?.uses_count || 0) + 1 }).eq('id', appliedPromoId);
+      }
       await new Promise(r => setTimeout(r, 300));
       return res.json({ success: true, intentId: intent.id });
     }
@@ -2737,6 +2773,76 @@ app.delete('/api/admin/posts/:id', requireAdmin, async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ─── LISTING PROMO CODES (admin) ─────────────────────────────
+app.get('/api/admin/listing-promo-codes', requireAdmin, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('listing_promo_codes')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ codes: data });
+});
+
+app.post('/api/admin/listing-promo-codes', requireAdmin, async (req, res) => {
+  const { code, discount_type, discount_value, max_uses, expires_at } = req.body;
+  if (!code || !discount_type || !discount_value)
+    return res.status(400).json({ error: 'code, discount_type and discount_value are required.' });
+  if (!['percent','fixed'].includes(discount_type))
+    return res.status(400).json({ error: 'discount_type must be percent or fixed.' });
+  const val = parseFloat(discount_value);
+  if (isNaN(val) || val <= 0) return res.status(400).json({ error: 'discount_value must be a positive number.' });
+  if (discount_type === 'percent' && val > 100) return res.status(400).json({ error: 'Percent discount cannot exceed 100.' });
+  const { data, error } = await supabaseAdmin
+    .from('listing_promo_codes')
+    .insert({
+      code: code.toUpperCase().trim(),
+      discount_type,
+      discount_value: val,
+      max_uses: max_uses ? parseInt(max_uses, 10) : null,
+      expires_at: expires_at || null,
+    })
+    .select()
+    .single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ code: data });
+});
+
+app.patch('/api/admin/listing-promo-codes/:id', requireAdmin, async (req, res) => {
+  const { active } = req.body;
+  const { error } = await supabaseAdmin
+    .from('listing_promo_codes')
+    .update({ active })
+    .eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+// Validate a promo code (called by host before payment)
+app.post('/api/validate-listing-promo', requireAuth, async (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'Code required.' });
+  const { data: promo } = await supabaseAdmin
+    .from('listing_promo_codes')
+    .select('*')
+    .eq('code', code.toUpperCase().trim())
+    .eq('active', true)
+    .single();
+  if (!promo) return res.status(404).json({ error: 'Invalid or expired promo code.' });
+  if (promo.expires_at && new Date() > new Date(promo.expires_at))
+    return res.status(400).json({ error: 'This promo code has expired.' });
+  if (promo.max_uses !== null && promo.uses_count >= promo.max_uses)
+    return res.status(400).json({ error: 'This promo code has reached its usage limit.' });
+  // Calculate discounted amount
+  let discountCents;
+  if (promo.discount_type === 'percent') {
+    discountCents = Math.round(HOST_LISTING_FEE * (promo.discount_value / 100));
+  } else {
+    discountCents = Math.min(Math.round(promo.discount_value * 100), HOST_LISTING_FEE);
+  }
+  const finalCents = Math.max(0, HOST_LISTING_FEE - discountCents);
+  res.json({ valid: true, promo_id: promo.id, discount_type: promo.discount_type, discount_value: promo.discount_value, discount_cents: discountCents, final_cents: finalCents });
 });
 
 // ─── SCHEDULED EVENT AUTO-PUBLISHER ─────────────────────────

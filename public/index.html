@@ -3652,6 +3652,12 @@ button, a, [onclick],
         <div class="card-wrap" id="lfExpWrap"><div id="lfCardExpiryEl"></div></div>
         <div class="card-wrap" id="lfCvcWrap"><div id="lfCardCvcEl"></div></div>
       </div>
+      <!-- Promo code -->
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input type="text" id="lfPromoInput" class="field" placeholder="Promo code (optional)" style="flex:1;margin:0;text-transform:uppercase">
+        <button onclick="applyListingPromo()" style="background:var(--surface3);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:600;padding:0 14px;border-radius:var(--r-md);cursor:pointer;white-space:nowrap">Apply</button>
+      </div>
+      <div id="lfPromoMsg" style="display:none;font-size:13px;color:#22c55e;margin-bottom:12px;font-weight:600"></div>
       <div class="error-msg" id="lfErr"></div>
       <button class="btn btn-gold" id="lfPayBtn" onclick="processListingFee()">Pay $19.99 →</button>
     </div>
@@ -4246,6 +4252,7 @@ button, a, [onclick],
     <button class="admin-tab" onclick="switchAdminTab('activity',this)">Activity</button>
     <button class="admin-tab" onclick="switchAdminTab('manage',this)">Manage</button>
     <button class="admin-tab" onclick="switchAdminTab('community',this)">Community</button>
+    <button class="admin-tab" onclick="switchAdminTab('promos',this)">Promo Codes</button>
   </div>
   <!-- Panel container -->
   <div id="adminPanels" style="padding:20px;padding-bottom:80px">
@@ -4311,6 +4318,45 @@ button, a, [onclick],
         </select>
       </div>
       <div id="adminUserTable"></div>
+    </div>
+    <!-- PROMO CODES PANEL -->
+    <div id="admin-panel-promos" class="admin-panel">
+      <div class="admin-section-title" style="margin-bottom:16px">Listing Fee Promo Codes</div>
+      <!-- Create form -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">New Code</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="field-label">Code</label>
+            <input type="text" id="promoCode" class="field" placeholder="FAITH50" style="text-transform:uppercase">
+          </div>
+          <div>
+            <label class="field-label">Type</label>
+            <select id="promoType" class="field" onchange="adminPromoTypeChange()">
+              <option value="percent">Percent off</option>
+              <option value="fixed">Fixed $ off</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" id="promoValueLabel">Discount %</label>
+            <input type="number" id="promoValue" class="field" placeholder="50" min="1" max="100">
+          </div>
+          <div>
+            <label class="field-label">Max Uses <span style="color:var(--muted2)">(blank = unlimited)</span></label>
+            <input type="number" id="promoMaxUses" class="field" placeholder="∞" min="1">
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="field-label">Expires <span style="color:var(--muted2)">(blank = never)</span></label>
+          <input type="date" id="promoExpiry" class="field">
+        </div>
+        <div class="error-msg" id="promoCreateErr"></div>
+        <button class="btn btn-gold" onclick="adminCreatePromoCode()" style="width:100%">Create Code</button>
+      </div>
+      <!-- List -->
+      <div id="adminPromoList" style="display:flex;flex-direction:column;gap:10px">
+        <div style="text-align:center;padding:30px;color:var(--muted2);font-size:14px">Loading…</div>
+      </div>
     </div>
     <!-- COMMUNITY PANEL -->
     <div id="admin-panel-community" class="admin-panel">
@@ -4610,6 +4656,7 @@ let listingFeePaid = false;
 let listingFeePaymentMethodId = null;
 let publishMode = 'publish'; // 'draft' | 'scheduled' | 'publish'
 let listingFeeHostEmail = null;
+let listingFeePromoCode = null;
 let authMode       = 'signin';
 let pendingAction  = null;
 let isNewSignup    = false;
@@ -8556,6 +8603,12 @@ function resetListingCard() {
   listingFeePaid = false;
   listingFeePaymentMethodId = null;
   listingFeeHostEmail = null;
+  listingFeePromoCode = null;
+  _listingPromoId = null;
+  _listingPromoDiscount = 0;
+  const promoInp = document.getElementById('lfPromoInput'); if (promoInp) promoInp.value = '';
+  const promoMsg = document.getElementById('lfPromoMsg'); if (promoMsg) promoMsg.style.display = 'none';
+  const payBtn = document.getElementById('lfPayBtn'); if (payBtn) payBtn.textContent = 'Pay $19.99 →';
   lfMounted = false;
   lfCardNum = lfCardExp = lfCardCvc = null;
   ['lfCardNumberEl','lfCardExpiryEl','lfCardCvcEl'].forEach(id => {
@@ -8599,20 +8652,32 @@ function openSheet(id) {
 }
 
 async function processListingFee() {
-  if (!lfCardNum) { showToast('Card form loading…'); return; }
   const btn  = document.getElementById('lfPayBtn');
   const orig = btn.innerHTML;
   const err  = document.getElementById('lfErr');
+  const promoCode = document.getElementById('lfPromoInput').value.trim().toUpperCase() || null;
+  err.classList.remove('show');
+
+  // If promo makes it free, skip Stripe card entry entirely
+  if (_listingPromoId && _listingPromoDiscount >= (HOST_LISTING_FEE_CENTS || 1999)) {
+    listingFeePaymentMethodId = '__promo_free__';
+    listingFeeHostEmail = document.getElementById('lfEmail').value.trim();
+    listingFeePromoCode = promoCode;
+    handleListingFeePaid();
+    return;
+  }
+
+  if (!lfCardNum) { showToast('Card form loading…'); return; }
   const name = document.getElementById('lfName').value.trim();
   const email= document.getElementById('lfEmail').value.trim();
   if (!name) { err.textContent='Name on card is required.';err.classList.add('show'); return; }
   btn.disabled=true; btn.innerHTML='<div class="spinner"></div>&nbsp;Saving card…';
-  err.classList.remove('show');
   try {
     const {paymentMethod, error:pmErr} = await stripeClient.createPaymentMethod({type:'card',card:lfCardNum,billing_details:{name,email:email||undefined}});
     if (pmErr) throw new Error(pmErr.message);
     listingFeePaymentMethodId = paymentMethod.id;
     listingFeeHostEmail = email;
+    listingFeePromoCode = promoCode;
     handleListingFeePaid();
   } catch(e) {
     err.textContent=e.message; err.classList.add('show'); btn.disabled=false; btn.innerHTML=orig;
@@ -9068,7 +9133,7 @@ async function publishEvent() {
       btn.innerHTML='<div class="spinner"></div>&nbsp;Processing payment…';
       const feeRes = await fetch(`${API_BASE}/api/charge-listing-fee`,{
         method:'POST', headers: authHeader,
-        body: JSON.stringify({paymentMethodId:listingFeePaymentMethodId,eventId:event.id,hostEmail:listingFeeHostEmail}),
+        body: JSON.stringify({paymentMethodId:listingFeePaymentMethodId,eventId:event.id,hostEmail:listingFeeHostEmail,promoCode:listingFeePromoCode||undefined}),
       });
       const feeData = await feeRes.json();
       if (!feeData.success) {
@@ -10728,6 +10793,7 @@ function switchAdminTab(tab, btn) {
 
 function loadAdminPanel(tab) {
   if (tab === 'community') { loadAdminCommunityPosts(); return; }
+  if (tab === 'promos')    { loadAdminPromoCodes(); return; }
   if (_adminLoaded[tab]) return;
   _adminLoaded[tab] = true;
   switch(tab) {
@@ -10804,6 +10870,120 @@ async function adminDeleteSelectedPosts() {
   btn.disabled = false;
   showToast(failed ? `Deleted with ${failed} error(s).` : 'Posts deleted.', failed ? 'error' : 'success');
   loadAdminCommunityPosts();
+}
+
+// ─── LISTING PROMO CODES (admin) ───────────────────────────
+async function loadAdminPromoCodes() {
+  const list = document.getElementById('adminPromoList');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted2);font-size:14px"><div class="spinner spinner-gold" style="margin:0 auto 10px"></div>Loading…</div>';
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/listing-promo-codes`, { headers: adminHeaders() });
+    const data = await res.json();
+    const codes = data.codes || [];
+    if (!codes.length) {
+      list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted2);font-size:14px">No promo codes yet.</div>';
+      return;
+    }
+    list.innerHTML = codes.map(c => {
+      const discountLabel = c.discount_type === 'percent' ? `${c.discount_value}% off` : `$${parseFloat(c.discount_value).toFixed(2)} off`;
+      const usageLabel   = c.max_uses ? `${c.uses_count}/${c.max_uses} uses` : `${c.uses_count} uses`;
+      const expiredLabel = c.expires_at && new Date(c.expires_at) < new Date() ? ' · <span style="color:#ef4444">Expired</span>' : (c.expires_at ? ` · Exp ${new Date(c.expires_at).toLocaleDateString()}` : '');
+      const statusColor  = c.active ? '#22c55e' : '#ef4444';
+      const statusLabel  = c.active ? 'Active' : 'Inactive';
+      return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:15px;font-weight:700;color:var(--gold);letter-spacing:.04em">${escapeHtml(c.code)}</span>
+            <span style="font-size:11px;font-weight:600;color:${statusColor};background:${statusColor}22;border-radius:20px;padding:2px 8px">${statusLabel}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted2)">${discountLabel} · ${usageLabel}${expiredLabel}</div>
+        </div>
+        <button onclick="adminTogglePromo('${c.id}',${!c.active})" style="background:${c.active ? '#ef4444' : 'var(--gold)'};color:${c.active ? '#fff' : '#0a0a0f'};border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">${c.active ? 'Deactivate' : 'Activate'}</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;font-size:14px">${e.message}</div>`;
+  }
+}
+
+function adminPromoTypeChange() {
+  const type = document.getElementById('promoType').value;
+  const lbl  = document.getElementById('promoValueLabel');
+  const inp  = document.getElementById('promoValue');
+  if (type === 'percent') { lbl.textContent = 'Discount %'; inp.max = 100; inp.placeholder = '50'; }
+  else { lbl.textContent = 'Discount $'; inp.removeAttribute('max'); inp.placeholder = '5.00'; }
+}
+
+async function adminCreatePromoCode() {
+  const errEl = document.getElementById('promoCreateErr');
+  errEl.classList.remove('show');
+  const code  = document.getElementById('promoCode').value.trim().toUpperCase();
+  const type  = document.getElementById('promoType').value;
+  const value = document.getElementById('promoValue').value.trim();
+  const maxU  = document.getElementById('promoMaxUses').value.trim();
+  const exp   = document.getElementById('promoExpiry').value;
+  if (!code)  { errEl.textContent = 'Code is required.'; errEl.classList.add('show'); return; }
+  if (!value) { errEl.textContent = 'Discount value is required.'; errEl.classList.add('show'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/listing-promo-codes`, {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, discount_type: type, discount_value: value, max_uses: maxU || null, expires_at: exp || null }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create code.');
+    // clear form
+    ['promoCode','promoValue','promoMaxUses','promoExpiry'].forEach(id => document.getElementById(id).value = '');
+    showToast('Promo code created!', 'success');
+    loadAdminPromoCodes();
+  } catch(e) {
+    errEl.textContent = e.message; errEl.classList.add('show');
+  }
+}
+
+async function adminTogglePromo(id, active) {
+  try {
+    await fetch(`${API_BASE}/api/admin/listing-promo-codes/${id}`, {
+      method: 'PATCH',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active }),
+    });
+    loadAdminPromoCodes();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+// ─── LISTING PROMO (host side — fee sheet) ─────────────────
+let _listingPromoId = null;
+let _listingPromoDiscount = 0; // cents
+
+async function applyListingPromo() {
+  const code  = document.getElementById('lfPromoInput').value.trim();
+  const msgEl = document.getElementById('lfPromoMsg');
+  const errEl = document.getElementById('lfErr');
+  msgEl.style.display = 'none';
+  errEl.classList.remove('show');
+  if (!code) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/validate-listing-promo`, {
+      method: 'POST',
+      headers: { ...authHeader, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Invalid code.');
+    _listingPromoId = data.promo_id;
+    _listingPromoDiscount = data.discount_cents;
+    const finalDollars = (data.final_cents / 100).toFixed(2);
+    const discLabel = data.discount_type === 'percent' ? `${data.discount_value}% off` : `$${(data.discount_cents/100).toFixed(2)} off`;
+    msgEl.textContent = `✓ ${discLabel} applied — you pay $${finalDollars}`;
+    msgEl.style.display = 'block';
+    const payBtn = document.getElementById('lfPayBtn');
+    payBtn.textContent = data.final_cents === 0 ? 'Publish Free →' : `Pay $${finalDollars} →`;
+  } catch(e) {
+    _listingPromoId = null; _listingPromoDiscount = 0;
+    errEl.textContent = e.message; errEl.classList.add('show');
+  }
 }
 
 async function loadAdminOverview() {
