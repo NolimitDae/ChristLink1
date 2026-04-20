@@ -7007,8 +7007,8 @@ function renderForumMessages(posts) {
     const avHtml = !isOwn
       ? (post._isLast
           ? (avUrl
-              ? `<div class="forum-msg-av"><img src="${escapeHtml(avUrl)}" alt=""></div>`
-              : `<div class="forum-msg-av" style="background:${avColor}">${avInitial}</div>`)
+              ? `<div class="forum-msg-av" style="cursor:pointer" onclick="openPublicProfile('${post.user_id}')"><img src="${escapeHtml(avUrl)}" alt=""></div>`
+              : `<div class="forum-msg-av" style="background:${avColor};cursor:pointer" onclick="openPublicProfile('${post.user_id}')">${avInitial}</div>`)
           : `<div style="width:28px;flex-shrink:0"></div>`)
       : '';
 
@@ -7019,7 +7019,7 @@ function renderForumMessages(posts) {
 
     // Name: only on first of group; time: only on last of group
     const nameHtml = !isOwn && post._isFirst
-      ? `<div class="forum-msg-name">${escapeHtml(name)}</div>`
+      ? `<div class="forum-msg-name" style="cursor:pointer" onclick="openPublicProfile('${post.user_id}')">${escapeHtml(name)}</div>`
       : '';
     const metaHtml = post._isLast
       ? `<div class="forum-msg-meta"><span class="forum-msg-time">${timeStr}</span>${tickHtml}${delHtml}</div>`
