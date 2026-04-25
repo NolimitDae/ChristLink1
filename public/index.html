@@ -4784,12 +4784,16 @@ sb.auth.onAuthStateChange((event, session) => {
       lp.classList.remove('active');
       lp.style.display = 'none';
       lp.style.overflow = '';
+      lp.style.overscrollBehavior = '';
+      lp.style.touchAction = '';
       lp.style.height = '';
       lp.style.minHeight = '';
       lp.style.paddingTop = '0';
       document.body.style.overflow = '';
       document.getElementById('landingNavSection').style.display = '';
       document.getElementById('landingCtaSection').style.display = '';
+      document.getElementById('landingSignInBtn').style.display = '';
+      document.getElementById('landingBackBtn').style.display = 'none';
       document.getElementById('tabbar').style.display = '';
       document.getElementById('topnav').style.display = '';
       goTo('home');
@@ -4816,8 +4820,15 @@ sb.auth.onAuthStateChange((event, session) => {
       lp.classList.add('active');
       lp.style.display = 'flex';
       lp.style.overflow = 'hidden';
+      lp.style.overscrollBehavior = 'none';
+      lp.style.touchAction = 'none';
       lp.style.height = '100vh';
       lp.style.minHeight = '0';
+      lp.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+      // Ensure Sign In shows, CTA shows, Back hidden for non-logged-in initial state
+      document.getElementById('landingSignInBtn').style.display = '';
+      document.getElementById('landingBackBtn').style.display = 'none';
+      document.getElementById('landingCtaSection').style.display = '';
       document.body.style.overflow = 'hidden';
       _landingSwipeInit(lp);
       document.getElementById('tabbar').style.display = 'none';
@@ -9561,23 +9572,27 @@ function showLandingPage() {
   lp.classList.add('active');
   lp.style.display = 'flex';
   lp.style.overflow = 'hidden';
+  lp.style.overscrollBehavior = 'none';
+  lp.style.touchAction = 'none';
   lp.style.height = '100vh';
   lp.style.minHeight = '0';
   document.getElementById('tabbar').style.display = 'none';
   document.body.style.overflow = 'hidden';
 
   if (currentUser) {
-    // Keep topnav — hide landing's own nav row and CTAs (already in app)
+    // Logged-in: keep topnav, hide landing's own nav + CTAs + Sign In
     document.getElementById('landingNavSection').style.display = 'none';
     document.getElementById('landingCtaSection').style.display = 'none';
+    document.getElementById('landingSignInBtn').style.display = 'none';
     lp.style.paddingTop = 'calc(var(--nav-h) + var(--safe-t))';
   } else {
+    // Logged-out: hide topnav, show landing nav with Sign In, safe-area top
     document.getElementById('topnav').style.display = 'none';
     document.getElementById('landingNavSection').style.display = '';
     document.getElementById('landingCtaSection').style.display = '';
     document.getElementById('landingBackBtn').style.display = 'none';
     document.getElementById('landingSignInBtn').style.display = '';
-    lp.style.paddingTop = '0';
+    lp.style.paddingTop = 'env(safe-area-inset-top, 0px)';
   }
   lp.scrollTop = 0;
   _landingSwipeInit(lp);
@@ -9588,6 +9603,8 @@ function hideLandingPage() {
   lp.classList.remove('active');
   lp.style.display = 'none';
   lp.style.overflow = '';
+  lp.style.overscrollBehavior = '';
+  lp.style.touchAction = '';
   lp.style.height = '';
   lp.style.minHeight = '';
   lp.style.paddingTop = '0';
