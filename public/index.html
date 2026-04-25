@@ -6524,7 +6524,26 @@ async function startStripeConnect() {
       },
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || 'Failed to start setup.');
+    if (!res.ok || data.error) {
+      if (data.platformSetup) {
+        // Platform-level Stripe config issue — show inline card, not just a toast
+        const section = document.getElementById('stripeConnectSection');
+        if (section) {
+          section.querySelector('.prof-section').innerHTML = `
+            <div class="prof-section-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              Payouts (Host)
+            </div>
+            <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:var(--r-md);padding:14px;font-size:13px;color:#ef4444;line-height:1.6">
+              <div style="font-weight:700;margin-bottom:4px">Stripe Connect setup required</div>
+              <div style="color:var(--muted2)">The platform owner needs to complete the Stripe Connect platform profile before payouts can be enabled. Go to <strong style="color:var(--text)">Stripe Dashboard → Connect → Get started</strong> and complete the platform application.</div>
+            </div>`;
+        }
+        if (btn) { btn.disabled = false; }
+        return;
+      }
+      throw new Error(data.error || 'Failed to start setup.');
+    }
 
     window.location.href = data.url;
   } catch(e) {

@@ -1628,6 +1628,12 @@ app.post('/api/connect-onboard', requireAuth, async (req, res) => {
     res.json({ url: link.url, accountId });
   } catch (e) {
     console.error('[connect-onboard]', e.message);
+    if (e.message && e.message.toLowerCase().includes('platform profile')) {
+      return res.status(400).json({
+        error: 'Stripe Connect is not fully configured yet. The platform owner must complete the Connect platform profile in the Stripe Dashboard before hosts can set up payouts.',
+        platformSetup: true,
+      });
+    }
     res.status(400).json({ error: e.message });
   }
 });
