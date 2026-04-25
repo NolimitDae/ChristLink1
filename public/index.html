@@ -6365,7 +6365,20 @@ function renderProfilePage() {
     gateLogo.innerHTML = LOGO_MARK;
   }
 
-  // ── Stripe Connect section ────────────────────────────────
+  // ── Stripe Connect section (only after ≥4 profile sections filled) ──
+  const _profileSectionsFilled = [
+    profileData?.full_name,
+    profileData?.bio,
+    profileData?.bible_verse,
+    profileData?.hot_takes,
+    profileData?.hobbies,
+    (profileData?.connect_tags || []).length > 0,
+    profileData?.prayer_request,
+    profileData?.testimony,
+    profileData?.city,
+  ].filter(Boolean).length;
+  const _stripeSection = document.getElementById('stripeConnectSection');
+  if (_stripeSection) _stripeSection.dataset.profileReady = _profileSectionsFilled >= 4 ? '1' : '0';
   renderStripeConnectStatus();
   syncAdminNav();
 }
@@ -6410,6 +6423,7 @@ function shareProfile() {
 function renderStripeConnectStatus() {
   const section = document.getElementById('stripeConnectSection');
   if (!section) return;
+  if (section.dataset.profileReady === '0') { section.style.display = 'none'; return; }
   section.style.display = 'block';
 
   const stripe = profileData?.host_stripe_accounts?.[0];
