@@ -6733,7 +6733,7 @@ async function submitIdentityVerification() {
 
     _identityVerifData = { status: 'pending', legal_name: legalName, submitted_at: new Date().toISOString() };
     closeSheet('identityVerifySheet');
-    showToast('Submitted! We'll review your identity within 1–2 business days.', 'success');
+    showToast('Submitted! We will review your identity within 1–2 business days.', 'success');
     await fetchProfile();
     renderIdentityGate(true);
   } catch (e) {
