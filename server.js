@@ -73,8 +73,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Ensure storage buckets exist (runs once on startup)
 (async () => {
   const buckets = [
-    { name: 'avatars',      public: true },
-    { name: 'event-images', public: true },
+    { name: 'avatars',        public: true  },
+    { name: 'event-images',   public: true  },
+    { name: 'identity-docs',  public: false },
   ];
   for (const b of buckets) {
     const { error } = await supabaseAdmin.storage.createBucket(b.name, { public: b.public });
@@ -1709,6 +1710,116 @@ app.delete('/api/admin/connect-disconnect/:userId', requireAdmin, async (req, re
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ════════════════════════════════════════════════════════════
+// IDENTITY VERIFICATION
+// ════════════════════════════════════════════════════════════
+
+app.post('/api/identity/submit', requireAuth, async (req, res) => {
+  const { legal_name, id_doc_base64 } = req.body;
+  if (!legal_name?.trim()) return res.status(400).json({ error: 'Legal name is required.' });
+  if (!id_doc_base64)       return res.status(400).json({ error: 'ID document photo is required.' });
+  try {
+    const matches = id_doc_base64.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) return res.status(400).json({ error: 'Invalid image data.' });
+    const mimeType = matches[1];
+    const buffer   = Buffer.from(matches[2], 'base64');
+    if (buffer.length > 10 * 1024 * 1024) return res.status(413).json({ error: 'ID document must be under 10 MB.' });
+    const ext  = mimeType.includes('png') ? 'png' : mimeType.includes('pdf') ? 'pdf' : 'jpg';
+    const path = `${req.userId}/id-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabaseAdmin.storage
+      .from('identity-docs')
+      .upload(path, buffer, { upsert: true, contentType: mimeType });
+    if (upErr) throw upErr;
+
+    const cleanName = sanitizeText(legal_name.trim());
+    const { error: dbErr } = await supabaseAdmin
+      .from('identity_verifications')
+      .upsert({
+        user_id: req.userId, status: 'pending', legal_name: cleanName,
+        id_doc_path: path, submitted_at: new Date().toISOString(),
+        verified_at: null, rejected_reason: null, reviewed_by: null,
+      }, { onConflict: 'user_id' });
+    if (dbErr) throw dbErr;
+
+    // Keep profile full_name in sync with legal name
+    const { data: prof } = await supabaseAdmin.from('profiles').select('full_name').eq('id', req.userId).single();
+    if (prof && prof.full_name?.toLowerCase().trim() !== cleanName.toLowerCase()) {
+      await supabaseAdmin.from('profiles').update({ full_name: cleanName }).eq('id', req.userId);
+    }
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[identity/submit]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/identity/status', requireAuth, async (req, res) => {
+  try {
+    const { data } = await supabaseAdmin
+      .from('identity_verifications')
+      .select('status, legal_name, submitted_at, verified_at, rejected_reason')
+      .eq('user_id', req.userId)
+      .single();
+    res.json({ verification: data || null });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/admin/verifications', requireAdmin, async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = supabaseAdmin
+      .from('identity_verifications')
+      .select('*, profiles!user_id(full_name, email, avatar_url, avatar_color)')
+      .order('submitted_at', { ascending: false });
+    if (status) query = query.eq('status', status);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ verifications: data || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.patch('/api/admin/verifications/:userId/approve', requireAdmin, async (req, res) => {
+  try {
+    const uid = req.params.userId;
+    const { error: vErr } = await supabaseAdmin.from('identity_verifications')
+      .update({ status: 'verified', verified_at: new Date().toISOString(), reviewed_by: req.userId, rejected_reason: null })
+      .eq('user_id', uid);
+    if (vErr) throw vErr;
+    const { error: pErr } = await supabaseAdmin.from('profiles')
+      .update({ identity_verified: true, identity_verified_at: new Date().toISOString() })
+      .eq('id', uid);
+    if (pErr) throw pErr;
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.patch('/api/admin/verifications/:userId/reject', requireAdmin, async (req, res) => {
+  const { reason } = req.body;
+  try {
+    const uid = req.params.userId;
+    const { error: vErr } = await supabaseAdmin.from('identity_verifications')
+      .update({ status: 'rejected', reviewed_by: req.userId, rejected_reason: sanitizeText(reason || 'Verification could not be confirmed.') })
+      .eq('user_id', uid);
+    if (vErr) throw vErr;
+    await supabaseAdmin.from('profiles')
+      .update({ identity_verified: false, identity_verified_at: null })
+      .eq('id', uid);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/admin/verifications/:userId/id-doc', requireAdmin, async (req, res) => {
+  try {
+    const { data: v } = await supabaseAdmin.from('identity_verifications')
+      .select('id_doc_path').eq('user_id', req.params.userId).single();
+    if (!v?.id_doc_path) return res.status(404).json({ error: 'No ID document found.' });
+    const { data, error } = await supabaseAdmin.storage
+      .from('identity-docs').createSignedUrl(v.id_doc_path, 3600);
+    if (error) throw error;
+    res.json({ url: data.signedUrl });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Fallback route — called by frontend after payment succeeds
