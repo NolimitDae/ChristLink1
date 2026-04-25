@@ -1679,6 +1679,32 @@ app.post('/api/connect-sync', requireAuth, async (req, res) => {
   }
 });
 
+// Disconnect/reset Stripe Connect — removes the DB record so user can re-onboard
+app.delete('/api/connect-disconnect', requireAuth, async (req, res) => {
+  try {
+    const { data: row } = await supabaseAdmin
+      .from('host_stripe_accounts')
+      .select('stripe_account_id')
+      .eq('user_id', req.userId)
+      .single();
+    if (!row) return res.status(404).json({ error: 'No connected Stripe account found.' });
+    await supabaseAdmin.from('host_stripe_accounts').delete().eq('user_id', req.userId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin: disconnect any user's Stripe Connect account
+app.delete('/api/admin/connect-disconnect/:userId', requireAdmin, async (req, res) => {
+  try {
+    await supabaseAdmin.from('host_stripe_accounts').delete().eq('user_id', req.params.userId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Fallback route — called by frontend after payment succeeds
 // Confirms the ticket without relying on webhook delivery
 app.post('/api/tickets/confirm-by-intent', requireAuth, async (req, res) => {
@@ -2691,14 +2717,19 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
   try {
     let query = supabaseAdmin
       .from('profiles')
-      .select('id, full_name, email, role, city, created_at, avatar_url, avatar_color')
+      .select('id, full_name, email, role, city, created_at, avatar_url, avatar_color, host_stripe_accounts(stripe_account_id)')
       .order('created_at', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
     if (q)    query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
     if (role) query = query.eq('role', role);
     const { data, error } = await query;
     if (error) throw error;
-    res.json({ users: data || [] });
+    const users = (data || []).map(u => ({
+      ...u,
+      stripe_account_id: u.host_stripe_accounts?.[0]?.stripe_account_id || null,
+      host_stripe_accounts: undefined,
+    }));
+    res.json({ users });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

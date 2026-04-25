@@ -3204,6 +3204,7 @@ button, a, [onclick],
             </div>
           </div>
           <button id="stripeConnectBtn" class="btn btn-gold btn-sm" onclick="startStripeConnect()" style="width:100%">Set Up Payouts →</button>
+          <button id="stripeDisconnectBtn" onclick="disconnectStripeConnect()" style="display:none;width:100%;margin-top:8px;background:none;border:1px solid rgba(239,68,68,.4);color:#ef4444;font-size:13px;font-weight:600;padding:10px;border-radius:var(--r-md);cursor:pointer">Disconnect / Reset Stripe →</button>
         </div>
       </div>
 
@@ -6464,6 +6465,30 @@ function renderStripeConnectStatus() {
     btn.textContent      = 'Manage in Stripe ↗';
     btn.onclick          = startStripeConnect;
     btn.style.display    = 'block';
+  }
+
+  // Show disconnect button whenever an account record exists
+  const disconnectBtn = document.getElementById('stripeDisconnectBtn');
+  if (disconnectBtn) disconnectBtn.style.display = stripe?.stripe_account_id ? 'block' : 'none';
+}
+
+async function disconnectStripeConnect() {
+  if (!confirm('Disconnect your Stripe account? You will need to re-onboard to accept ticket payments. This does not cancel any pending payouts.')) return;
+  const btn = document.getElementById('stripeDisconnectBtn');
+  btn.disabled = true; btn.textContent = 'Disconnecting…';
+  try {
+    const res = await fetch(`${API_BASE}/api/connect-disconnect`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to disconnect.');
+    showToast('Stripe account disconnected. You can now re-onboard.', 'success');
+    await fetchProfile();
+    renderStripeConnectStatus();
+  } catch (e) {
+    showToast(e.message, 'error');
+    btn.disabled = false; btn.textContent = 'Disconnect / Reset Stripe →';
   }
 }
 
@@ -11249,6 +11274,7 @@ async function loadAdminUsers() {
                     ${u.role === 'attendee' ? `<button class="admin-action-btn promote" onclick="adminSetRole('${u.id}','host',this)">→ Host</button>` : ''}
                     ${u.role === 'host'     ? `<button class="admin-action-btn demote"  onclick="adminSetRole('${u.id}','attendee',this)">→ Attendee</button>` : ''}
                     ${u.role !== 'admin'   ? `<button class="admin-action-btn promote" onclick="adminSetRole('${u.id}','admin',this)" style="background:rgba(201,168,76,.1);color:var(--gold);border-color:rgba(201,168,76,.3)">→ Admin</button>` : ''}
+                    ${u.stripe_account_id  ? `<button class="admin-action-btn demote"  onclick="adminResetStripe('${u.id}',this)" style="background:rgba(239,68,68,.08);color:#ef4444;border-color:rgba(239,68,68,.3)">Reset Stripe</button>` : ''}
                   </div>
                 </td>
               </tr>`).join('')}
@@ -11306,6 +11332,25 @@ async function adminSetRole(userId, role, btn) {
       btn.disabled = false; btn.textContent = `→ ${role}`;
     }
   } catch { btn.disabled = false; showToast('Failed', 'error'); }
+}
+
+async function adminResetStripe(userId, btn) {
+  if (!confirm('Disconnect this user\'s Stripe Connect account? They will need to re-onboard.')) return;
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/connect-disconnect/${userId}`, {
+      method: 'DELETE',
+      headers: adminHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to reset Stripe.');
+    showToast('Stripe account disconnected for user.', 'success');
+    _adminLoaded['manage'] = false;
+    loadAdminUsers();
+  } catch(e) {
+    showToast(e.message, 'error');
+    btn.disabled = false; btn.textContent = 'Reset Stripe';
+  }
 }
 
 function adminViewEvent(id) {
