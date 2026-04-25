@@ -1316,6 +1316,11 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
     }
   }
 
+  // Guard: if frontend sent the free-promo sentinel but discount is no longer valid
+  if (paymentMethodId === '__promo_free__' && chargeAmount > 0) {
+    return res.status(400).json({ error: 'Promo code could not be applied. Please re-enter your card details and try again.', resetCard: true });
+  }
+
   // Free after discount — skip Stripe entirely
   if (chargeAmount === 0) {
     await supabaseAdmin.from('events').update({ listing_fee_paid: true, listing_payment_id: 'promo_free' }).eq('id', eventId);
@@ -1334,11 +1339,12 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
       payment_method_types: ['card'],
       payment_method:       paymentMethodId,
       confirm:              true,
-      receipt_email:        hostEmail || req.user.email,
+      receipt_email:        hostEmail || req.user.email || undefined,
       description:          `Christ Link listing fee — ${ev.name}`,
       metadata:             { type: 'listing_fee', event_id: eventId, host_id: req.userId, promo_id: appliedPromoId || '' },
       return_url:           `${process.env.APP_URL}/?listing_success=1`,
     }, { idempotencyKey: `listing-fee-${eventId}-${paymentMethodId.slice(-12)}` });
+    console.log('[listing-fee] intent status:', intent.status, 'eventId:', eventId);
     if (intent.status === 'succeeded') {
       await supabaseAdmin
         .from('events')
@@ -1357,6 +1363,7 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
       error: `Payment status: ${intent.status}. Please try again.`,
     });
   } catch (e) {
+    console.error('[listing-fee] stripe error:', e.raw?.code, e.message, 'eventId:', eventId, 'userId:', req.userId);
     const msg = (e.raw?.code === 'payment_method_unexpected_state' || (e.message||'').toLowerCase().includes('previously used'))
       ? 'Your card could not be reused. Please re-enter your card details and try again.'
       : e.message;
