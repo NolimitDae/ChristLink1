@@ -563,9 +563,11 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   top: 0;
   left: 0;
   right: 0;
-  height: 70vh;
+  height: 100dvh;
+  height: 100vh; /* fallback */
   min-height: 0 !important;
   overflow: hidden;
+  overscroll-behavior: none;
   touch-action: none;
   background: #0a0a0f;
   z-index: 999;
@@ -881,6 +883,7 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   min-height: 44px;
   gap: 8px;
   transition: border-color 0.15s;
+  touch-action: manipulation;
 }
 .forum-input-wrap:focus-within { border-color: rgba(201,162,39,0.4); }
 .forum-textarea {
@@ -890,9 +893,10 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   outline: none;
   resize: none;
   color: rgba(255,255,255,0.9) !important;
-  font-size: 15px;
+  font-size: 16px; /* ≥16px prevents iOS auto-zoom on focus */
   line-height: 1.4;
   font-family: var(--font-body, -apple-system, sans-serif);
+  touch-action: manipulation;
   min-height: 32px;
   max-height: 120px;
   overflow-y: auto;
@@ -7283,13 +7287,8 @@ function _forumVVResize() {
   if (!vv) return;
   const visH      = Math.round(vv.height);
   const keyboardH = window.innerHeight - visH;
-  if (keyboardH > 80) {
-    // Keyboard is open — shrink forum to exactly fill the space above it
-    fp.style.height = visH + 'px';
-  } else {
-    // Keyboard dismissed — back to half screen
-    fp.style.height = Math.round(window.innerHeight * 0.7) + 'px';
-  }
+  // Keyboard open → shrink to visible area; keyboard closed → full screen
+  fp.style.height = (keyboardH > 80 ? visH : window.innerHeight) + 'px';
   forumRelayout();
 }
 
@@ -7330,12 +7329,18 @@ function openForum(event) {
   document.getElementById('forumSendBtn').disabled = true;
   document.getElementById('forumPinnedBar').style.display = 'none';
   goTo('forum');
-  // Enforce half-screen height; visualViewport will shrink it to fit when keyboard opens
+  // Full-screen; visualViewport listener shrinks it when keyboard opens
   const fp = document.getElementById('page-forum');
   if (fp) {
     fp.style.display = 'block';
-    fp.style.height  = Math.round(window.innerHeight * 0.7) + 'px';
+    fp.style.height  = window.innerHeight + 'px';
   }
+  // Lock body scroll so nothing behind the forum can rubber-band on iOS
+  document.body.dataset.forumScrollY = window.scrollY;
+  document.body.style.overflow = 'hidden';
+  document.body.style.position = 'fixed';
+  document.body.style.width    = '100%';
+  document.body.style.top      = `-${window.scrollY}px`;
   if (window.visualViewport) {
     window.visualViewport.removeEventListener('resize', _forumVVResize);
     window.visualViewport.addEventListener('resize', _forumVVResize);
@@ -7359,6 +7364,14 @@ function closeForum() {
   if (fp) { fp.style.height = ''; fp.style.display = ''; }
   const msgs = document.getElementById('forumMessages');
   if (msgs) { msgs.style.top = ''; msgs.style.bottom = ''; }
+  // Restore body scroll
+  const scrollY = parseFloat(document.body.dataset.forumScrollY || '0');
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.width    = '';
+  document.body.style.top      = '';
+  window.scrollTo(0, scrollY);
+  document.body.dataset.forumScrollY = '';
   if (selectedEvent?.id) goTo('event-detail');
   else goTo('home');
 }
