@@ -560,39 +560,37 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 #page-forum {
   display: none;
   position: fixed;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  height: 100dvh;
-  height: 100vh; /* fallback */
+  height: 50vh;
   min-height: 0 !important;
+  flex-direction: column;
   overflow: hidden;
   overscroll-behavior: none;
   touch-action: none;
   background: #0a0a0f;
   z-index: 999;
   padding: 0 !important;
-  box-shadow: 0 4px 40px rgba(0,0,0,0.8);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 40px rgba(0,0,0,0.7);
 }
 #page-forum.active,
 #page-forum[style*="display: block"],
 #page-forum[style*="display:block"],
 #page-forum[style*="display: flex"],
 #page-forum[style*="display:flex"] {
-  display: block !important;
+  display: flex !important;
 }
 .forum-topbar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 14px 12px;
-  padding-top: max(10px, env(safe-area-inset-top));
   background: #0d0d1a;
   border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  border-radius: 20px 20px 0 0;
   z-index: 20;
 }
 .forum-group-av {
@@ -693,11 +691,8 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
   white-space: nowrap;
 }
 .forum-messages {
-  position: absolute;
-  top: 64px; /* below topbar */
-  left: 0;
-  right: 0;
-  bottom: 70px; /* above input bar */
+  flex: 1;
+  min-height: 0; /* critical — lets flex child scroll instead of overflow parent */
   overflow-y: auto;
   overflow-x: hidden;
   padding: 14px 12px 10px;
@@ -847,14 +842,12 @@ textarea.field{resize:vertical;min-height:90px;line-height:1.5}
 .forum-empty-icon { font-size: 40px; opacity: 0.4; }
 .forum-empty-text { font-size: 14px; color: rgba(255,255,255,0.35); line-height: 1.6; }
 .forum-input-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
   display: flex;
   align-items: flex-end;
   gap: 8px;
   padding: 6px 12px;
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
   background: #0d0d1a;
   border-top: 0.5px solid rgba(255,255,255,0.08);
   z-index: 20;
@@ -4268,7 +4261,7 @@ button, a, [onclick],
     </div>
   </div>
   <!-- Image preview (shown when photo selected) -->
-  <div id="forumImagePreview" style="display:none;align-items:center;gap:10px;padding:8px 14px;background:#0d0d1a;border-top:0.5px solid rgba(255,255,255,0.08)">
+  <div id="forumImagePreview" style="display:none;flex-shrink:0;align-items:center;gap:10px;padding:8px 14px;background:#0d0d1a;border-top:0.5px solid rgba(255,255,255,0.08)">
     <img id="forumImageThumb" src="" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0">
     <div id="forumImageName" style="flex:1;font-size:12px;color:rgba(255,255,255,0.45);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
     <button onclick="forumClearImage()" style="border:none;background:none;color:rgba(255,255,255,0.4);font-size:20px;line-height:1;padding:4px 6px;cursor:pointer;flex-shrink:0">✕</button>
@@ -7253,26 +7246,9 @@ function _eventRowHTML(ev) {
 
 // Measure actual element heights and position messages area correctly
 function forumRelayout() {
-  const topbar  = document.querySelector('.forum-topbar');
-  const pinned  = document.getElementById('forumPinnedBar');
-  const preview = document.getElementById('forumImagePreview');
-  const inputBar = document.getElementById('forumInputBar');
-  const msgs    = document.getElementById('forumMessages');
-  if (!msgs || !topbar || !inputBar) return;
-  const topH     = topbar.getBoundingClientRect().height || 64;
-  const pinnedH  = (pinned  && pinned.style.display  !== 'none') ? (pinned.getBoundingClientRect().height  || 0) : 0;
-  const previewH = (preview && preview.style.display !== 'none') ? (preview.getBoundingClientRect().height || 0) : 0;
-  const inputH      = inputBar.getBoundingClientRect().height || 70;
-  msgs.style.top    = (topH + pinnedH) + 'px';
-  msgs.style.bottom = (inputH + previewH) + 'px';
-  // Position image preview just above input bar
-  if (preview) {
-    preview.style.position = 'absolute';
-    preview.style.bottom   = inputH + 'px';
-    preview.style.left     = '0';
-    preview.style.right    = '0';
-    preview.style.zIndex   = '19';
-  }
+  // Flexbox handles all layout — just scroll messages to bottom
+  const msgs = document.getElementById('forumMessages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
 }
 
 let forumEventId  = null;
@@ -7285,11 +7261,11 @@ function _forumVVResize() {
   if (!fp || fp.style.display === 'none' || !fp.style.display) return;
   const vv = window.visualViewport;
   if (!vv) return;
-  const visH      = Math.round(vv.height);
-  const keyboardH = window.innerHeight - visH;
-  // Keyboard open → shrink to visible area; keyboard closed → full screen
-  fp.style.height = (keyboardH > 80 ? visH : window.innerHeight) + 'px';
-  forumRelayout();
+  const keyboardH = Math.max(0, window.innerHeight - Math.round(vv.height));
+  // Shift the panel up above the keyboard without changing its height
+  fp.style.bottom = keyboardH + 'px';
+  const msgs = document.getElementById('forumMessages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
 }
 
 function openForum(event) {
@@ -7329,13 +7305,13 @@ function openForum(event) {
   document.getElementById('forumSendBtn').disabled = true;
   document.getElementById('forumPinnedBar').style.display = 'none';
   goTo('forum');
-  // Full-screen; visualViewport listener shrinks it when keyboard opens
   const fp = document.getElementById('page-forum');
   if (fp) {
-    fp.style.display = 'block';
-    fp.style.height  = window.innerHeight + 'px';
+    fp.style.display = 'flex';
+    fp.style.height  = Math.round(window.innerHeight * 0.5) + 'px';
+    fp.style.bottom  = '0px';
   }
-  // Lock body scroll so nothing behind the forum can rubber-band on iOS
+  // Lock body so nothing behind the panel rubber-bands on iOS
   document.body.dataset.forumScrollY = window.scrollY;
   document.body.style.overflow = 'hidden';
   document.body.style.position = 'fixed';
@@ -7361,9 +7337,7 @@ function closeForum() {
   forumPolling = null;
   if (window.visualViewport) window.visualViewport.removeEventListener('resize', _forumVVResize);
   const fp = document.getElementById('page-forum');
-  if (fp) { fp.style.height = ''; fp.style.display = ''; }
-  const msgs = document.getElementById('forumMessages');
-  if (msgs) { msgs.style.top = ''; msgs.style.bottom = ''; }
+  if (fp) { fp.style.height = ''; fp.style.bottom = ''; fp.style.display = ''; }
   // Restore body scroll
   const scrollY = parseFloat(document.body.dataset.forumScrollY || '0');
   document.body.style.overflow = '';
