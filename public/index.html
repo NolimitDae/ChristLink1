@@ -4630,6 +4630,9 @@ const VERSES = [
 // SUPABASE AUTH
 // ═══════════════════════════════════════════════════════════
 let _notifPollTimer = null;
+let _homeFeedTimer  = null;
+let _lastVisibleAt  = Date.now();
+
 function startNotifPoll() {
   if (_notifPollTimer) return;
   _notifPollTimer = setInterval(() => { if (currentUser) fetchNotifCount(); }, 30000);
@@ -4637,13 +4640,36 @@ function startNotifPoll() {
 function stopNotifPoll() {
   if (_notifPollTimer) { clearInterval(_notifPollTimer); _notifPollTimer = null; }
 }
+function startHomeFeedPoll() {
+  if (_homeFeedTimer) return;
+  _homeFeedTimer = setInterval(() => {
+    if (document.querySelector('#page-home.active')) fetchHomeEvents();
+  }, 60000);
+}
+function stopHomeFeedPoll() {
+  if (_homeFeedTimer) { clearInterval(_homeFeedTimer); _homeFeedTimer = null; }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { _lastVisibleAt = Date.now(); return; }
+  const elapsed = Date.now() - _lastVisibleAt;
+  _lastVisibleAt = Date.now();
+  if (elapsed < 30000) return; // less than 30s away — skip
+  const active = document.querySelector('.page.active')?.id?.replace('page-', '');
+  if (!active) return;
+  if (active === 'home')      { fetchHomeEvents(); fetchDiscoveryRows(); }
+  if (active === 'profile')   { fetchProfile(); }
+  if (active === 'community') { initCommunityFeed(false); }
+  if (active === 'browse')    { initBrowse(); }
+  _adminLoaded = {};
+});
 
 sb.auth.onAuthStateChange((event, session) => {
   currentSession = session;
   currentUser    = session?.user || null;
   syncAuthUI();
-  if (currentUser) { fetchProfile(); fetchNotifCount(); startNotifPoll(); }
-  else stopNotifPoll();
+  if (currentUser) { fetchProfile(); fetchNotifCount(); startNotifPoll(); startHomeFeedPoll(); }
+  else { stopNotifPoll(); stopHomeFeedPoll(); }
 });
 
 (async () => {
@@ -4651,7 +4677,7 @@ sb.auth.onAuthStateChange((event, session) => {
   currentSession = session;
   currentUser    = session?.user || null;
   syncAuthUI();
-  if (currentUser) { fetchProfile(); fetchNotifCount(); startNotifPoll(); }
+  if (currentUser) { fetchProfile(); fetchNotifCount(); startNotifPoll(); startHomeFeedPoll(); }
 })();
 
 function syncAuthUI() {
@@ -6503,9 +6529,15 @@ async function toggleFollow() {
     if (!res.ok) throw new Error('failed');
     const nowFollowing = !isFollowing;
     _updateFollowBtn(nowFollowing);
-    // Update follower count display
+    // Update viewed profile's follower count
     const sF = document.getElementById('pubStatFollowers');
     if (sF) sF.textContent = Math.max(0, parseInt(sF.textContent || '0') + (nowFollowing ? 1 : -1));
+    // Update own profile's following count immediately
+    if (profileData) {
+      profileData.following_count = Math.max(0, (profileData.following_count ?? 0) + (nowFollowing ? 1 : -1));
+      const ownFollowing = document.getElementById('statFollowing');
+      if (ownFollowing) ownFollowing.textContent = profileData.following_count;
+    }
   } catch {
     showToast('Could not update follow. Try again.', 'error');
   } finally {
@@ -10401,8 +10433,7 @@ async function adminSetRole(userId, role, btn) {
     });
     if (res.ok) {
       showToast(`Role updated to ${role}`, 'success');
-      _adminLoaded['manage'] = false;
-      _adminLoaded['users-hosts'] = false;
+      _adminLoaded = {};
       loadAdminUsers();
     } else {
       const d = await res.json();
@@ -10431,7 +10462,7 @@ async function adminCancelEvent(id, btn) {
       showToast('Event cancelled', 'success');
       btn.textContent = 'Cancelled';
       btn.style.color = 'var(--muted)';
-      _adminLoaded['events'] = false;
+      _adminLoaded = {};
     } else {
       btn.disabled = false; btn.textContent = 'Cancel';
       showToast('Failed to cancel', 'error');
