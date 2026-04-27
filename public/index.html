@@ -4778,6 +4778,7 @@ let listingFeeHostEmail = null;
 let listingFeePromoCode = null;
 let authMode       = 'signin';
 let pendingAction  = null;
+let _pendingProfileUserId = null; // set when a #user/UUID link is opened before auth
 let isNewSignup    = false;
 let cardEl         = null;
 let lfCardNum = null, lfCardExp = null, lfCardCvc = null;
@@ -4926,6 +4927,10 @@ sb.auth.onAuthStateChange((event, session) => {
   if (currentUser) {
     fetchProfile(); fetchNotifCount(); startNotifPoll();
     if (!document.querySelector('.page.active')) goTo('home');
+    if (_pendingProfileUserId) {
+      const uid = _pendingProfileUserId; _pendingProfileUserId = null;
+      setTimeout(() => openPublicProfile(uid), 350);
+    }
   } else {
     // Show landing page to logged-out visitors (skip if deep-link param present)
     const hasDeepLink = window.location.search.includes('connect_return') ||
@@ -5121,6 +5126,18 @@ function restorePageFromHash() {
   // #forum/UUID → fetch event then open its forum
   if (parts[0] === 'forum' && parts[1]) {
     loadEventForumById(parts[1]);
+    return;
+  }
+  // #user/UUID → open that user's public profile
+  if (parts[0] === 'user' && parts[1]) {
+    const uid = parts[1];
+    if (currentUser) {
+      // Auth already resolved — open immediately
+      setTimeout(() => openPublicProfile(uid), 200);
+    } else {
+      // Auth not yet resolved — park it; IIFE or sign-in will pick it up
+      _pendingProfileUserId = uid;
+    }
     return;
   }
   const valid = ['home','browse','community','host','profile','event-detail','forum'];
@@ -5322,6 +5339,10 @@ async function verifyOtp() {
       closeSheet('authSheet');
       if (pendingAction) { pendingAction(); pendingAction = null; }
       else if (isNewSignup) { showOnboarding(); isNewSignup = false; }
+      if (_pendingProfileUserId) {
+        const uid = _pendingProfileUserId; _pendingProfileUserId = null;
+        setTimeout(() => openPublicProfile(uid), 300);
+      }
     }, 1600);
   } catch {
     showErr('err-otp','Verification failed. Please try again.');
@@ -6521,8 +6542,9 @@ function renderHostedEventsPreview(events) {
 }
 
 function shareProfile() {
-  const name = profileData?.full_name || currentUser?.email?.split('@')[0] || 'my profile';
-  const url  = window.location.href;
+  if (!currentUser) return;
+  const name = profileData?.full_name || currentUser.email?.split('@')[0] || 'my profile';
+  const url  = `${window.location.origin}${window.location.pathname}#user/${currentUser.id}`;
   if (navigator.share) {
     navigator.share({ title: `${name} on ChristLink`, url }).catch(() => {});
   } else {
