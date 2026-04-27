@@ -7216,7 +7216,9 @@ async function saveProfile() {
   showToast('Profile updated!', 'success');
   btn.disabled = false;
   btn.innerHTML = 'Save Changes';
-}
+  // Refresh home feed so city/preference changes show up immediately
+  fetchHomeEvents(profileData?.city ? { city: profileData.city } : {});
+  fetchDiscoveryRows();
 
 // ═══════════════════════════════════════════════════════════
 // EVENT CARDS
@@ -7248,12 +7250,13 @@ function makeCardHTML(ev, scrollMode) {
             return `<div style="width:22px;height:22px;border-radius:50%;background:${c};border:2px solid rgba(0,0,0,.6);margin-left:${i>0?'-7px':'0'};flex-shrink:0"></div>`;
           }).join('')}
         </div>
-        <span style="font-size:11px;color:rgba(255,255,255,.8);font-weight:600">${going > 99 ? '99+' : going} going</span>
+        <span class="card-going" style="font-size:11px;color:rgba(255,255,255,.8);font-weight:600">${going > 99 ? '99+' : going} going</span>
       </div>`
     : `<span></span>`;
 
   const card = document.createElement('div');
   card.className = 'event-card';
+  card.dataset.id = ev.id;
   card.innerHTML = `
     <div style="position:absolute;inset:0;background:${bg}"></div>
     ${ev.cover_url
@@ -7320,7 +7323,10 @@ async function fetchHomeEvents(params = {}) {
       </div>
     </div>`).join('');
   try {
-    const qs = new URLSearchParams(params);
+    // Auto-apply city filter from profile when no explicit location passed
+    const merged = { ...params };
+    if (!merged.lat && !merged.city && profileData?.city) merged.city = profileData.city;
+    const qs = new URLSearchParams(merged);
     const res = await fetch(`${API_BASE}/api/events?${qs}`);
     const data = await res.json();
     renderInto(scroll, data.events, true);
@@ -7724,6 +7730,11 @@ function handleRsvp() {
       document.getElementById('detailWhoGoingBtn').textContent = `See All ${newRsvpCount} Attendees ↓`;
       document.getElementById('detailWhoGoing').style.display = 'block';
       loadInlineAttendees(selectedEvent.id, selectedEvent.is_paid);
+      // Keep home feed card count in sync
+      if (selectedEvent) {
+        selectedEvent.confirmed_rsvps = newRsvpCount;
+        document.querySelectorAll(`.event-card[data-id="${selectedEvent.id}"] .card-going`).forEach(el => { el.textContent = `${newRsvpCount} going`; });
+      }
       spawnConfetti();
       setTimeout(() => spawnConfetti(), 600);
       showSuccess('celebrate', 'You\'re Going!', `Spot reserved for ${selectedEvent?.name || 'the event'}. See you there!`);
@@ -7758,6 +7769,11 @@ async function cancelRsvp() {
       } else {
         document.getElementById('detailWhoGoingBtn').textContent = `See All ${newCount} Attendees ↓`;
         loadInlineAttendees(selectedEvent.id, selectedEvent.is_paid);
+      }
+      // Keep home feed card count in sync
+      if (selectedEvent) {
+        selectedEvent.confirmed_rsvps = newCount;
+        document.querySelectorAll(`.event-card[data-id="${selectedEvent.id}"] .card-going`).forEach(el => { el.textContent = `${newCount} going`; });
       }
       showToast('RSVP cancelled');
     } else { showToast('Could not cancel RSVP', 'error'); }
@@ -8771,6 +8787,7 @@ async function publishEvent() {
       showToast('Event is live!','success');
       spawnConfetti();
     }
+    fetchHomeEvents(); fetchDiscoveryRows();
     setTimeout(()=>goTo('profile'),1400);
   } catch(e) {
     showToast(e.message||'Something went wrong. Please try again.','error');
