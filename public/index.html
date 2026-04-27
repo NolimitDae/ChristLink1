@@ -11698,6 +11698,7 @@ async function loadAdminUsers() {
                 <td style="font-size:11px;color:var(--muted)">${new Date(u.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</td>
                 <td>
                   <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="admin-action-btn view" onclick="openPublicProfile('${u.id}')">View</button>
                     ${u.role === 'attendee' ? `<button class="admin-action-btn promote" onclick="adminSetRole('${u.id}','host',this)">→ Host</button>` : ''}
                     ${u.role === 'host'     ? `<button class="admin-action-btn demote"  onclick="adminSetRole('${u.id}','attendee',this)">→ Attendee</button>` : ''}
                     ${u.role !== 'admin'   ? `<button class="admin-action-btn promote" onclick="adminSetRole('${u.id}','admin',this)" style="background:rgba(201,168,76,.1);color:var(--gold);border-color:rgba(201,168,76,.3)">→ Admin</button>` : ''}
