@@ -8895,7 +8895,9 @@ async function initCommunityFeed(silent = false) {
       </div>`).join('');
   }
   try {
-    const res = await fetch(`${API_BASE}/api/community-posts`);
+    const res = await fetch(`${API_BASE}/api/community-posts`, {
+      headers: currentSession?.access_token ? { 'Authorization': `Bearer ${currentSession.access_token}` } : {},
+    });
     const { posts, error } = await res.json();
     if (error) throw new Error(error);
     const currentCount = feed.querySelectorAll('.feed-card').length;
@@ -8957,7 +8959,7 @@ function makeCommunityPost(p) {
     </div>
     <div class="feed-body" id="post-body-${p.id}" style="white-space:pre-wrap">${escapeHtml(p.body)}</div>
     <div class="feed-reactions">
-      <button class="reaction-btn" data-post-id="${p.id}" onclick="amenPost('${p.id}',this)"><svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M10 6 L10 18 C10 21 12.5 23 16 23 C19.5 23 22 21 22 18 L22 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 10 C8 9 7 11 7 13 C7 15 9 15 9 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 10 C24 9 25 11 25 13 C25 15 23 15 23 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 27 L16 23 L19 27" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Amen <span>${p.amen_count||0}</span></button>
+      <button class="reaction-btn${p.has_amened ? ' active' : ''}" data-post-id="${p.id}" data-amened="${p.has_amened ? '1' : '0'}" onclick="amenPost('${p.id}',this)"><svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M10 6 L10 18 C10 21 12.5 23 16 23 C19.5 23 22 21 22 18 L22 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 10 C8 9 7 11 7 13 C7 15 9 15 9 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 10 C24 9 25 11 25 13 C25 15 23 15 23 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 27 L16 23 L19 27" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Amen <span>${p.amen_count||0}</span></button>
       <button class="reply-toggle-btn ${replyCount > 0 ? 'has-replies' : ''}" id="reply-toggle-${p.id}" onclick="toggleReplies('${p.id}', this)">
         <svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M5 6 C5 5 6 4 7 4 L22 4 C23 4 24 5 24 6 L24 16 C24 17 23 18 22 18 L14 18 L9 23 L9 18 L7 18 C6 18 5 17 5 16 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>${replyCount > 0 ? replyCount + ' repl' + (replyCount === 1 ? 'y' : 'ies') : 'Reply'}
       </button>
@@ -8991,6 +8993,7 @@ function makeCommunityPost(p) {
 
 async function amenPost(postId, btn) {
   if (!currentUser) { openAuth('signup'); return; }
+  btn.disabled = true;
   try {
     const res = await fetch(`${API_BASE}/api/community-posts/${postId}/amen`, {
       method: 'POST',
@@ -9000,9 +9003,11 @@ async function amenPost(postId, btn) {
     if (res.ok) {
       const countEl = btn.querySelector('span');
       if (countEl) countEl.textContent = data.amen_count;
-      btn.classList.add('active');
+      btn.dataset.amened = data.has_amened ? '1' : '0';
+      btn.classList.toggle('active', data.has_amened);
     }
   } catch(e) { /* silent */ }
+  finally { btn.disabled = false; }
 }
 
 async function postToFeed() {
@@ -10091,7 +10096,9 @@ async function loadReplies(postId) {
   if (!list) return;
   list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">Loading…</div>';
   try {
-    const res  = await fetch(`${API_BASE}/api/community-posts/${postId}/replies`);
+    const res  = await fetch(`${API_BASE}/api/community-posts/${postId}/replies`, {
+      headers: currentSession?.access_token ? { 'Authorization': `Bearer ${currentSession.access_token}` } : {},
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to load');
     _repliesLoaded.add(postId);
@@ -10132,7 +10139,7 @@ function makeReplyEl(postId, r) {
       </div>
       <div class="reply-text">${escapeHtml(r.body)}</div>
       <div class="reply-actions">
-        <button class="reply-amen-btn" onclick="amenReply('${r.id}', this)">
+        <button class="reply-amen-btn${r.has_amened ? ' active' : ''}" data-amened="${r.has_amened ? '1' : '0'}" onclick="amenReply('${r.id}', this)">
           <svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M10 6 L10 18 C10 21 12.5 23 16 23 C19.5 23 22 21 22 18 L22 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 27 L16 23 L19 27" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${r.amen_count || 0}</span>
         </button>
         ${isOwn ? `<button class="reply-delete-btn" onclick="deleteReply('${postId}','${r.id}',this)">Delete</button>` : ''}
@@ -10175,6 +10182,7 @@ async function submitReply(postId) {
 
 async function amenReply(replyId, btn) {
   if (!currentUser) { openAuth('signup'); return; }
+  btn.disabled = true;
   try {
     const res  = await fetch(`${API_BASE}/api/community-replies/${replyId}/amen`, {
       method:  'POST',
@@ -10184,9 +10192,11 @@ async function amenReply(replyId, btn) {
     if (res.ok) {
       const countEl = btn.querySelector('span');
       if (countEl) countEl.textContent = data.amen_count;
-      btn.classList.add('active');
+      btn.dataset.amened = data.has_amened ? '1' : '0';
+      btn.classList.toggle('active', data.has_amened);
     }
   } catch {}
+  finally { btn.disabled = false; }
 }
 
 async function deleteReply(postId, replyId, btn) {
