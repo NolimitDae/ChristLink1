@@ -2526,6 +2526,16 @@ app.get('/api/tickets/:ticketId/wallet', requireAuth, async (req, res) => {
 app.get('/api/community-posts', async (req, res) => {
   const limit  = Math.min(Math.max(parseInt(req.query.limit)  || 30, 1), 100);
   const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+
+  let callerId = null;
+  const auth = req.headers.authorization || '';
+  if (auth.startsWith('Bearer ')) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser(auth.replace('Bearer ', ''));
+      callerId = user?.id || null;
+    } catch {}
+  }
+
   const { data: posts, error } = await supabaseAdmin
     .from('community_posts')
     .select('*')
@@ -2539,7 +2549,16 @@ app.get('/api/community-posts', async (req, res) => {
     ? await supabaseAdmin.from('profiles').select('id, full_name, avatar_url, avatar_color').in('id', authorIds)
     : { data: [] };
   const profilesMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
-  res.json({ posts: posts.map(p => ({ ...p, profiles: profilesMap[p.author_id] || null })) });
+
+  let amenedSet = new Set();
+  if (callerId) {
+    const postIds = posts.map(p => p.id);
+    const { data: amens } = await supabaseAdmin
+      .from('community_post_amens').select('post_id').eq('user_id', callerId).in('post_id', postIds);
+    amenedSet = new Set((amens || []).map(a => a.post_id));
+  }
+
+  res.json({ posts: posts.map(p => ({ ...p, profiles: profilesMap[p.author_id] || null, has_amened: amenedSet.has(p.id) })) });
 });
 
 app.post('/api/community-posts', requireAuth, async (req, res) => {
@@ -2587,14 +2606,19 @@ app.delete('/api/community-posts/:id', requireAuth, async (req, res) => {
 });
 
 app.post('/api/community-posts/:id/amen', requireAuth, async (req, res) => {
-  const { data: post, error: fetchErr } = await supabaseAdmin
-    .from('community_posts').select('amen_count').eq('id', req.params.id).single();
-  if (fetchErr || !post) return res.status(404).json({ error: 'Post not found.' });
-  const newCount = (post.amen_count || 0) + 1;
-  const { error } = await supabaseAdmin
-    .from('community_posts').update({ amen_count: newCount }).eq('id', req.params.id);
-  if (error) return res.status(400).json({ error: error.message });
-  res.json({ amen_count: newCount });
+  const postId = req.params.id;
+  const userId = req.userId;
+  const { data: existing } = await supabaseAdmin
+    .from('community_post_amens').select('post_id').eq('post_id', postId).eq('user_id', userId).single();
+  if (existing) {
+    await supabaseAdmin.from('community_post_amens').delete().eq('post_id', postId).eq('user_id', userId);
+    await supabaseAdmin.rpc('adjust_post_amen_count', { p_post_id: postId, p_delta: -1 });
+  } else {
+    await supabaseAdmin.from('community_post_amens').insert({ post_id: postId, user_id: userId });
+    await supabaseAdmin.rpc('adjust_post_amen_count', { p_post_id: postId, p_delta: 1 });
+  }
+  const { data: updated } = await supabaseAdmin.from('community_posts').select('amen_count').eq('id', postId).single();
+  res.json({ amen_count: updated?.amen_count ?? 0, has_amened: !existing });
 });
 
 // ════════════════════════════════════════════════════════════
@@ -2616,7 +2640,22 @@ app.get('/api/community-posts/:id/replies', async (req, res) => {
     ? await supabaseAdmin.from('profiles').select('id, full_name, avatar_url, avatar_color').in('id', authorIds)
     : { data: [] };
   const profilesMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
-  res.json({ replies: replies.map(r => ({ ...r, profiles: profilesMap[r.author_id] || null })) });
+
+  let amenedSet = new Set();
+  const auth = req.headers.authorization || '';
+  if (auth.startsWith('Bearer ')) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser(auth.replace('Bearer ', ''));
+      if (user?.id) {
+        const replyIds = replies.map(r => r.id);
+        const { data: amens } = await supabaseAdmin
+          .from('community_reply_amens').select('reply_id').eq('user_id', user.id).in('reply_id', replyIds);
+        amenedSet = new Set((amens || []).map(a => a.reply_id));
+      }
+    } catch {}
+  }
+
+  res.json({ replies: replies.map(r => ({ ...r, profiles: profilesMap[r.author_id] || null, has_amened: amenedSet.has(r.id) })) });
 });
 
 // POST /api/community-posts/:id/replies
@@ -2668,12 +2707,19 @@ app.delete('/api/community-posts/:postId/replies/:replyId', requireAuth, async (
 
 // POST /api/community-replies/:id/amen
 app.post('/api/community-replies/:id/amen', requireAuth, async (req, res) => {
-  const { data: reply, error: fetchErr } = await supabaseAdmin
-    .from('community_replies').select('amen_count').eq('id', req.params.id).single();
-  if (fetchErr || !reply) return res.status(404).json({ error: 'Reply not found.' });
-  const newCount = (reply.amen_count || 0) + 1;
-  await supabaseAdmin.from('community_replies').update({ amen_count: newCount }).eq('id', req.params.id);
-  res.json({ amen_count: newCount });
+  const replyId = req.params.id;
+  const userId  = req.userId;
+  const { data: existing } = await supabaseAdmin
+    .from('community_reply_amens').select('reply_id').eq('reply_id', replyId).eq('user_id', userId).single();
+  if (existing) {
+    await supabaseAdmin.from('community_reply_amens').delete().eq('reply_id', replyId).eq('user_id', userId);
+    await supabaseAdmin.rpc('adjust_reply_amen_count', { p_reply_id: replyId, p_delta: -1 });
+  } else {
+    await supabaseAdmin.from('community_reply_amens').insert({ reply_id: replyId, user_id: userId });
+    await supabaseAdmin.rpc('adjust_reply_amen_count', { p_reply_id: replyId, p_delta: 1 });
+  }
+  const { data: updated } = await supabaseAdmin.from('community_replies').select('amen_count').eq('id', replyId).single();
+  res.json({ amen_count: updated?.amen_count ?? 0, has_amened: !existing });
 });
 
 // ── ADMIN MIDDLEWARE ─────────────────────────────────────────

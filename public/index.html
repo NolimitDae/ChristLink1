@@ -58,6 +58,33 @@
   --spring: cubic-bezier(.175,.885,.32,1.275);
 }
 
+/* ── LIGHT MODE ──────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:         #F5F0E8;
+  --bg2:        #EDE8DE;
+  --surface:    #FFFFFF;
+  --surface2:   #F8F4EE;
+  --surface3:   #EDE8DE;
+  --border:     rgba(0,0,0,.09);
+  --border2:    rgba(0,0,0,.15);
+  --gold:       #A07828;
+  --gold2:      #C9A84C;
+  --gold-dim:   rgba(160,120,40,.12);
+  --gold-glow:  rgba(160,120,40,.20);
+  --text:       #1C160E;
+  --muted:      #8A8070;
+  --muted2:     #5E5848;
+  --red:        #C03030;
+  --green:      #2A8A5E;
+}
+[data-theme="light"] .detail-back,
+[data-theme="light"] .detail-share-btn { background:rgba(245,240,232,.85); }
+[data-theme="light"] .overlay,
+[data-theme="light"] .sheet-overlay { background:rgba(0,0,0,.45); }
+[data-theme="light"] .nav-badge-gold { color:#fff; }
+[data-theme="light"] .btn-gold { color:#fff; }
+[data-theme="light"] .tab-item svg [fill="#0a0a14"] { fill:var(--bg)!important; }
+
 /* ═══════════════════════════════════════════════════════════
    RESET
 ═══════════════════════════════════════════════════════════ */
@@ -118,7 +145,7 @@ img{display:block;max-width:100%}
   position:fixed;top:0;left:0;right:0;z-index:400;
   height:calc(var(--nav-h) + var(--safe-t));
   padding-top:var(--safe-t);
-  background:rgba(10,10,15,.9);
+  background:color-mix(in srgb, var(--bg) 90%, transparent);
   backdrop-filter:blur(20px);
   border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;
@@ -168,7 +195,7 @@ img{display:block;max-width:100%}
   position:fixed;bottom:0;left:0;right:0;z-index:400;
   height:calc(var(--tab-h) + var(--safe-b));
   padding-bottom:var(--safe-b);
-  background:rgba(10,10,15,.95);
+  background:color-mix(in srgb, var(--bg) 95%, transparent);
   backdrop-filter:blur(24px);
   border-top:1px solid var(--border);
   display:flex;align-items:flex-start;
@@ -2394,6 +2421,7 @@ button, a, [onclick],
         <div class="dd-item" onclick="goTo('profile');closeDrop()"><svg width="14" height="14" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:5px"><circle cx="16" cy="10" r="5" stroke="#C9A84C" stroke-width="2"/><path d="M6 28 C6 22 10.5 17 16 17 C21.5 17 26 22 26 28" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/></svg>My Profile</div>
         <div class="dd-item" onclick="goTo('host');closeDrop()"><svg width="11" height="14" viewBox="0 0 18 22" fill="none" style="vertical-align:middle;margin-right:4px"><rect x="7" y="0" width="4" height="22" rx="2" fill="#C9A84C"/><rect x="0" y="6" width="18" height="4" rx="2" fill="#C9A84C"/></svg> Host Event</div>
         <div class="dd-item" id="dd-admin-link" style="display:none" onclick="goTo('admin');closeDrop()"><svg width="14" height="14" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:5px"><circle cx="16" cy="16" r="4" stroke="#C9A84C" stroke-width="2"/><path d="M14.5 4L13 8C12.3 8.2 11.6 8.5 11 9L7 7.5L5 10.8L8 13.5C7.9 14 7.9 14.7 8 15.2L5 18L7 21.3L11 19.8C11.6 20.3 12.3 20.6 13 20.8L14.5 25H17.5L19 20.8C19.7 20.6 20.4 20.3 21 19.8L25 21.3L27 18L24 15.2C24.1 14.7 24.1 14 24 13.5L27 10.8L25 7.5L21 9C20.4 8.5 19.7 8.2 19 8L17.5 4Z" stroke="#C9A84C" stroke-width="1.8" stroke-linejoin="round"/></svg>Admin Dashboard</div>
+        <div class="dd-item" id="dd-theme-toggle" onclick="toggleTheme()"></div>
         <div class="dd-item danger" onclick="signOut()">↩ Sign Out</div>
       </div>
     </div>
@@ -4881,6 +4909,9 @@ const VERSES  = Array.from({length: 5}, (_, i) => VERSES_POOL[(_start + i) % VER
 // SUPABASE AUTH
 // ═══════════════════════════════════════════════════════════
 let _notifPollTimer = null;
+let _homeFeedTimer  = null;
+let _lastVisibleAt  = Date.now();
+
 function startNotifPoll() {
   if (_notifPollTimer) return;
   _notifPollTimer = setInterval(() => { if (currentUser) fetchNotifCount(); }, 30000);
@@ -4888,15 +4919,37 @@ function startNotifPoll() {
 function stopNotifPoll() {
   if (_notifPollTimer) { clearInterval(_notifPollTimer); _notifPollTimer = null; }
 }
+function startHomeFeedPoll() {
+  if (_homeFeedTimer) return;
+  _homeFeedTimer = setInterval(() => {
+    if (document.querySelector('#page-home.active')) fetchHomeEvents();
+  }, 60000);
+}
+function stopHomeFeedPoll() {
+  if (_homeFeedTimer) { clearInterval(_homeFeedTimer); _homeFeedTimer = null; }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { _lastVisibleAt = Date.now(); return; }
+  const elapsed = Date.now() - _lastVisibleAt;
+  _lastVisibleAt = Date.now();
+  if (elapsed < 30000) return; // less than 30s away — skip
+  const active = document.querySelector('.page.active')?.id?.replace('page-', '');
+  if (!active) return;
+  if (active === 'home')      { fetchHomeEvents(); fetchDiscoveryRows(); }
+  if (active === 'profile')   { fetchProfile(); }
+  if (active === 'community') { initCommunityFeed(false); }
+  if (active === 'browse')    { initBrowse(); }
+  _adminLoaded = {};
+});
 
 sb.auth.onAuthStateChange((event, session) => {
   currentSession = session;
   currentUser    = session?.user || null;
   syncAuthUI();
-  if (currentUser) { fetchProfile(); fetchNotifCount(); startNotifPoll(); }
-  else stopNotifPoll();
+  if (currentUser) { fetchProfile(); fetchNotifCount(); startNotifPoll(); startHomeFeedPoll(); }
+  else { stopNotifPoll(); stopHomeFeedPoll(); }
   if (currentUser) {
-    // User just logged in — hide landing, show home
     const lp = document.getElementById('page-landing');
     if (lp && lp.classList.contains('active')) {
       lp.classList.remove('active');
@@ -4925,14 +4978,13 @@ sb.auth.onAuthStateChange((event, session) => {
   currentUser    = session?.user || null;
   syncAuthUI();
   if (currentUser) {
-    fetchProfile(); fetchNotifCount(); startNotifPoll();
+    fetchProfile(); fetchNotifCount(); startNotifPoll(); startHomeFeedPoll();
     if (!document.querySelector('.page.active')) goTo('home');
     if (_pendingProfileUserId) {
       const uid = _pendingProfileUserId; _pendingProfileUserId = null;
       setTimeout(() => openPublicProfile(uid), 350);
     }
   } else {
-    // Show landing page to logged-out visitors (skip if deep-link param present)
     const hasDeepLink = window.location.search.includes('connect_return') ||
                         window.location.search.includes('listing_success') ||
                         window.location.search.includes('reauth');
@@ -4947,7 +4999,6 @@ sb.auth.onAuthStateChange((event, session) => {
       lp.style.height = '100vh';
       lp.style.minHeight = '0';
       lp.style.paddingTop = 'env(safe-area-inset-top, 0px)';
-      // Ensure Sign In shows, CTA shows, Back hidden for non-logged-in initial state
       document.getElementById('landingSignInBtn').style.display = '';
       document.getElementById('landingBackBtn').style.display = 'none';
       document.getElementById('landingCtaSection').style.display = '';
@@ -5024,6 +5075,29 @@ async function signOut() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════════
+function applyTheme(theme) {
+  const isLight = theme === 'light';
+  document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
+  document.querySelector('meta[name="theme-color"]').content = isLight ? '#F5F0E8' : '#0A0A0F';
+  const btn = document.getElementById('dd-theme-toggle');
+  if (btn) {
+    btn.innerHTML = isLight
+      ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;color:var(--gold)"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>Dark Mode`
+      : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;color:var(--gold)"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>Light Mode`;
+  }
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'light' ? 'dark' : 'light';
+  localStorage.setItem('cl-theme', next);
+  applyTheme(next);
+}
+// Restore saved theme on load
+applyTheme(localStorage.getItem('cl-theme') || 'dark');
+
 // NAV DROPDOWN
 // ═══════════════════════════════════════════════════════════
 function toggleDrop() {
@@ -5033,6 +5107,7 @@ function toggleDrop() {
   dd.style.display = 'block';
   document.getElementById('dd-name').textContent  = profileData?.full_name || currentUser?.email?.split('@')[0] || '—';
   document.getElementById('dd-email').textContent = currentUser?.email || '—';
+  applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
   setTimeout(() => document.addEventListener('click', outsideDrop, {once:true}), 50);
 }
 function closeDrop() {
@@ -7188,9 +7263,15 @@ async function toggleFollow() {
     if (!res.ok) throw new Error('failed');
     const nowFollowing = !isFollowing;
     _updateFollowBtn(nowFollowing);
-    // Update follower count display
+    // Update viewed profile's follower count
     const sF = document.getElementById('pubStatFollowers');
     if (sF) sF.textContent = Math.max(0, parseInt(sF.textContent || '0') + (nowFollowing ? 1 : -1));
+    // Update own profile's following count immediately
+    if (profileData) {
+      profileData.following_count = Math.max(0, (profileData.following_count ?? 0) + (nowFollowing ? 1 : -1));
+      const ownFollowing = document.getElementById('statFollowing');
+      if (ownFollowing) ownFollowing.textContent = profileData.following_count;
+    }
   } catch {
     showToast('Could not update follow. Try again.', 'error');
   } finally {
@@ -8070,7 +8151,9 @@ async function saveProfile() {
   showToast('Profile updated!', 'success');
   btn.disabled = false;
   btn.innerHTML = 'Save Changes';
-}
+  // Refresh home feed so city/preference changes show up immediately
+  fetchHomeEvents(profileData?.city ? { city: profileData.city } : {});
+  fetchDiscoveryRows();
 
 // ═══════════════════════════════════════════════════════════
 // EVENT CARDS
@@ -8102,12 +8185,13 @@ function makeCardHTML(ev, scrollMode) {
             return `<div style="width:22px;height:22px;border-radius:50%;background:${c};border:2px solid rgba(0,0,0,.6);margin-left:${i>0?'-7px':'0'};flex-shrink:0"></div>`;
           }).join('')}
         </div>
-        <span style="font-size:11px;color:rgba(255,255,255,.8);font-weight:600">${going > 99 ? '99+' : going} going</span>
+        <span class="card-going" style="font-size:11px;color:rgba(255,255,255,.8);font-weight:600">${going > 99 ? '99+' : going} going</span>
       </div>`
     : `<span></span>`;
 
   const card = document.createElement('div');
   card.className = 'event-card';
+  card.dataset.id = ev.id;
   card.innerHTML = `
     <div style="position:absolute;inset:0;background:${bg}"></div>
     ${ev.cover_url
@@ -8174,7 +8258,10 @@ async function fetchHomeEvents(params = {}) {
       </div>
     </div>`).join('');
   try {
-    const qs = new URLSearchParams(params);
+    // Auto-apply city filter from profile when no explicit location passed
+    const merged = { ...params };
+    if (!merged.lat && !merged.city && profileData?.city) merged.city = profileData.city;
+    const qs = new URLSearchParams(merged);
     const res = await fetch(`${API_BASE}/api/events?${qs}`);
     const data = await res.json();
     renderInto(scroll, data.events, true);
@@ -8601,6 +8688,11 @@ function handleRsvp() {
       document.getElementById('detailWhoGoingBtn').textContent = `See All ${newRsvpCount} Attendees ↓`;
       document.getElementById('detailWhoGoing').style.display = 'block';
       loadInlineAttendees(selectedEvent.id, selectedEvent.is_paid);
+      // Keep home feed card count in sync
+      if (selectedEvent) {
+        selectedEvent.confirmed_rsvps = newRsvpCount;
+        document.querySelectorAll(`.event-card[data-id="${selectedEvent.id}"] .card-going`).forEach(el => { el.textContent = `${newRsvpCount} going`; });
+      }
       spawnConfetti();
       setTimeout(() => spawnConfetti(), 600);
       showSuccess('celebrate', 'You\'re Going!', `Spot reserved for ${selectedEvent?.name || 'the event'}. See you there!`);
@@ -8635,6 +8727,11 @@ async function cancelRsvp() {
       } else {
         document.getElementById('detailWhoGoingBtn').textContent = `See All ${newCount} Attendees ↓`;
         loadInlineAttendees(selectedEvent.id, selectedEvent.is_paid);
+      }
+      // Keep home feed card count in sync
+      if (selectedEvent) {
+        selectedEvent.confirmed_rsvps = newCount;
+        document.querySelectorAll(`.event-card[data-id="${selectedEvent.id}"] .card-going`).forEach(el => { el.textContent = `${newCount} going`; });
       }
       showToast('RSVP cancelled');
     } else { showToast('Could not cancel RSVP', 'error'); }
@@ -9679,6 +9776,7 @@ async function publishEvent() {
       showToast('Event is live!','success');
       spawnConfetti();
     }
+    fetchHomeEvents(); fetchDiscoveryRows();
     setTimeout(()=>goTo('profile'),1400);
   } catch(e) {
     showToast(e.message||'Something went wrong. Please try again.','error');
@@ -9734,7 +9832,9 @@ async function initCommunityFeed(silent = false) {
       </div>`).join('');
   }
   try {
-    const res = await fetch(`${API_BASE}/api/community-posts`);
+    const res = await fetch(`${API_BASE}/api/community-posts`, {
+      headers: currentSession?.access_token ? { 'Authorization': `Bearer ${currentSession.access_token}` } : {},
+    });
     const { posts, error } = await res.json();
     if (error) throw new Error(error);
     const currentCount = feed.querySelectorAll('.feed-card').length;
@@ -9796,7 +9896,7 @@ function makeCommunityPost(p) {
     </div>
     <div class="feed-body" id="post-body-${p.id}" style="white-space:pre-wrap">${escapeHtml(p.body)}</div>
     <div class="feed-reactions">
-      <button class="reaction-btn" data-post-id="${p.id}" onclick="amenPost('${p.id}',this)"><svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M9 20 L9 11 C9 10.2 9.6 9.5 10.5 9.5 C11.4 9.5 12 10.2 12 11 L12 8.5 C12 7.7 12.6 7 13.5 7 C14.4 7 15 7.7 15 8.5 L15 7.5 C15 6.7 15.6 6 16.5 6 C17.4 6 18 6.7 18 7.5 L18 8.5 C18 7.7 18.6 7 19.5 7 C20.4 7 21 7.7 21 8.5 L21 11 C21.5 10.4 22 10.2 22.5 10.5 C23 10.8 23 11.5 23 12 L23 18 C23 21.3 20.3 24 17 24 L15 24 C11.7 24 9 21.3 9 18 Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="24" x2="16" y2="29" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="13.5" y1="27" x2="18.5" y2="27" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Amen <span>${p.amen_count||0}</span></button>
+      <button class="reaction-btn${p.has_amened ? ' active' : ''}" data-post-id="${p.id}" data-amened="${p.has_amened ? '1' : '0'}" onclick="amenPost('${p.id}',this)"><svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M10 6 L10 18 C10 21 12.5 23 16 23 C19.5 23 22 21 22 18 L22 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 10 C8 9 7 11 7 13 C7 15 9 15 9 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 10 C24 9 25 11 25 13 C25 15 23 15 23 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 27 L16 23 L19 27" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Amen <span>${p.amen_count||0}</span></button>
       <button class="reply-toggle-btn ${replyCount > 0 ? 'has-replies' : ''}" id="reply-toggle-${p.id}" onclick="toggleReplies('${p.id}', this)">
         <svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M5 6 C5 5 6 4 7 4 L22 4 C23 4 24 5 24 6 L24 16 C24 17 23 18 22 18 L14 18 L9 23 L9 18 L7 18 C6 18 5 17 5 16 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>${replyCount > 0 ? replyCount + ' repl' + (replyCount === 1 ? 'y' : 'ies') : 'Reply'}
       </button>
@@ -9830,6 +9930,7 @@ function makeCommunityPost(p) {
 
 async function amenPost(postId, btn) {
   if (!currentUser) { openAuth('signup'); return; }
+  btn.disabled = true;
   try {
     const res = await fetch(`${API_BASE}/api/community-posts/${postId}/amen`, {
       method: 'POST',
@@ -9839,9 +9940,11 @@ async function amenPost(postId, btn) {
     if (res.ok) {
       const countEl = btn.querySelector('span');
       if (countEl) countEl.textContent = data.amen_count;
-      btn.classList.add('active');
+      btn.dataset.amened = data.has_amened ? '1' : '0';
+      btn.classList.toggle('active', data.has_amened);
     }
   } catch(e) { /* silent */ }
+  finally { btn.disabled = false; }
 }
 
 async function postToFeed() {
@@ -11159,7 +11262,9 @@ async function loadReplies(postId) {
   if (!list) return;
   list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">Loading…</div>';
   try {
-    const res  = await fetch(`${API_BASE}/api/community-posts/${postId}/replies`);
+    const res  = await fetch(`${API_BASE}/api/community-posts/${postId}/replies`, {
+      headers: currentSession?.access_token ? { 'Authorization': `Bearer ${currentSession.access_token}` } : {},
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to load');
     _repliesLoaded.add(postId);
@@ -11200,7 +11305,7 @@ function makeReplyEl(postId, r) {
       </div>
       <div class="reply-text">${escapeHtml(r.body)}</div>
       <div class="reply-actions">
-        <button class="reply-amen-btn" onclick="amenReply('${r.id}', this)">
+        <button class="reply-amen-btn${r.has_amened ? ' active' : ''}" data-amened="${r.has_amened ? '1' : '0'}" onclick="amenReply('${r.id}', this)">
           <svg width="13" height="13" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M10 6 L10 18 C10 21 12.5 23 16 23 C19.5 23 22 21 22 18 L22 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 27 L16 23 L19 27" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${r.amen_count || 0}</span>
         </button>
         ${isOwn ? `<button class="reply-delete-btn" onclick="deleteReply('${postId}','${r.id}',this)">Delete</button>` : ''}
@@ -11243,6 +11348,7 @@ async function submitReply(postId) {
 
 async function amenReply(replyId, btn) {
   if (!currentUser) { openAuth('signup'); return; }
+  btn.disabled = true;
   try {
     const res  = await fetch(`${API_BASE}/api/community-replies/${replyId}/amen`, {
       method:  'POST',
@@ -11252,9 +11358,11 @@ async function amenReply(replyId, btn) {
     if (res.ok) {
       const countEl = btn.querySelector('span');
       if (countEl) countEl.textContent = data.amen_count;
-      btn.classList.add('active');
+      btn.dataset.amened = data.has_amened ? '1' : '0';
+      btn.classList.toggle('active', data.has_amened);
     }
   } catch {}
+  finally { btn.disabled = false; }
 }
 
 async function deleteReply(postId, replyId, btn) {
@@ -11751,8 +11859,7 @@ async function adminSetRole(userId, role, btn) {
     });
     if (res.ok) {
       showToast(`Role updated to ${role}`, 'success');
-      _adminLoaded['manage'] = false;
-      _adminLoaded['users-hosts'] = false;
+      _adminLoaded = {};
       loadAdminUsers();
     } else {
       const d = await res.json();
@@ -11800,7 +11907,7 @@ async function adminCancelEvent(id, btn) {
       showToast('Event cancelled', 'success');
       btn.textContent = 'Cancelled';
       btn.style.color = 'var(--muted)';
-      _adminLoaded['events'] = false;
+      _adminLoaded = {};
     } else {
       btn.disabled = false; btn.textContent = 'Cancel';
       showToast('Failed to cancel', 'error');
