@@ -73,8 +73,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Ensure storage buckets exist (runs once on startup)
 (async () => {
   const buckets = [
-    { name: 'avatars',      public: true },
-    { name: 'event-images', public: true },
+    { name: 'avatars',        public: true  },
+    { name: 'event-images',   public: true  },
+    { name: 'identity-docs',  public: false },
   ];
   for (const b of buckets) {
     const { error } = await supabaseAdmin.storage.createBucket(b.name, { public: b.public });
@@ -310,6 +311,57 @@ app.delete('/api/follow/:userId', requireAuth, async (req, res) => {
   res.json({ following: false });
 });
 
+// GET /api/followers — current user's followers list (for invite picker)
+app.get('/api/followers', requireAuth, async (req, res) => {
+  try {
+    const { data: follows, error } = await supabaseAdmin
+      .from('user_follows')
+      .select('follower_id')
+      .eq('following_id', req.userId);
+    if (error) return res.status(500).json({ error: error.message });
+    if (!follows || follows.length === 0) return res.json({ followers: [] });
+    const ids = follows.map(f => f.follower_id);
+    const { data: profiles, error: pErr } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name, avatar_url, avatar_color')
+      .in('id', ids);
+    if (pErr) return res.status(500).json({ error: pErr.message });
+    res.json({ followers: profiles || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/followers/:userId — list of users following this person
+app.get('/api/followers/:userId', async (req, res) => {
+  try {
+    const { data: follows, error } = await supabaseAdmin
+      .from('user_follows').select('follower_id')
+      .eq('following_id', req.params.userId)
+      .order('created_at', { ascending: false }).limit(200);
+    if (error) return res.status(500).json({ error: error.message });
+    if (!follows || follows.length === 0) return res.json({ users: [] });
+    const ids = follows.map(f => f.follower_id);
+    const { data: profiles } = await supabaseAdmin
+      .from('profiles').select('id, full_name, avatar_url, avatar_color, city, role').in('id', ids);
+    res.json({ users: profiles || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/following/:userId — list of users this person follows
+app.get('/api/following/:userId', async (req, res) => {
+  try {
+    const { data: follows, error } = await supabaseAdmin
+      .from('user_follows').select('following_id')
+      .eq('follower_id', req.params.userId)
+      .order('created_at', { ascending: false }).limit(200);
+    if (error) return res.status(500).json({ error: error.message });
+    if (!follows || follows.length === 0) return res.json({ users: [] });
+    const ids = follows.map(f => f.following_id);
+    const { data: profiles } = await supabaseAdmin
+      .from('profiles').select('id, full_name, avatar_url, avatar_color, city, role').in('id', ids);
+    res.json({ users: profiles || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // POST /api/upload-banner — same dataUrl pattern as upload-avatar
 app.post('/api/upload-banner', requireAuth, async (req, res) => {
   const { dataUrl } = req.body;
@@ -319,6 +371,7 @@ app.post('/api/upload-banner', requireAuth, async (req, res) => {
     if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
     const mimeType = matches[1];
     const buffer   = Buffer.from(matches[2], 'base64');
+    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
     const ext      = mimeType.includes('png') ? 'png' : 'jpg';
     const path     = `banners/${req.userId}/banner.${ext}`;
     const { error: upErr } = await supabaseAdmin.storage
@@ -332,7 +385,7 @@ app.post('/api/upload-banner', requireAuth, async (req, res) => {
 
 app.patch('/api/profile', requireAuth, async (req, res) => {
   const {
-    full_name, bio, city, avatar_url, avatar_color,
+    full_name, bio, city, avatar_url, avatar_color, avatar_ring_color,
     instagram_url, facebook_url, tiktok_url,
     banner_url, bible_verse, bible_verse_reference, bible_version,
     hot_takes, hobbies, connect_tags, prayer_request, testimony,
@@ -343,6 +396,7 @@ app.patch('/api/profile', requireAuth, async (req, res) => {
   if (city                    !== undefined) updates.city                    = city;
   if (avatar_url              !== undefined) updates.avatar_url              = avatar_url;
   if (avatar_color            !== undefined) updates.avatar_color            = avatar_color;
+  if (avatar_ring_color       !== undefined) updates.avatar_ring_color       = avatar_ring_color;
   if (instagram_url           !== undefined) updates.instagram_url           = instagram_url;
   if (facebook_url            !== undefined) updates.facebook_url            = facebook_url;
   if (tiktok_url              !== undefined) updates.tiktok_url              = tiktok_url;
@@ -399,6 +453,7 @@ app.post('/api/upload-avatar', requireAuth, async (req, res) => {
     if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
     const mimeType = matches[1];
     const buffer   = Buffer.from(matches[2], 'base64');
+    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
     const ext      = mimeType.includes('png') ? 'png' : 'jpg';
     const path     = `avatars/${req.userId}/avatar-${Date.now()}.${ext}`;
     const { error: upErr } = await supabaseAdmin.storage
@@ -419,12 +474,34 @@ app.post('/api/upload-event-image', requireAuth, async (req, res) => {
     if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
     const mimeType = matches[1];
     const buffer   = Buffer.from(matches[2], 'base64');
+    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
     const ext      = mimeType.includes('png') ? 'png' : 'jpg';
     const suffix   = type === 'cover' ? 'cover' : `gallery-${Math.random().toString(36).slice(2)}`;
     const path     = `events/${req.userId}/${Date.now()}-${suffix}.${ext}`;
     const { error: upErr } = await supabaseAdmin.storage
       .from('event-images')
       .upload(path, buffer, { upsert: true, contentType: mimeType });
+    if (upErr) return res.status(400).json({ error: upErr.message });
+    const { data: { publicUrl } } = supabaseAdmin.storage.from('event-images').getPublicUrl(path);
+    res.json({ url: publicUrl });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Upload forum image via server (bypasses Supabase storage RLS)
+app.post('/api/upload-forum-image', requireAuth, async (req, res) => {
+  const { dataUrl } = req.body;
+  if (!dataUrl || !dataUrl.startsWith('data:')) return res.status(400).json({ error: 'Invalid image data.' });
+  try {
+    const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
+    const mimeType = matches[1];
+    const buffer   = Buffer.from(matches[2], 'base64');
+    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
+    const ext      = mimeType.includes('png') ? 'png' : 'jpg';
+    const path     = `forum/${req.userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: upErr } = await supabaseAdmin.storage
+      .from('event-images')
+      .upload(path, buffer, { upsert: false, contentType: mimeType });
     if (upErr) return res.status(400).json({ error: upErr.message });
     const { data: { publicUrl } } = supabaseAdmin.storage.from('event-images').getPublicUrl(path);
     res.json({ url: publicUrl });
@@ -501,7 +578,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
   const {
     name, description, cover_url, gallery_urls, event_type, age_group, format,
     denomination, tags, is_paid, absorb_stripe_fee,
-    start_date, end_date, venue_name, address, city, state, zip, online_url, max_capacity,
+    start_date, end_date, sales_cutoff, venue_name, address, city, state, zip, online_url, max_capacity,
     forum_enabled, publish_at,
   } = req.body;
   if (!name) return res.status(400).json({ error: 'Event name is required.' });
@@ -521,6 +598,7 @@ app.post('/api/events', requireAuth, async (req, res) => {
     is_paid: is_paid || false,
     absorb_stripe_fee: absorb_stripe_fee !== false,
     start_date: start_date || null, end_date: end_date || null,
+    sales_cutoff: sales_cutoff || end_date || null,
     venue_name, address, city, state, zip, online_url,
     max_capacity: max_capacity || null,
     forum_enabled: forum_enabled !== false,
@@ -539,7 +617,7 @@ app.patch('/api/events/:id', requireAuth, async (req, res) => {
   if (!ev) return res.status(404).json({ error: 'Event not found or not yours.' });
   const allowed = [
     'name','description','event_type','age_group','format','denomination','tags',
-    'start_date','end_date','venue_name','address','city','state','zip','online_url',
+    'start_date','end_date','sales_cutoff','venue_name','address','city','state','zip','online_url',
     'max_capacity','gallery_urls','forum_enabled',
   ];
   const updates = {};
@@ -699,16 +777,19 @@ app.get('/api/my-tickets', requireAuth, async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
   if (!ticketRows || ticketRows.length === 0) return res.json({ tickets: [] });
 
-  const eventIds = [...new Set(ticketRows.map(t => t.event_id).filter(Boolean))];
-  const typeIds  = [...new Set(ticketRows.map(t => t.ticket_type_id).filter(Boolean))];
+  const eventIds  = [...new Set(ticketRows.map(t => t.event_id).filter(Boolean))];
+  const typeIds   = [...new Set(ticketRows.map(t => t.ticket_type_id).filter(Boolean))];
+  const ticketIds = ticketRows.map(t => t.id);
 
-  const [{ data: events }, { data: ticketTypes }] = await Promise.all([
+  const [{ data: events }, { data: ticketTypes }, { data: checkins }] = await Promise.all([
     supabaseAdmin.from('events').select('id, name, start_date, city, cover_url, host_id').in('id', eventIds),
     supabaseAdmin.from('ticket_types').select('id, name').in('id', typeIds),
+    supabaseAdmin.from('ticket_checkins').select('ticket_id, checked_in_at').in('ticket_id', ticketIds),
   ]);
 
-  const eventsMap = Object.fromEntries((events || []).map(e => [e.id, e]));
-  const typesMap  = Object.fromEntries((ticketTypes || []).map(tt => [tt.id, tt]));
+  const eventsMap   = Object.fromEntries((events      || []).map(e  => [e.id,        e]));
+  const typesMap    = Object.fromEntries((ticketTypes || []).map(tt => [tt.id,       tt]));
+  const checkinsMap = Object.fromEntries((checkins    || []).map(c  => [c.ticket_id, c.checked_in_at]));
 
   const tickets = ticketRows.map(t => ({
     ...t,
@@ -718,6 +799,8 @@ app.get('/api/my-tickets', requireAuth, async (req, res) => {
     event_cover_url:  eventsMap[t.event_id]?.cover_url,
     event_host_id:    eventsMap[t.event_id]?.host_id,
     ticket_type_name: typesMap[t.ticket_type_id]?.name,
+    checked_in:       !!checkinsMap[t.id],
+    checked_in_at:    checkinsMap[t.id] || null,
   }));
   res.json({ tickets });
 });
@@ -1031,8 +1114,10 @@ app.get('/api/my-rsvps', requireAuth, async (req, res) => {
 app.post('/api/rsvp', requireAuth, async (req, res) => {
   const { eventId } = req.body;
   if (!eventId) return res.status(400).json({ error: 'Event ID required.' });
-  const { data: ev } = await supabaseAdmin.from('events').select('id, max_capacity, status').eq('id', eventId).single();
+  const { data: ev } = await supabaseAdmin.from('events').select('id, max_capacity, status, end_date, sales_cutoff').eq('id', eventId).single();
   if (!ev || ev.status !== 'published') return res.status(404).json({ error: 'Event not found.' });
+  const cutoff = ev.sales_cutoff || ev.end_date;
+  if (cutoff && new Date() > new Date(cutoff)) return res.status(400).json({ error: 'RSVPs for this event are now closed.' });
   if (ev.max_capacity) {
     const { count } = await supabaseAdmin.from('rsvps').select('*', { count: 'exact' })
       .eq('event_id', eventId).eq('status', 'confirmed');
@@ -1204,30 +1289,72 @@ app.post('/api/tax-estimate', requireAuth, async (req, res) => {
 });
 
 app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) => {
-  const { paymentMethodId, eventId, hostEmail } = req.body;
-  if (!paymentMethodId || !eventId) return res.status(400).json({ error: 'Payment method and event ID required.' });
+  const { paymentMethodId, eventId, hostEmail, promoCode } = req.body;
+  if (!eventId) return res.status(400).json({ error: 'Event ID required.' });
+  if (!paymentMethodId) return res.status(400).json({ error: 'Payment method required.' });
   const { data: ev } = await supabaseAdmin.from('events').select('id, name, listing_fee_paid')
     .eq('id', eventId).eq('host_id', req.userId).single();
   if (!ev) return res.status(404).json({ error: 'Event not found or not yours.' });
   if (ev.listing_fee_paid) return res.status(400).json({ error: 'Listing fee already paid.' });
+
+  // Apply promo code if provided
+  let chargeAmount = HOST_LISTING_FEE;
+  let appliedPromoId = null;
+  if (promoCode) {
+    const { data: promo } = await supabaseAdmin
+      .from('listing_promo_codes')
+      .select('*')
+      .eq('code', promoCode.toUpperCase().trim())
+      .eq('active', true)
+      .single();
+    if (promo && !(promo.expires_at && new Date() > new Date(promo.expires_at))
+              && (promo.max_uses === null || promo.uses_count < promo.max_uses)) {
+      const discountCents = promo.discount_type === 'percent'
+        ? Math.round(HOST_LISTING_FEE * (promo.discount_value / 100))
+        : Math.min(Math.round(promo.discount_value * 100), HOST_LISTING_FEE);
+      chargeAmount = Math.max(0, HOST_LISTING_FEE - discountCents);
+      appliedPromoId = promo.id;
+    }
+  }
+
+  // Guard: if frontend sent the free-promo sentinel but discount is no longer valid
+  if (paymentMethodId === '__promo_free__' && chargeAmount > 0) {
+    return res.status(400).json({ error: 'Promo code could not be applied. Please re-enter your card details and try again.', resetCard: true });
+  }
+
+  // Free after discount — skip Stripe entirely
+  if (chargeAmount === 0) {
+    await supabaseAdmin.from('events').update({ listing_fee_paid: true, listing_payment_id: 'promo_free' }).eq('id', eventId);
+    if (appliedPromoId) {
+      const { data: pc } = await supabaseAdmin.from('listing_promo_codes').select('uses_count').eq('id', appliedPromoId).single();
+      await supabaseAdmin.from('listing_promo_codes').update({ uses_count: (pc?.uses_count || 0) + 1 }).eq('id', appliedPromoId);
+    }
+    await new Promise(r => setTimeout(r, 300));
+    return res.json({ success: true, intentId: 'promo_free' });
+  }
+
   try {
     const intent = await stripe.paymentIntents.create({
-      amount:               HOST_LISTING_FEE,
+      amount:               chargeAmount,
       currency:             'usd',
       payment_method_types: ['card'],
       payment_method:       paymentMethodId,
       confirm:              true,
-      receipt_email:        hostEmail || req.user.email,
+      receipt_email:        hostEmail || req.user.email || undefined,
       description:          `Christ Link listing fee — ${ev.name}`,
-      metadata:             { type: 'listing_fee', event_id: eventId, host_id: req.userId },
+      metadata:             { type: 'listing_fee', event_id: eventId, host_id: req.userId, promo_id: appliedPromoId || '' },
       return_url:           `${process.env.APP_URL}/?listing_success=1`,
     }, { idempotencyKey: `listing-fee-${eventId}-${paymentMethodId.slice(-12)}` });
+    console.log('[listing-fee] intent status:', intent.status, 'eventId:', eventId);
     if (intent.status === 'succeeded') {
       await supabaseAdmin
         .from('events')
         .update({ listing_fee_paid: true, listing_payment_id: intent.id })
         .eq('id', eventId);
-      // Small delay to ensure DB commit propagates before frontend calls /publish
+      if (appliedPromoId) {
+        const { data: pc } = await supabaseAdmin.from('listing_promo_codes').select('uses_count').eq('id', appliedPromoId).single();
+        await supabaseAdmin.from('listing_promo_codes').update({ uses_count: (pc?.uses_count || 0) + 1 }).eq('id', appliedPromoId);
+      }
       await new Promise(r => setTimeout(r, 300));
       return res.json({ success: true, intentId: intent.id });
     }
@@ -1237,6 +1364,7 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
       error: `Payment status: ${intent.status}. Please try again.`,
     });
   } catch (e) {
+    console.error('[listing-fee] stripe error:', e.raw?.code, e.message, 'eventId:', eventId, 'userId:', req.userId);
     const msg = (e.raw?.code === 'payment_method_unexpected_state' || (e.message||'').toLowerCase().includes('previously used'))
       ? 'Your card could not be reused. Please re-enter your card details and try again.'
       : e.message;
@@ -1246,14 +1374,17 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
 
 app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res) => {
   const { eventId, ticketTypeId, qty = 1, buyerEmail } = req.body;
+  const parsedQty = parseInt(qty, 10);
   if (!eventId || !ticketTypeId)
     return res.status(400).json({ error: 'Event ID and ticket type required.' });
+  if (!parsedQty || parsedQty < 1 || parsedQty > 20)
+    return res.status(400).json({ error: 'Quantity must be between 1 and 20.' });
 
   try {
     // ── 1. Fetch event using admin client (bypasses RLS) ──────────
     const { data: ev, error: evErr } = await supabaseAdmin
       .from('events')
-      .select('id, name, status, is_paid, absorb_stripe_fee, host_id, max_capacity')
+      .select('id, name, status, is_paid, absorb_stripe_fee, host_id, max_capacity, end_date, sales_cutoff')
       .eq('id', eventId)
       .single();
 
@@ -1264,6 +1395,10 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
 
     if (ev.status !== 'published')
       return res.status(400).json({ error: 'This event is not currently available for ticket purchases.' });
+
+    const ticketCutoff = ev.sales_cutoff || ev.end_date;
+    if (ticketCutoff && new Date() > new Date(ticketCutoff))
+      return res.status(400).json({ error: 'Ticket sales for this event are now closed.' });
 
     if (!ev.is_paid)
       return res.status(400).json({ error: 'This is a free event — use RSVP instead.' });
@@ -1494,6 +1629,12 @@ app.post('/api/connect-onboard', requireAuth, async (req, res) => {
     res.json({ url: link.url, accountId });
   } catch (e) {
     console.error('[connect-onboard]', e.message);
+    if (e.message && e.message.toLowerCase().includes('platform profile')) {
+      return res.status(400).json({
+        error: 'Stripe Connect is not fully configured yet. The platform owner must complete the Connect platform profile in the Stripe Dashboard before hosts can set up payouts.',
+        platformSetup: true,
+      });
+    }
     res.status(400).json({ error: e.message });
   }
 });
@@ -1543,6 +1684,142 @@ app.post('/api/connect-sync', requireAuth, async (req, res) => {
     console.error('[connect-sync]', e.message);
     res.status(400).json({ error: e.message });
   }
+});
+
+// Disconnect/reset Stripe Connect — removes the DB record so user can re-onboard
+app.delete('/api/connect-disconnect', requireAuth, async (req, res) => {
+  try {
+    const { data: row } = await supabaseAdmin
+      .from('host_stripe_accounts')
+      .select('stripe_account_id')
+      .eq('user_id', req.userId)
+      .single();
+    if (!row) return res.status(404).json({ error: 'No connected Stripe account found.' });
+    await supabaseAdmin.from('host_stripe_accounts').delete().eq('user_id', req.userId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin: disconnect any user's Stripe Connect account
+app.delete('/api/admin/connect-disconnect/:userId', requireAdmin, async (req, res) => {
+  try {
+    await supabaseAdmin.from('host_stripe_accounts').delete().eq('user_id', req.params.userId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// IDENTITY VERIFICATION
+// ════════════════════════════════════════════════════════════
+
+app.post('/api/identity/submit', requireAuth, async (req, res) => {
+  const { legal_name, id_doc_base64 } = req.body;
+  if (!legal_name?.trim()) return res.status(400).json({ error: 'Legal name is required.' });
+  if (!id_doc_base64)       return res.status(400).json({ error: 'ID document photo is required.' });
+  try {
+    const matches = id_doc_base64.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) return res.status(400).json({ error: 'Invalid image data.' });
+    const mimeType = matches[1];
+    const buffer   = Buffer.from(matches[2], 'base64');
+    if (buffer.length > 10 * 1024 * 1024) return res.status(413).json({ error: 'ID document must be under 10 MB.' });
+    const ext  = mimeType.includes('png') ? 'png' : mimeType.includes('pdf') ? 'pdf' : 'jpg';
+    const path = `${req.userId}/id-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabaseAdmin.storage
+      .from('identity-docs')
+      .upload(path, buffer, { upsert: true, contentType: mimeType });
+    if (upErr) throw upErr;
+
+    const cleanName = sanitizeText(legal_name.trim());
+    const { error: dbErr } = await supabaseAdmin
+      .from('identity_verifications')
+      .upsert({
+        user_id: req.userId, status: 'pending', legal_name: cleanName,
+        id_doc_path: path, submitted_at: new Date().toISOString(),
+        verified_at: null, rejected_reason: null, reviewed_by: null,
+      }, { onConflict: 'user_id' });
+    if (dbErr) throw dbErr;
+
+    // Keep profile full_name in sync with legal name
+    const { data: prof } = await supabaseAdmin.from('profiles').select('full_name').eq('id', req.userId).single();
+    if (prof && prof.full_name?.toLowerCase().trim() !== cleanName.toLowerCase()) {
+      await supabaseAdmin.from('profiles').update({ full_name: cleanName }).eq('id', req.userId);
+    }
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[identity/submit]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/identity/status', requireAuth, async (req, res) => {
+  try {
+    const { data } = await supabaseAdmin
+      .from('identity_verifications')
+      .select('status, legal_name, submitted_at, verified_at, rejected_reason')
+      .eq('user_id', req.userId)
+      .single();
+    res.json({ verification: data || null });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/admin/verifications', requireAdmin, async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = supabaseAdmin
+      .from('identity_verifications')
+      .select('*, profiles!user_id(full_name, email, avatar_url, avatar_color)')
+      .order('submitted_at', { ascending: false });
+    if (status) query = query.eq('status', status);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ verifications: data || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.patch('/api/admin/verifications/:userId/approve', requireAdmin, async (req, res) => {
+  try {
+    const uid = req.params.userId;
+    const { error: vErr } = await supabaseAdmin.from('identity_verifications')
+      .update({ status: 'verified', verified_at: new Date().toISOString(), reviewed_by: req.userId, rejected_reason: null })
+      .eq('user_id', uid);
+    if (vErr) throw vErr;
+    const { error: pErr } = await supabaseAdmin.from('profiles')
+      .update({ identity_verified: true, identity_verified_at: new Date().toISOString() })
+      .eq('id', uid);
+    if (pErr) throw pErr;
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.patch('/api/admin/verifications/:userId/reject', requireAdmin, async (req, res) => {
+  const { reason } = req.body;
+  try {
+    const uid = req.params.userId;
+    const { error: vErr } = await supabaseAdmin.from('identity_verifications')
+      .update({ status: 'rejected', reviewed_by: req.userId, rejected_reason: sanitizeText(reason || 'Verification could not be confirmed.') })
+      .eq('user_id', uid);
+    if (vErr) throw vErr;
+    await supabaseAdmin.from('profiles')
+      .update({ identity_verified: false, identity_verified_at: null })
+      .eq('id', uid);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/admin/verifications/:userId/id-doc', requireAdmin, async (req, res) => {
+  try {
+    const { data: v } = await supabaseAdmin.from('identity_verifications')
+      .select('id_doc_path').eq('user_id', req.params.userId).single();
+    if (!v?.id_doc_path) return res.status(404).json({ error: 'No ID document found.' });
+    const { data, error } = await supabaseAdmin.storage
+      .from('identity-docs').createSignedUrl(v.id_doc_path, 3600);
+    if (error) throw error;
+    res.json({ url: data.signedUrl });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Fallback route — called by frontend after payment succeeds
@@ -1920,6 +2197,35 @@ app.patch('/api/notifications/read-all', requireAuth, async (req, res) => {
   await supabaseAdmin.from('notifications')
     .update({ read: true }).eq('user_id', req.userId).eq('read', false);
   res.json({ success: true });
+});
+
+// POST /api/events/:eventId/invite — host sends event invites to selected followers
+app.post('/api/events/:eventId/invite', requireAuth, async (req, res) => {
+  const { eventId } = req.params;
+  const { followerIds } = req.body;
+  if (!Array.isArray(followerIds) || followerIds.length === 0)
+    return res.status(400).json({ error: 'No followers selected.' });
+  if (followerIds.length > 100)
+    return res.status(400).json({ error: 'Cannot invite more than 100 people at once.' });
+  try {
+    const { data: ev, error } = await supabaseAdmin
+      .from('events').select('id, name, host_id').eq('id', eventId).single();
+    if (error || !ev) return res.status(404).json({ error: 'Event not found.' });
+    if (ev.host_id !== req.userId) return res.status(403).json({ error: 'Only the host can send invites.' });
+    const { data: host } = await supabaseAdmin
+      .from('profiles').select('full_name').eq('id', req.userId).single();
+    const hostName = host?.full_name || 'Someone';
+    await supabaseAdmin.from('notifications').insert(
+      followerIds.map(uid => ({
+        user_id: uid,
+        type: 'event_invite',
+        title: `${hostName} invited you to an event`,
+        body: ev.name,
+        data: { event_id: ev.id, event_name: ev.name }
+      }))
+    );
+    res.json({ sent: followerIds.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // GET /api/refund-requests — host fetches refund requests for their events
@@ -2574,14 +2880,19 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
   try {
     let query = supabaseAdmin
       .from('profiles')
-      .select('id, full_name, email, role, city, created_at, avatar_url, avatar_color')
+      .select('id, full_name, email, role, city, created_at, avatar_url, avatar_color, host_stripe_accounts(stripe_account_id)')
       .order('created_at', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
     if (q)    query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
     if (role) query = query.eq('role', role);
     const { data, error } = await query;
     if (error) throw error;
-    res.json({ users: data || [] });
+    const users = (data || []).map(u => ({
+      ...u,
+      stripe_account_id: u.host_stripe_accounts?.[0]?.stripe_account_id || null,
+      host_stripe_accounts: undefined,
+    }));
+    res.json({ users });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -2634,6 +2945,27 @@ app.delete('/api/admin/events/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// List all community posts for admin moderation
+app.get('/api/admin/posts', requireAdmin, async (req, res) => {
+  try {
+    const limit  = Math.min(parseInt(req.query.limit) || 50, 200);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    const { data: posts, error } = await supabaseAdmin
+      .from('community_posts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (error) return res.status(500).json({ error: error.message });
+    if (!posts?.length) return res.json({ posts: [] });
+    const ids = [...new Set(posts.map(p => p.author_id).filter(Boolean))];
+    const { data: profiles } = ids.length
+      ? await supabaseAdmin.from('profiles').select('id, full_name, avatar_url, avatar_color').in('id', ids)
+      : { data: [] };
+    const pm = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+    res.json({ posts: posts.map(p => ({ ...p, profiles: pm[p.author_id] || null })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Delete community post (admin moderation)
 app.delete('/api/admin/posts/:id', requireAdmin, async (req, res) => {
   try {
@@ -2642,6 +2974,76 @@ app.delete('/api/admin/posts/:id', requireAdmin, async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ─── LISTING PROMO CODES (admin) ─────────────────────────────
+app.get('/api/admin/listing-promo-codes', requireAdmin, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('listing_promo_codes')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ codes: data });
+});
+
+app.post('/api/admin/listing-promo-codes', requireAdmin, async (req, res) => {
+  const { code, discount_type, discount_value, max_uses, expires_at } = req.body;
+  if (!code || !discount_type || !discount_value)
+    return res.status(400).json({ error: 'code, discount_type and discount_value are required.' });
+  if (!['percent','fixed'].includes(discount_type))
+    return res.status(400).json({ error: 'discount_type must be percent or fixed.' });
+  const val = parseFloat(discount_value);
+  if (isNaN(val) || val <= 0) return res.status(400).json({ error: 'discount_value must be a positive number.' });
+  if (discount_type === 'percent' && val > 100) return res.status(400).json({ error: 'Percent discount cannot exceed 100.' });
+  const { data, error } = await supabaseAdmin
+    .from('listing_promo_codes')
+    .insert({
+      code: code.toUpperCase().trim(),
+      discount_type,
+      discount_value: val,
+      max_uses: max_uses ? parseInt(max_uses, 10) : null,
+      expires_at: expires_at || null,
+    })
+    .select()
+    .single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ code: data });
+});
+
+app.patch('/api/admin/listing-promo-codes/:id', requireAdmin, async (req, res) => {
+  const { active } = req.body;
+  const { error } = await supabaseAdmin
+    .from('listing_promo_codes')
+    .update({ active })
+    .eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+// Validate a promo code (called by host before payment)
+app.post('/api/validate-listing-promo', requireAuth, async (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'Code required.' });
+  const { data: promo } = await supabaseAdmin
+    .from('listing_promo_codes')
+    .select('*')
+    .eq('code', code.toUpperCase().trim())
+    .eq('active', true)
+    .single();
+  if (!promo) return res.status(404).json({ error: 'Invalid or expired promo code.' });
+  if (promo.expires_at && new Date() > new Date(promo.expires_at))
+    return res.status(400).json({ error: 'This promo code has expired.' });
+  if (promo.max_uses !== null && promo.uses_count >= promo.max_uses)
+    return res.status(400).json({ error: 'This promo code has reached its usage limit.' });
+  // Calculate discounted amount
+  let discountCents;
+  if (promo.discount_type === 'percent') {
+    discountCents = Math.round(HOST_LISTING_FEE * (promo.discount_value / 100));
+  } else {
+    discountCents = Math.min(Math.round(promo.discount_value * 100), HOST_LISTING_FEE);
+  }
+  const finalCents = Math.max(0, HOST_LISTING_FEE - discountCents);
+  res.json({ valid: true, promo_id: promo.id, discount_type: promo.discount_type, discount_value: promo.discount_value, discount_cents: discountCents, final_cents: finalCents });
 });
 
 // ─── SCHEDULED EVENT AUTO-PUBLISHER ─────────────────────────
