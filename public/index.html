@@ -8154,6 +8154,7 @@ async function saveProfile() {
   // Refresh home feed so city/preference changes show up immediately
   fetchHomeEvents(profileData?.city ? { city: profileData.city } : {});
   fetchDiscoveryRows();
+}
 
 // ═══════════════════════════════════════════════════════════
 // EVENT CARDS
