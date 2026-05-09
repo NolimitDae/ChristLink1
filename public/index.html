@@ -178,12 +178,19 @@ img{display:block;max-width:100%}
 .splash-wordmark{font-family:Georgia,'Times New Roman',serif;font-size:1.8rem;font-weight:700;color:#C9A84C;text-align:center;letter-spacing:.02em}
 @keyframes splashPulse{from{opacity:.7;transform:scale(.97)}to{opacity:1;transform:scale(1.03)}}
 /* Nav icon stroke states */
-.tab-item svg path,.tab-item svg circle,.tab-item svg line,.tab-item svg rect,.tab-item svg ellipse{stroke:rgba(255,255,255,.38);transition:stroke .18s}
+.tab-item svg path,.tab-item svg circle,.tab-item svg line,.tab-item svg rect,.tab-item svg ellipse{stroke:rgba(255,255,255,.55);transition:stroke .18s}
 .tab-item.active svg path,.tab-item.active svg circle,.tab-item.active svg line,.tab-item.active svg rect,.tab-item.active svg ellipse{stroke:#C9A84C}
 .tab-item.active svg [fill="#C9A84C"]{fill:#C9A84C}
-.tab-item:not(.active) svg [fill="#C9A84C"]{fill:rgba(255,255,255,.38)}
+.tab-item:not(.active) svg [fill="#C9A84C"]{fill:rgba(255,255,255,.55)}
 /* Nav icon fill overrides for dark-background insets */
 .tab-item svg [fill="#0a0a14"]{fill:var(--bg)!important}
+/* Light mode: swap white strokes for dark so icons are visible on cream background */
+[data-theme="light"] .tab-item svg path,
+[data-theme="light"] .tab-item svg circle,
+[data-theme="light"] .tab-item svg line,
+[data-theme="light"] .tab-item svg rect,
+[data-theme="light"] .tab-item svg ellipse{stroke:rgba(0,0,0,.45)}
+[data-theme="light"] .tab-item:not(.active) svg [fill="#C9A84C"]{fill:rgba(0,0,0,.4)}
 
 .nav-logo{
   font-family:var(--font-display);font-weight:700;font-size:19px;
@@ -223,7 +230,7 @@ img{display:block;max-width:100%}
 .tab-item{
   flex:1;display:flex;flex-direction:column;align-items:center;
   gap:3px;padding:4px 0;
-  color:var(--muted);font-size:10px;font-weight:500;
+  color:var(--muted2);font-size:10px;font-weight:600;
   letter-spacing:.04em;text-transform:uppercase;
   transition:color .18s var(--ease);
 }
@@ -262,9 +269,9 @@ img{display:block;max-width:100%}
    HERO (Home)
 ═══════════════════════════════════════════════════════════ */
 .hero{
-  min-height:280px;
+  min-height:200px;
   display:flex;flex-direction:column;justify-content:flex-end;
-  padding:20px 20px 28px;
+  padding:12px 20px 24px;
   position:relative;overflow:hidden;
   background:linear-gradient(160deg,#1A0F30 0%,#0A0A0F 60%);
 }
@@ -1913,7 +1920,7 @@ input[type="datetime-local"] {
     transition:color .18s;
   }
   .nav-desktop-links a:hover,.nav-desktop-links a.active{color:var(--gold)}
-  .hero{min-height:420px}
+  .hero{min-height:220px}
   .events-grid{grid-template-columns:1fr 1fr 1fr}
   .host-form-wrap{max-width:600px;margin:0 auto}
 }
