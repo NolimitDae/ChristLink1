@@ -8289,8 +8289,14 @@ function isoToLocalInput(iso) {
 function homePill(el, filter) {
   document.querySelectorAll('#homePills .pill').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
-  // "All" bypasses city filter so users always see events
-  fetchHomeEvents(filter === 'all' ? {_showAll: true} : {type:filter});
+  // Reset Near Me button when switching pill filters
+  const nearBtn = document.getElementById('nearMeHomeBtn');
+  if (nearBtn) {
+    nearBtn.classList.remove('active');
+    nearBtn.innerHTML = `<svg width="11" height="14" viewBox="0 0 10 13" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg> Near Me`;
+  }
+  // Skip city filter on all pill clicks so events from any city are shown
+  fetchHomeEvents(filter === 'all' ? {_showAll: true} : {type: filter, _showAll: true});
 }
 
 async function fetchHomeEvents(params = {}) {
