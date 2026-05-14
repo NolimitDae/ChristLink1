@@ -8181,7 +8181,7 @@ async function saveProfile() {
   btn.disabled = false;
   btn.innerHTML = 'Save Changes';
   // Refresh home feed so city/preference changes show up immediately
-  fetchHomeEvents(profileData?.city ? { city: profileData.city } : {});
+  fetchHomeEvents();
   fetchDiscoveryRows();
 }
 
@@ -8312,11 +8312,7 @@ async function fetchHomeEvents(params = {}) {
     </div>`).join('');
   try {
     const merged = { ...params };
-    const showAll = !!merged._showAll;
     delete merged._showAll;
-    // Auto-apply city filter from profile when no explicit location passed,
-    // but skip when user explicitly clicks "All"
-    if (!showAll && !merged.lat && !merged.city && profileData?.city) merged.city = profileData.city;
     const qs = new URLSearchParams(merged);
     const res = await fetch(`${API_BASE}/api/events?${qs}`);
     const data = await res.json();
