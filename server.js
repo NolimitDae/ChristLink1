@@ -3,16 +3,17 @@
  * Express + Supabase + Stripe
  */
 require('dotenv').config();
-const express   = require('express');
-const cors      = require('cors');
-const helmet    = require('helmet');
-const rateLimit = require('express-rate-limit');
-const path      = require('path');
+const express      = require('express');
+const cors         = require('cors');
+const helmet       = require('helmet');
+const rateLimit    = require('express-rate-limit');
+const compression  = require('compression');
+const path         = require('path');
 const { createClient } = require('@supabase/supabase-js');
-const Stripe    = require('stripe');
-const forge     = require('node-forge');
-const JSZip     = require('jszip');
-const crypto    = require('crypto');
+const Stripe       = require('stripe');
+const forge        = require('node-forge');
+const JSZip        = require('jszip');
+const crypto       = require('crypto');
 
 const app  = express();
 const PORT = process.env.PORT || 4242;
@@ -60,6 +61,7 @@ const STRIPE_FIXED     = 30;
 // Webhook needs raw body BEFORE json()
 app.post('/webhook', express.raw({ type: 'application/json' }), handleWebhook);
 
+app.use(compression());
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
   origin: process.env.APP_URL
@@ -68,7 +70,19 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json({ limit: '15mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, filePath) {
+    if (/\.html?$/.test(filePath)) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=2592000, immutable'); // 30 days
+    } else if (/\.(js|css|woff2?)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
+    } else if (/\.json$/.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour
+    }
+  },
+}));
 
 // Ensure storage buckets exist (runs once on startup)
 (async () => {
