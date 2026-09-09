@@ -2506,11 +2506,8 @@ button, a, [onclick],
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;width:100%;padding:0 0 16px">
     <!-- Hero -->
     <div style="text-align:center;padding:0 24px 20px;max-width:420px;width:100%;box-sizing:border-box">
-      <div style="width:64px;height:64px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
-        <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
-          <rect x="14" y="4" width="4" height="24" rx="2" fill="#C9A84C"/>
-          <rect x="6" y="10" width="20" height="4" rx="2" fill="#C9A84C"/>
-        </svg>
+      <div style="width:72px;height:72px;border-radius:20px;overflow:hidden;margin:0 auto 16px">
+        <img src="/icon-logo.png" alt="ChristLink" style="width:100%;height:100%;object-fit:cover;display:block">
       </div>
       <h1 style="font-size:26px;font-weight:800;color:#fff;margin:0 0 10px;line-height:1.2;letter-spacing:-0.5px">Faith Events,<br>Made Simple.</h1>
       <p style="font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;margin:0 0 20px">Discover and host Christian events in your city. Connect with believers who share your faith.</p>
@@ -5465,7 +5462,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (authMark) authMark.innerHTML = LOGO_MARK;
   document.querySelectorAll('.footer-logo-mark').forEach(el => {
     el.style.cssText = 'width:16px;height:16px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex';
-    el.innerHTML = `<img src="/christlink-logo.svg" alt="" style="width:100%;height:100%;object-fit:cover;display:block">`;
+    el.innerHTML = `<img src="/icon-logo.png" alt="" style="width:100%;height:100%;object-fit:cover;display:block">`;
   });
   // ── Inject section icons ──────────────────────────────────
   const hotEl = document.getElementById('editHotTakesIcon');
