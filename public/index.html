@@ -2433,6 +2433,104 @@ button, a, [onclick],
   height: 180px;
   object-fit: cover;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   AVAILABILITY BANNER + CTA STATES
+═══════════════════════════════════════════════════════════ */
+.detail-avail-banner{font-size:13px;line-height:1.5;color:var(--text);background:var(--surface2);border:1px solid var(--border2);border-left:3px solid var(--gold);border-radius:var(--r-sm);padding:10px 14px;margin:0 0 20px}
+.detail-avail-banner[data-tone="low"]{border-left-color:#F4855F;background:rgba(244,133,95,.08)}
+.detail-avail-banner[data-tone="full"]{border-left-color:var(--red);background:rgba(224,80,80,.08)}
+.detail-avail-banner strong{font-weight:700}
+.detail-rsvp-btn.pending{background:var(--surface3);color:var(--gold);border:1px solid rgba(201,168,76,.35);box-shadow:none}
+.detail-rsvp-btn.waitlisted{background:var(--surface3);color:var(--text);border:1px solid var(--border2);box-shadow:none}
+.ticket-select-avail.low{color:#F4855F;font-weight:600}
+
+/* ═══════════════════════════════════════════════════════════
+   HOST HUB
+═══════════════════════════════════════════════════════════ */
+.hh-sheet{max-height:92vh;display:flex;flex-direction:column;padding:0}
+.hh-sub{font-size:12px;color:var(--muted2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}
+.hh-tabs{display:flex;gap:4px;padding:0 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.hh-tabs::-webkit-scrollbar{display:none}
+.hh-tab{position:relative;flex:1 0 auto;min-height:40px;padding:0 14px;font:600 13px var(--font-body);color:var(--muted2);background:transparent;border:1px solid transparent;border-radius:var(--r-full);cursor:pointer;transition:color .15s var(--ease),background .15s var(--ease)}
+.hh-tab:hover{color:var(--text)}
+.hh-tab.active{color:var(--text);background:var(--surface2);border-color:var(--border2)}
+.hh-tab:focus-visible,.hh-seg-btn:focus-visible,.hh-btn-ghost:focus-visible,.hh-btn-gold:focus-visible,.hh-row-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.hh-tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-left:6px;padding:0 5px;font-size:11px;font-weight:700;color:#0A0A0F;background:var(--gold);border-radius:var(--r-full);font-variant-numeric:tabular-nums}
+.hh-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(28px + var(--safe-b))}
+.hh-panel{display:none}
+.hh-panel.active{display:block;animation:hhFade .2s var(--ease)}
+@keyframes hhFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.hh-panel.active{animation:none}}
+.hh-toolbar{display:flex;gap:8px;margin-bottom:12px}
+.hh-input{width:100%;box-sizing:border-box;font:400 16px var(--font-body);color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 14px;outline:none;transition:border-color .15s}
+.hh-input:focus{border-color:rgba(201,168,76,.55)}
+textarea.hh-input{resize:vertical;min-height:110px;line-height:1.5}
+.hh-toolbar .hh-input{flex:1;min-width:0}
+.hh-btn-ghost,.hh-btn-gold{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;font:600 13px var(--font-body);border-radius:var(--r-sm);cursor:pointer}
+.hh-btn-ghost{color:var(--text);background:var(--surface2);border:1px solid var(--border2)}
+.hh-btn-gold{color:#0A0A0F;background:var(--gold);border:1px solid var(--gold)}
+.hh-btn-gold:disabled,.hh-btn-ghost:disabled{opacity:.5;cursor:default}
+.hh-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.hh-chip{font-size:12px;font-weight:600;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-full);padding:5px 11px;font-variant-numeric:tabular-nums}
+.hh-chip b{color:var(--text);font-weight:700}
+.hh-section-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);margin:18px 0 8px;display:flex;align-items:center;gap:8px}
+.hh-section-title:first-child{margin-top:4px}
+.hh-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.hh-row:last-child{border-bottom:0}
+.hh-av{width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#0A0A0F;background:linear-gradient(135deg,#C9A84C,#6B4A00);overflow:hidden}
+.hh-av img{width:100%;height:100%;object-fit:cover}
+.hh-row-main{flex:1;min-width:0}
+.hh-row-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hh-row-sub{font-size:12px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.hh-row-actions{display:flex;gap:6px;flex-shrink:0}
+.hh-row-btn{min-height:36px;padding:0 12px;font:600 12px var(--font-body);border-radius:var(--r-full);cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text)}
+.hh-row-btn.approve{background:rgba(78,201,140,.14);border-color:rgba(78,201,140,.4);color:var(--green)}
+.hh-row-btn.decline{color:var(--muted2)}
+.hh-row-btn:disabled{opacity:.5}
+.hh-pill{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:var(--r-full);background:var(--surface3);color:var(--muted2);flex-shrink:0}
+.hh-pill.in{background:rgba(78,201,140,.14);color:var(--green)}
+.hh-empty,.hh-muted{font-size:13px;color:var(--muted2);padding:6px 0}
+.hh-empty{text-align:center;padding:28px 12px}
+.hh-loading{display:flex;justify-content:center;padding:36px 0}
+.hh-help{font-size:13px;color:var(--muted2);line-height:1.5;margin:0 0 14px}
+.hh-label{display:block;font-size:12px;font-weight:600;color:var(--muted2);margin:12px 0 6px}
+.hh-seg{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px;gap:3px}
+.hh-seg-btn{flex:1;min-height:38px;font:600 13px var(--font-body);color:var(--muted2);background:transparent;border:0;border-radius:7px;cursor:pointer}
+.hh-seg-btn.active{background:var(--surface3);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.hh-check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin:12px 0 14px;cursor:pointer}
+.hh-check input{width:18px;height:18px;accent-color:var(--gold)}
+.hh-msg{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px}
+.hh-msg-subject{font-size:14px;font-weight:600}
+.hh-msg-meta{font-size:11px;color:var(--muted2);margin:2px 0 6px}
+.hh-msg-body{font-size:13px;color:var(--text);white-space:pre-wrap;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.hh-link{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px}
+.hh-link-top{display:flex;align-items:center;gap:8px}
+.hh-link-name{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hh-link-url{font:500 12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted2);margin:4px 0 10px;word-break:break-all}
+.hh-link-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.hh-stat-mini{background:var(--surface3);border-radius:8px;padding:7px 9px}
+.hh-stat-mini b{display:block;font-size:15px;font-variant-numeric:tabular-nums}
+.hh-stat-mini span{font-size:11px;color:var(--muted2)}
+.hh-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px}
+@media (min-width:560px){.hh-kpis{grid-template-columns:repeat(4,1fr)}}
+.hh-kpi{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px}
+.hh-kpi-val{font:700 22px var(--font-body);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.hh-kpi-label{font-size:11px;color:var(--muted2);margin-top:2px}
+.hh-bars{display:flex;align-items:flex-end;gap:2px;height:72px;padding:8px 0 0;border-bottom:1px solid var(--border2)}
+.hh-bar{flex:1;min-height:2px;background:var(--gold);border-radius:2px 2px 0 0;opacity:.85}
+.hh-bar.zero{background:var(--surface3);opacity:1}
+.hh-bars-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px}
+.hh-meter{height:6px;background:var(--surface3);border-radius:var(--r-full);overflow:hidden;margin-top:6px}
+.hh-meter > i{display:block;height:100%;background:var(--gold);border-radius:inherit}
+.hh-tier{padding:10px 0;border-bottom:1px solid var(--border)}
+.hh-tier:last-child{border-bottom:0}
+.hh-tier-top{display:flex;justify-content:space-between;font-size:13px;gap:8px}
+.hh-tier-top span:last-child{color:var(--muted2);font-variant-numeric:tabular-nums}
+.hh-table{width:100%;border-collapse:collapse;font-size:13px}
+.hh-table th{text-align:left;font-size:11px;font-weight:600;color:var(--muted2);padding:6px 0;border-bottom:1px solid var(--border2)}
+.hh-table td{padding:9px 0;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+.hh-table th:not(:first-child),.hh-table td:not(:first-child){text-align:right}
 </style>
 </head>
 <body>
@@ -2955,6 +3053,15 @@ button, a, [onclick],
           <label class="toggle-sw"><input type="checkbox" id="evForumEnabled" checked><span class="toggle-sw-track"></span></label>
         </div>
 
+        <!-- Approval toggle (free events) -->
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;margin-bottom:18px">
+          <div>
+            <div style="font-size:14px;font-weight:600">Require Approval</div>
+            <div style="font-size:12px;color:var(--muted2);margin-top:2px">Guests request to join and you approve each one (free events)</div>
+          </div>
+          <label class="toggle-sw"><input type="checkbox" id="evRequiresApproval" aria-label="Require approval"><span class="toggle-sw-track"></span></label>
+        </div>
+
         <div class="step-nav">
           <button class="btn btn-outline" style="flex:0 0 auto;width:auto;padding:0 20px" onclick="hostPrev(3)">←</button>
           <button class="btn btn-gold" onclick="hostNext(3)">Review →</button>
@@ -3358,6 +3465,9 @@ button, a, [onclick],
     </div>
     <div style="font-size:14px;line-height:1.7;color:var(--text);margin-bottom:20px" id="detailDesc">—</div>
 
+    <!-- Availability / access banner (spots left, sold out, approval required) -->
+    <div id="detailAvailBanner" class="detail-avail-banner" role="status" hidden></div>
+
     <!-- Who's Going inline -->
     <div id="detailWhoGoing" class="who-going-section" style="display:none">
       <div class="who-going-header">
@@ -3447,6 +3557,73 @@ button, a, [onclick],
     <div style="padding:12px 16px 32px;border-top:1px solid var(--border);flex-shrink:0">
       <div id="inviteSelectedCount" style="font-size:13px;color:var(--muted2);text-align:center;margin-bottom:10px">No followers selected</div>
       <button id="inviteSendBtn" onclick="sendInvites()" disabled style="width:100%;height:48px;background:linear-gradient(135deg,#C9A84C,#8B6010);color:#000;font-size:15px;font-weight:700;border:none;border-radius:var(--r-full);cursor:pointer;opacity:.45;transition:opacity .2s">Send Invites</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOST HUB SHEET (guests · message · links · insights) -->
+<div class="sheet-overlay" id="hostHubSheet" onclick="if(event.target===this)closeSheet('hostHubSheet')">
+  <div class="sheet hh-sheet" role="dialog" aria-modal="true" aria-labelledby="hhTitle">
+    <div class="sheet-handle" style="margin:10px auto 0;flex-shrink:0"></div>
+    <div class="sheet-header" style="flex-shrink:0">
+      <div style="min-width:0">
+        <div class="sheet-title" id="hhTitle">Manage Event</div>
+        <div id="hhEventName" class="hh-sub"></div>
+      </div>
+      <button class="sheet-close" aria-label="Close" onclick="closeSheet('hostHubSheet')">×</button>
+    </div>
+    <div class="hh-tabs" role="tablist">
+      <button class="hh-tab active" role="tab" data-tab="guests"   onclick="hhSwitch('guests')">Guests<span class="hh-tab-badge" id="hhPendingBadge" hidden></span></button>
+      <button class="hh-tab"        role="tab" data-tab="message"  onclick="hhSwitch('message')">Message</button>
+      <button class="hh-tab"        role="tab" data-tab="links"    onclick="hhSwitch('links')">Links</button>
+      <button class="hh-tab"        role="tab" data-tab="insights" onclick="hhSwitch('insights')">Insights</button>
+    </div>
+    <div class="hh-body">
+      <!-- GUESTS -->
+      <section class="hh-panel active" id="hhPanel-guests" role="tabpanel">
+        <div class="hh-toolbar">
+          <input type="search" id="hhGuestSearch" class="hh-input" placeholder="Search guests…" oninput="hhRenderGuests()" aria-label="Search guests">
+          <button class="hh-btn-ghost" onclick="hhExportCsv(this)" title="Download guest list as CSV">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV
+          </button>
+        </div>
+        <div id="hhGuestStats" class="hh-chips"></div>
+        <div id="hhGuestList"><div class="hh-loading"><div class="spinner spinner-gold"></div></div></div>
+      </section>
+
+      <!-- MESSAGE -->
+      <section class="hh-panel" id="hhPanel-message" role="tabpanel">
+        <p class="hh-help">Send an update to your guests — it lands in their notifications and inbox.</p>
+        <label class="hh-label" for="hhMsgAudience">Send to</label>
+        <div class="hh-seg" id="hhMsgAudience" role="radiogroup">
+          <button class="hh-seg-btn active" data-val="going" role="radio" aria-checked="true" onclick="hhSetAudience('going')">Going</button>
+          <button class="hh-seg-btn" data-val="waitlist" role="radio" aria-checked="false" onclick="hhSetAudience('waitlist')">Waitlist</button>
+          <button class="hh-seg-btn" data-val="all" role="radio" aria-checked="false" onclick="hhSetAudience('all')">Everyone</button>
+        </div>
+        <label class="hh-label" for="hhMsgSubject">Subject</label>
+        <input id="hhMsgSubject" class="hh-input" maxlength="120" placeholder="e.g. Doors open at 6:30 — see you tonight!">
+        <label class="hh-label" for="hhMsgBody">Message</label>
+        <textarea id="hhMsgBody" class="hh-input" rows="5" maxlength="3000" placeholder="Parking, what to bring, schedule changes…"></textarea>
+        <label class="hh-check"><input type="checkbox" id="hhMsgEmail" checked> Also send by email</label>
+        <button class="btn btn-gold" id="hhMsgSend" onclick="hhSendMessage()">Send Message</button>
+        <div class="hh-section-title">Sent</div>
+        <div id="hhMsgHistory" class="hh-muted">No messages yet.</div>
+      </section>
+
+      <!-- LINKS -->
+      <section class="hh-panel" id="hhPanel-links" role="tabpanel">
+        <p class="hh-help">Create a tracking link for each promoter, ministry partner or channel and see who brings people in.</p>
+        <div class="hh-toolbar">
+          <input id="hhLinkLabel" class="hh-input" maxlength="60" placeholder='Name, e.g. "Youth group" or "Instagram"' onkeydown="if(event.key==='Enter')hhCreateLink()">
+          <button class="hh-btn-gold" id="hhLinkCreate" onclick="hhCreateLink()">Create</button>
+        </div>
+        <div id="hhLinkList"></div>
+      </section>
+
+      <!-- INSIGHTS -->
+      <section class="hh-panel" id="hhPanel-insights" role="tabpanel">
+        <div id="hhInsights"><div class="hh-loading"><div class="spinner spinner-gold"></div></div></div>
+      </section>
     </div>
   </div>
 </div>
@@ -4709,6 +4886,18 @@ button, a, [onclick],
         <div id="eeeCouponBuilder"></div>
       </div>
 
+      <!-- APPROVAL TOGGLE -->
+      <div class="toggle-row" style="margin-bottom:12px">
+        <div class="toggle-label">
+          <h4 style="margin:0 0 2px">Require Approval</h4>
+          <p style="font-size:12px;color:var(--muted2);margin:0">Guests request to join; you approve each one (free events)</p>
+        </div>
+        <label class="toggle-sw">
+          <input type="checkbox" id="eeeRequiresApproval" aria-label="Require approval">
+          <span class="toggle-sw-track"></span>
+        </label>
+      </div>
+
       <!-- FORUM TOGGLE -->
       <div class="toggle-row" id="eeeForumRow" style="margin-bottom:18px;border-color:rgba(201,168,76,.2)">
         <div class="toggle-label" style="display:flex;align-items:center;gap:10px">
@@ -5032,9 +5221,12 @@ sb.auth.onAuthStateChange((event, session) => {
       setTimeout(() => openPublicProfile(uid), 350);
     }
   } else {
+    // Shared event / forum / profile links must open straight to their content —
+    // don't cover them with the marketing landing page.
     const hasDeepLink = window.location.search.includes('connect_return') ||
                         window.location.search.includes('listing_success') ||
-                        window.location.search.includes('reauth');
+                        window.location.search.includes('reauth') ||
+                        /^#(event|forum|user)\//.test(window.location.hash);
     if (!hasDeepLink) {
       document.getElementById('page-home').classList.remove('active');
       const lp = document.getElementById('page-landing');
@@ -5281,7 +5473,7 @@ window.addEventListener('hashchange', restorePageFromHash);
 // Load a single event by ID (used for shared links)
 async function loadEventById(id) {
   try {
-    const res = await fetch(`${API_BASE}/api/events/${id}`);
+    const res = await fetch(`${API_BASE}/api/events/${id}`, { headers: authHeaders() });
     if (!res.ok) throw new Error('not found');
     const ev = await res.json();
     viewDetail(ev);
@@ -5818,27 +6010,28 @@ function makeHostedEventCard(ev) {
   el.innerHTML = `
     <!-- Cover image — full width banner -->
     <div style="position:relative;width:100%;height:160px;background:${bg};overflow:hidden;flex-shrink:0">
-      ${ev.cover_url
-        ? `<img alt="" src="${ev.cover_url}" style="width:100%;height:100%;object-fit:cover;display:block">`
+      ${safeUrl(ev.cover_url)
+        ? `<img alt="" src="${safeUrl(ev.cover_url)}" style="width:100%;height:100%;object-fit:cover;display:block">`
         : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;display:flex;align-items:center;justify-content:center;opacity:.6"><svg width="40" height="40" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg></div>`}
       <div style="position:absolute;top:10px;left:10px;font-size:11px;font-weight:700;color:${statusColor};background:${statusBg};border:1px solid ${statusColor}44;border-radius:var(--r-full);padding:3px 10px;text-transform:uppercase;letter-spacing:.06em;backdrop-filter:blur(6px)">${ev.status}</div>
       <div style="position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;color:${ev.is_paid?'var(--gold)':'#4EC98C'};background:${ev.is_paid?'rgba(201,168,76,.18)':'rgba(78,201,140,.15)'};border:1px solid ${ev.is_paid?'rgba(201,168,76,.4)':'rgba(78,201,140,.35)'};border-radius:var(--r-full);padding:3px 10px;backdrop-filter:blur(6px)">${ev.is_paid?'Paid':'Free'}</div>
     </div>
     <!-- Info section -->
     <div style="padding:14px 14px 10px">
-      <div style="font-family:var(--font-display);font-size:17px;font-weight:700;margin-bottom:5px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${ev.name}</div>
+      <div style="font-family:var(--font-display);font-size:17px;font-weight:700;margin-bottom:5px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeHtml(ev.name)}</div>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span style="font-size:12px;color:var(--muted2)">${fmtDate}</span>
-        ${ev.city ? `<span style="font-size:12px;color:var(--muted)">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted);flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span style="font-size:12px;color:var(--muted2)">${ev.city}${ev.state?', '+ev.state:''}</span>` : ''}
+        ${ev.city ? `<span style="font-size:12px;color:var(--muted)">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted);flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span style="font-size:12px;color:var(--muted2)">${escapeHtml(ev.city)}${ev.state?', '+escapeHtml(ev.state):''}</span>` : ''}
       </div>
-      ${ev.description ? `<div style="font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin-bottom:2px">${ev.description}</div>` : ''}
+      ${ev.description ? `<div style="font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin-bottom:2px">${escapeHtml(ev.description)}</div>` : ''}
     </div>
     <!-- Action buttons — wrapping pill row -->
     <div style="display:flex;flex-wrap:wrap;gap:7px;padding:8px 14px 14px;border-top:1px solid var(--border)">
       <button class="ev-btn-view" style="font-size:12px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">View</button>
       <button class="ev-btn-edit" style="font-size:12px;font-weight:600;color:#7EB8F7;background:rgba(126,184,247,.1);border:1px solid rgba(126,184,247,.25);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">Edit</button>
       ${ev.status === 'published' ? `<button class="ev-btn-scan" style="font-size:12px;font-weight:600;color:#4EC98C;background:rgba(78,201,140,.1);border:1px solid rgba(78,201,140,.25);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">Scan</button>` : ''}
+      <button class="ev-btn-manage" style="font-size:12px;font-weight:700;color:#0A0A0F;background:var(--gold);border:1px solid var(--gold);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">Manage</button>
       ${ev.status === 'published' ? `<button class="ev-btn-sales" style="font-size:12px;font-weight:600;color:#A882FF;background:rgba(168,130,255,.1);border:1px solid rgba(168,130,255,.25);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">Sales</button>` : ''}
       <button class="ev-btn-toggle" style="font-size:12px;font-weight:600;color:${ev.status==='published'?'var(--gold)':'#4EC98C'};background:${ev.status==='published'?'rgba(201,168,76,.1)':'rgba(78,201,140,.1)'};border:1px solid ${ev.status==='published'?'rgba(201,168,76,.3)':'rgba(78,201,140,.3)'};padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">${ev.status==='published'?'Unpublish':'Publish'}</button>
       <button class="ev-btn-share" style="font-size:12px;font-weight:600;color:var(--muted2);background:var(--surface3);border:1px solid var(--border);padding:6px 14px;border-radius:var(--r-full);cursor:pointer;touch-action:manipulation">Share</button>
@@ -5852,6 +6045,7 @@ function makeHostedEventCard(ev) {
   q('.ev-btn-edit') ?.addEventListener('click', e => { e.stopPropagation(); openEditEventSheet(ev); });
   q('.ev-btn-scan') ?.addEventListener('click', e => { e.stopPropagation(); openScannerSheet(ev.id, encodeURIComponent(ev.name || '')); });
   q('.ev-btn-sales')?.addEventListener('click', e => { e.stopPropagation(); openEventSales(ev.id); });
+  q('.ev-btn-manage')?.addEventListener('click', e => { e.stopPropagation(); openHostHub(ev.id, ev.name); });
   q('.ev-btn-toggle')?.addEventListener('click', e => { e.stopPropagation(); toggleEventVisibility(ev.id, ev.status, e.currentTarget); });
   q('.ev-btn-share') ?.addEventListener('click', e => { e.stopPropagation(); shareEventById(ev.id, ev.name || '', ev.description || '', e.currentTarget); });
   q('.ev-btn-dup')  ?.addEventListener('click', e => { e.stopPropagation(); duplicateEvent(ev.id, e.currentTarget); });
@@ -5982,23 +6176,25 @@ function makeRsvpCard(r) {
   el.innerHTML = `
     <div style="display:flex;gap:12px;padding:14px 16px;align-items:center">
       <div style="width:48px;height:48px;border-radius:var(--r-sm);flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#0E3820,#0F1A15);display:flex;align-items:center;justify-content:center;font-size:22px">
-        ${r.event_cover_url ? `<img alt="" src="${r.event_cover_url}" style="width:100%;height:100%;object-fit:cover">` : '<svg width="40" height="40" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg>'}
+        ${safeUrl(r.event_cover_url) ? `<img alt="" src="${safeUrl(r.event_cover_url)}" style="width:100%;height:100%;object-fit:cover">` : '<svg width="40" height="40" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg>'}
       </div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${r.event_name || 'Event'}</div>
-        <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">${fmtDate} · ${r.event_city || ''}</div>
+        <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${escapeHtml(r.event_name || 'Event')}</div>
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">${fmtDate} · ${escapeHtml(r.event_city || '')}</div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.05em"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" style="vertical-align:middle;margin-right:2px"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Going</span>
+          ${r.status === 'pending'
+            ? `<span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.05em">Awaiting approval</span>`
+            : `<span style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.05em"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" style="vertical-align:middle;margin-right:2px"><path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Going</span>`}
           <span style="font-size:11px;color:var(--muted)">Free</span>
         </div>
       </div>
       <button onclick="event.stopPropagation();cancelRsvpFromTickets('${r.event_id}',this)" style="flex-shrink:0;font-size:12px;font-weight:600;color:var(--muted2);background:transparent;border:1px solid var(--border);padding:7px 12px;border-radius:var(--r-full)">
-        Cancel
+        ${r.status === 'pending' ? 'Withdraw' : 'Cancel'}
       </button>
     </div>`;
   el.onclick = () => {
     if (r.event_id) {
-      fetch(`${API_BASE}/api/events/${r.event_id}`)
+      fetch(`${API_BASE}/api/events/${r.event_id}`, { headers: authHeaders() })
         .then(res => res.json())
         .then(ev => { viewDetail(ev); goTo('event-detail'); })
         .catch(() => showToast('Could not load event', 'error'));
@@ -6099,6 +6295,8 @@ function openEditEventSheet(ev) {
   document.getElementById('eeeCapacity').value       = ev.max_capacity || '';
   document.getElementById('eeeOnlineUrl').value      = ev.online_url   || '';
   document.getElementById('eeeForumEnabled').checked = !!ev.forum_enabled;
+  const apprEl = document.getElementById('eeeRequiresApproval');
+  if (apprEl) apprEl.checked = !!ev.requires_approval;
   document.getElementById('eeeErr').textContent      = '';
 
   // Ticket types section
@@ -6331,6 +6529,7 @@ async function saveEditEvent() {
       max_capacity:  cap ? Number(cap) : null,
       online_url:    document.getElementById('eeeOnlineUrl').value.trim() || null,
       forum_enabled: document.getElementById('eeeForumEnabled').checked,
+      requires_approval: !!document.getElementById('eeeRequiresApproval')?.checked,
     };
 
     const res = await fetch(`${API_BASE}/api/events/${editEventId}`, {
@@ -6370,7 +6569,7 @@ async function saveEditEvent() {
 
     // Always re-fetch so detail page reflects edits immediately and selectedEvent stays current
     try {
-      const freshRes = await fetch(`${API_BASE}/api/events/${editEventId}`);
+      const freshRes = await fetch(`${API_BASE}/api/events/${editEventId}`, { headers: authHeaders() });
       if (freshRes.ok) {
         const freshEv = await freshRes.json();
         if (!freshEv.cover_url && freshEv.image_url) freshEv.cover_url = freshEv.image_url;
@@ -8253,12 +8452,12 @@ function makeCardHTML(ev, scrollMode) {
   card.dataset.id = ev.id;
   card.innerHTML = `
     <div style="position:absolute;inset:0;background:${bg}"></div>
-    ${ev.cover_url
-      ? `<img class="card-img" src="${ev.cover_url}" alt="${escapeAttr(ev.name||'')}" loading="lazy">`
+    ${safeUrl(ev.cover_url)
+      ? `<img class="card-img" src="${safeUrl(ev.cover_url)}" alt="${escapeHtml(ev.name||'')}" loading="lazy">`
       : `<div class="card-img-emoji" style="display:flex;align-items:center;justify-content:center"><svg width="40" height="40" viewBox="0 0 32 32" fill="none"><rect x="14" y="4" width="4" height="24" rx="1.5" fill="#C9A84C"/><rect x="6" y="11" width="20" height="4" rx="1.5" fill="#C9A84C"/></svg></div>`}
     <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.4) 50%,rgba(0,0,0,.08) 100%)"></div>
     <div class="card-badges">
-      <span class="badge badge-type">${ev.event_type || 'Event'}</span>
+      <span class="badge badge-type">${escapeHtml(ev.event_type || 'Event')}</span>
       <span class="badge ${isPaid ? 'badge-paid' : 'badge-free'}">${isPaid ? (price || 'Paid') : 'Free'}</span>
     </div>
     <div class="card-overlay">
@@ -8266,7 +8465,7 @@ function makeCardHTML(ev, scrollMode) {
       <div class="card-name">${escapeHtml(ev.name || 'Untitled')}</div>
       <div class="card-loc">
         <svg width="8" height="10" viewBox="0 0 10 13" fill="rgba(255,255,255,.55)"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z"/></svg>
-        ${ev.city ? `${escapeHtml(ev.city)}${ev.state ? ', '+ev.state : ''}` : (ev.format==='online'?'Online':'TBD')}
+        ${ev.city ? `${escapeHtml(ev.city)}${ev.state ? ', '+escapeHtml(ev.state) : ''}` : (ev.format==='online'?'Online':'TBD')}
       </div>
       <div class="card-footer">
         ${avatarStack}
@@ -8685,8 +8884,10 @@ function viewDetail(ev) {
     priceSub.textContent = 'Open to all';
     rsvpBtn.textContent  = 'Reserve My Spot →';
   }
-  rsvpBtn.classList.remove('confirmed');
+  rsvpBtn.classList.remove('confirmed', 'pending', 'waitlisted');
   document.getElementById('detailCancelRsvpBtn').style.display = 'none';
+  const availBanner = document.getElementById('detailAvailBanner');
+  if (availBanner) availBanner.hidden = true;
 
   // Cutoff check — disable RSVP/Buy if sales window has closed
   const cutoffTime = ev.sales_cutoff || ev.end_date;
@@ -8707,25 +8908,11 @@ function viewDetail(ev) {
   document.getElementById('detailWhoGoing').style.display = 'none';
   loadInlineAttendees(ev.id, ev.is_paid);
 
-  // Check if current user has already RSVP'd — retry after delay in case auth is still loading
-  function checkRsvpState() {
-    if (!currentUser || ev.is_paid) return;
-    fetch(`${API_BASE}/api/rsvp/${ev.id}`, {
-      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` }
-    }).then(r => r.json()).then(data => {
-      if (data.rsvp?.status === 'confirmed') {
-        const btn = document.getElementById('detailRsvpBtn');
-        if (btn && !btn.disabled && !btn.classList.contains('confirmed')) {
-          btn.textContent = "You're Going!";
-          btn.classList.add('confirmed');
-          document.getElementById('detailCancelRsvpBtn').style.display = 'block';
-        }
-      }
-    }).catch(() => {});
-  }
-  checkRsvpState();
-  // Retry once after 800ms in case auth token wasn't ready yet
-  setTimeout(checkRsvpState, 800);
+  // Pull live availability + the viewer's RSVP/waitlist state, then set the CTA.
+  // Retry once in case the auth session is still restoring on a cold load.
+  rsvpBtn.dataset.mode = isPaid ? 'tickets' : 'rsvp';
+  refreshEventState(ev.id);
+  setTimeout(() => { if (selectedEvent?.id === ev.id && currentSession && !selectedEvent.viewer) refreshEventState(ev.id); }, 900);
 
   // Show invite button if current user is the host (retry for auth timing)
   function checkHostInviteBtn() {
@@ -8740,6 +8927,99 @@ function viewDetail(ev) {
   goTo('event-detail');
 }
 
+async function refreshEventState(eventId) {
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${eventId}`, { headers: authHeaders() });
+    if (!res.ok || selectedEvent?.id !== eventId) return;
+    const fresh = await res.json();
+    // Keep list-view fields, overlay live availability + viewer state
+    Object.assign(selectedEvent, fresh);
+    if (fresh.is_paid && fresh.ticket_types?.length) {
+      const keepIdx = selectedTicketTypeIdx;
+      renderTicketTypeSelector(fresh.ticket_types);
+      const tt = fresh.ticket_types[keepIdx];
+      if (tt && tt.sale_state === 'on_sale') selectTicketType(keepIdx);
+    }
+    renderDetailCta(selectedEvent);
+  } catch {}
+}
+
+// Single place that decides what the sticky CTA says and does
+function renderDetailCta(ev) {
+  const btn    = document.getElementById('detailRsvpBtn');
+  const cancel = document.getElementById('detailCancelRsvpBtn');
+  const banner = document.getElementById('detailAvailBanner');
+  if (!btn || !ev) return;
+  const v = ev.viewer || {};
+  const closedByTime = btn.disabled && /ended|Closed/.test(btn.textContent);
+
+  // Banner
+  let bannerHtml = '', tone = '';
+  const tiersOpen = !ev.is_paid || (ev.ticket_types || []).some(t => (t.sale_state || 'on_sale') === 'on_sale');
+  const upcomingTier = (ev.ticket_types || []).find(t => t.sale_state === 'upcoming');
+  const soldOut = ev.is_full || (ev.is_paid && ev.ticket_types?.length && !tiersOpen && !upcomingTier);
+  if (soldOut) { bannerHtml = `<strong>${ev.is_paid ? 'Sold out' : 'This event is full'}</strong> · Join the waitlist and we'll let you know if a spot opens.`; tone = 'full'; }
+  else if (ev.is_paid && !tiersOpen && upcomingTier) {
+    bannerHtml = `<strong>Tickets on sale ${new Date(upcomingTier.sales_start).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</strong>`; tone = 'info';
+  }
+  else if (ev.spots_left != null && ev.spots_left <= 10) { bannerHtml = `<strong>Only ${ev.spots_left} spot${ev.spots_left === 1 ? '' : 's'} left</strong> · Don't miss out.`; tone = 'low'; }
+  if (ev.requires_approval && !ev.is_paid && !soldOut) {
+    bannerHtml = (bannerHtml ? bannerHtml + '<br>' : '') + 'The host reviews every request to join this event.'; tone = tone || 'info';
+  }
+  if (banner) { banner.innerHTML = bannerHtml; banner.hidden = !bannerHtml; banner.dataset.tone = tone; }
+
+  if (closedByTime) return;
+  btn.disabled = false; btn.style.opacity = ''; btn.style.cursor = '';
+  btn.classList.remove('confirmed', 'pending', 'waitlisted');
+  cancel.style.display = 'none';
+  const set = (mode, label, cls) => { btn.dataset.mode = mode; btn.textContent = label; if (cls) btn.classList.add(cls); };
+
+  if (v.is_host) { set('manage', 'Manage Event →'); return; }
+  if (ev.is_paid) {
+    if (soldOut) {
+      if (v.on_waitlist) { set('waitlist-leave', "You're on the waitlist ✓", 'waitlisted'); cancel.textContent = 'Leave Waitlist'; cancel.dataset.mode = 'waitlist'; cancel.style.display = 'block'; }
+      else set('waitlist-join', 'Join Waitlist →');
+    } else if (!tiersOpen) { set('none', 'Not on sale yet'); btn.disabled = true; btn.style.opacity = '.6'; }
+    else set('tickets', 'Get Tickets →');
+    return;
+  }
+  switch (v.rsvp_status) {
+    case 'confirmed':
+      set('going', "You're Going!", 'confirmed');
+      cancel.textContent = 'Cancel RSVP'; cancel.dataset.mode = 'rsvp'; cancel.style.display = 'block';
+      return;
+    case 'pending':
+      set('pending', 'Request Pending…', 'pending');
+      cancel.textContent = 'Withdraw Request'; cancel.dataset.mode = 'rsvp'; cancel.style.display = 'block';
+      return;
+    case 'declined':
+      set('none', 'Request Not Approved'); btn.disabled = true; btn.style.opacity = '.6';
+      return;
+  }
+  if (soldOut) {
+    if (v.on_waitlist) { set('waitlist-leave', "You're on the waitlist ✓", 'waitlisted'); cancel.textContent = 'Leave Waitlist'; cancel.dataset.mode = 'waitlist'; cancel.style.display = 'block'; }
+    else set('waitlist-join', 'Join Waitlist →');
+    return;
+  }
+  set('rsvp', ev.requires_approval ? 'Request to Join →' : 'Reserve My Spot →');
+}
+
+async function toggleWaitlist(join) {
+  if (!currentUser) { openAuth('signup', () => toggleWaitlist(join)); return; }
+  const btn = document.getElementById('detailRsvpBtn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${selectedEvent.id}/waitlist`, {
+      method: join ? 'POST' : 'DELETE', headers: authHeaders(),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'Could not update waitlist');
+    selectedEvent.viewer = { ...(selectedEvent.viewer || {}), on_waitlist: join };
+    showToast(join ? "You're on the waitlist — we'll notify you if a spot opens." : 'Removed from waitlist', 'success');
+  } catch (e) { showToast(e.message, 'error'); }
+  finally { btn.disabled = false; renderDetailCta(selectedEvent); }
+}
+
 function changeQty(d) {
   const tt = selectedEvent?.ticket_types?.[selectedTicketTypeIdx] || selectedEvent?.ticket_types?.[0];
   const maxAvail = tt?.quantity != null ? Math.max(1, tt.quantity - (tt.sold || 0)) : 10;
@@ -8748,17 +9028,37 @@ function changeQty(d) {
 }
 
 function handleRsvp() {
-  if (!currentUser) { openAuth('signup', () => handleRsvp()); return; }
-  if (selectedEvent?.is_paid) { openTicketSheet(); return; }
   const btn = document.getElementById('detailRsvpBtn');
+  const mode = btn.dataset.mode;
+  if (mode === 'manage')         { openHostHub(selectedEvent.id); return; }
+  if (mode === 'going' || mode === 'pending' || mode === 'none') return;
+  if (!currentUser) { openAuth('signup', () => handleRsvp()); return; }
+  if (mode === 'waitlist-join')  { toggleWaitlist(true); return; }
+  if (mode === 'waitlist-leave') return;
+  if (selectedEvent?.is_paid) { openTicketSheet(); return; }
   btn.disabled = true;
   fetch(`${API_BASE}/api/rsvp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession?.access_token}` },
-    body: JSON.stringify({ eventId: selectedEvent?.id }),
+    body: JSON.stringify({ eventId: selectedEvent?.id, ref: getEventRef(selectedEvent?.id) }),
   }).then(async r => {
     btn.disabled = false;
+    const d = r.ok ? await r.json().catch(() => ({})) : null;
+    if (r.ok && d?.status === 'pending') {
+      selectedEvent.viewer = { ...(selectedEvent.viewer || {}), rsvp_status: 'pending' };
+      renderDetailCta(selectedEvent);
+      showSuccess('celebrate', 'Request Sent', `The host of ${selectedEvent?.name || 'this event'} will review your request. We'll notify you when they respond.`);
+      return;
+    }
+    if (r.status === 409) {
+      selectedEvent.is_full = true;
+      renderDetailCta(selectedEvent);
+      showToast('This event just filled up — join the waitlist to get the next spot.', 'error');
+      return;
+    }
     if (r.ok) {
+      selectedEvent.viewer = { ...(selectedEvent.viewer || {}), rsvp_status: 'confirmed' };
+      btn.dataset.mode = 'going';
       btn.textContent = "You're Going!";
       btn.classList.add('confirmed');
       document.getElementById('detailCancelRsvpBtn').style.display = 'block';
@@ -8779,8 +9079,8 @@ function handleRsvp() {
       setTimeout(() => spawnConfetti(), 600);
       showSuccess('celebrate', 'You\'re Going!', `Spot reserved for ${selectedEvent?.name || 'the event'}. See you there!`);
     } else {
-      const d = await r.json().catch(() => ({}));
-      showToast(d.error || 'Could not RSVP', 'error');
+      const err = await r.json().catch(() => ({}));
+      showToast(err.error || 'Could not RSVP', 'error');
     }
   }).catch(() => { btn.disabled = false; showToast('Could not RSVP', 'error'); });
 }
@@ -8788,16 +9088,24 @@ function handleRsvp() {
 async function cancelRsvp() {
   if (!selectedEvent) return;
   const btn = document.getElementById('detailCancelRsvpBtn');
+  if (btn.dataset.mode === 'waitlist') { toggleWaitlist(false); return; }
+  const wasPending = selectedEvent.viewer?.rsvp_status === 'pending';
   btn.disabled = true; btn.textContent = 'Cancelling…';
   try {
     const res = await fetch(`${API_BASE}/api/rsvp/${selectedEvent.id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${currentSession?.access_token}` },
     });
+    if (res.ok && wasPending) {
+      selectedEvent.viewer = { ...(selectedEvent.viewer || {}), rsvp_status: null };
+      renderDetailCta(selectedEvent);
+      showToast('Request withdrawn');
+      return;
+    }
     if (res.ok) {
-      const rsvpBtn = document.getElementById('detailRsvpBtn');
-      rsvpBtn.textContent = 'Reserve My Spot →';
-      rsvpBtn.classList.remove('confirmed');
+      selectedEvent.viewer = { ...(selectedEvent.viewer || {}), rsvp_status: null };
+      if (selectedEvent.spots_left != null) { selectedEvent.spots_left += 1; selectedEvent.is_full = false; }
+      renderDetailCta(selectedEvent);
       btn.style.display = 'none';
       // Update attendance count
       const countEl = document.getElementById('detailAttendanceCount');
@@ -8818,7 +9126,7 @@ async function cancelRsvp() {
       showToast('RSVP cancelled');
     } else { showToast('Could not cancel RSVP', 'error'); }
   } catch { showToast('Could not cancel RSVP', 'error'); }
-  finally { btn.disabled = false; btn.textContent = 'Cancel RSVP'; }
+  finally { btn.disabled = false; if (btn.dataset.mode !== 'waitlist') btn.textContent = btn.dataset.mode === 'rsvp' && selectedEvent?.viewer?.rsvp_status === 'pending' ? 'Withdraw Request' : 'Cancel RSVP'; }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -8837,27 +9145,28 @@ async function loadInlineAttendees(eventId, isPaid = false) {
   listEl.innerHTML = '';
   try {
     const res = await fetch(`${API_BASE}/api/events/${eventId}/attendees`);
-    const { attendees } = await res.json();
+    const { attendees, total } = await res.json();
     if (!attendees || attendees.length === 0) {
       if (whoGoingEl) whoGoingEl.style.display = 'none';
       return;
     }
+    const goingCount = total || attendees.length;
 
     // Show section + update count
     if (whoGoingEl) whoGoingEl.style.display = 'block';
-    if (countEl) countEl.textContent = `${attendees.length} going`;
-    if (seeAllBtn) seeAllBtn.textContent = `See All ${attendees.length} Attendees ↓`;
+    if (countEl) countEl.textContent = `${goingCount} going`;
+    if (seeAllBtn) seeAllBtn.textContent = `See All ${goingCount} Attendees ↓`;
 
     const shown = attendees.slice(0, 5);
-    const extra = attendees.length - shown.length;
+    const extra = goingCount - shown.length;
 
     // Avatar bubbles row
     shown.forEach((p, i) => {
       const div = document.createElement('div');
       div.className = 'who-going-av-bubble';
       div.style.background = p.avatar_color || AVATAR_COLORS_WG[i % AVATAR_COLORS_WG.length];
-      if (p.avatar_url) {
-        div.innerHTML = `<img alt="" src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;
+      if (safeUrl(p.avatar_url)) {
+        div.innerHTML = `<img alt="" src="${safeUrl(p.avatar_url)}" style="width:100%;height:100%;object-fit:cover">`;
       } else {
         div.textContent = (p.full_name || '?').charAt(0).toUpperCase();
       }
@@ -8892,12 +9201,12 @@ async function loadInlineAttendees(eventId, isPaid = false) {
       const row = document.createElement('div');
       row.className = 'who-going-row';
       row.onclick = () => openPublicProfile(p.id);
-      const color   = p.avatar_color || AVATAR_COLORS_WG[i % AVATAR_COLORS_WG.length];
-      const initial = (p.full_name || '?').charAt(0).toUpperCase();
+      const color   = (p.avatar_color || AVATAR_COLORS_WG[i % AVATAR_COLORS_WG.length]).replace(/[";<>]/g, '');
+      const initial = escapeHtml((p.full_name || '?').charAt(0).toUpperCase());
       const parts   = (p.full_name || 'Anonymous').split(' ');
-      const displayName = parts.length > 1 ? `${parts[0]} ${parts[1].charAt(0)}.` : parts[0];
-      const avInner = p.avatar_url
-        ? `<img alt="" src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+      const displayName = escapeHtml(parts.length > 1 ? `${parts[0]} ${parts[1].charAt(0)}.` : parts[0]);
+      const avInner = safeUrl(p.avatar_url)
+        ? `<img alt="" src="${safeUrl(p.avatar_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
         : initial;
       row.innerHTML = `
         <div class="who-going-row-av" style="background:${color}">${avInner}</div>
@@ -8989,8 +9298,8 @@ async function openAttendeesSheet() {
       }
       const info = document.createElement('div');
       info.style.cssText = 'flex:1;min-width:0';
-      info.innerHTML = '<div style="font-size:14px;font-weight:600;color:var(--text)">' + (p.full_name || 'ChristLink Member') + '</div>' +
-        (p.city ? '<div style="font-size:12px;color:var(--muted)">' + p.city + '</div>' : '');
+      info.innerHTML = '<div style="font-size:14px;font-weight:600;color:var(--text)">' + escapeHtml(p.full_name || 'ChristLink Member') + '</div>' +
+        (p.city ? '<div style="font-size:12px;color:var(--muted)">' + escapeHtml(p.city) + '</div>' : '');
       const arrow = document.createElement('div');
       arrow.style.cssText = 'font-size:16px;color:var(--muted)';
       arrow.textContent = '›';
@@ -9050,25 +9359,39 @@ function renderTicketTypeSelector(ticketTypes) {
   selectedTicketTypeIdx = 0;
   const list = document.getElementById('detailTicketList');
   list.innerHTML = '';
-  ticketTypes.forEach((tt, i) => {
+  const fmtWhen = iso => new Date(iso).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+  const tierState = tt => {
     const remaining = tt.quantity != null ? tt.quantity - (tt.sold || 0) : null;
-    const soldOut   = remaining !== null && remaining <= 0;
+    if (tt.sale_state) return { state: tt.sale_state, remaining };
+    if (tt.sales_start && new Date(tt.sales_start) > new Date()) return { state: 'upcoming', remaining };
+    if (tt.sales_end && new Date(tt.sales_end) < new Date()) return { state: 'ended', remaining };
+    return { state: remaining !== null && remaining <= 0 ? 'sold_out' : 'on_sale', remaining };
+  };
+  ticketTypes.forEach((tt, i) => {
+    const { state, remaining } = tierState(tt);
+    const unavailable = state !== 'on_sale';
     const row = document.createElement('div');
-    row.className = 'ticket-select-row' + (i === 0 ? ' selected' : '') + (soldOut ? ' sold-out' : '');
+    row.className = 'ticket-select-row' + (i === 0 ? ' selected' : '') + (unavailable ? ' sold-out' : '');
     row.id = `ttSelectRow-${i}`;
-    if (!soldOut) row.onclick = () => selectTicketType(i);
-    const availText = soldOut ? 'Sold out' : (remaining !== null ? `${remaining} remaining` : 'Available');
+    if (!unavailable) row.onclick = () => selectTicketType(i);
+    const availText = state === 'sold_out' ? 'Sold out'
+      : state === 'upcoming' ? `On sale ${fmtWhen(tt.sales_start)}`
+      : state === 'ended' ? 'Sales ended'
+      : remaining !== null && remaining <= 10 ? `Only ${remaining} left`
+      : tt.sales_end ? `Available until ${fmtWhen(tt.sales_end)}`
+      : remaining !== null ? `${remaining} remaining` : 'Available';
     row.innerHTML = `
       <div class="ticket-select-radio"></div>
       <div style="flex:1;min-width:0">
-        <div class="ticket-select-name">${tt.name || 'General Admission'}</div>
-        <div class="ticket-select-avail">${availText}</div>
+        <div class="ticket-select-name">${escapeHtml(tt.name || 'General Admission')}</div>
+        ${tt.description ? `<div class="ticket-select-avail" style="color:var(--muted2)">${escapeHtml(tt.description)}</div>` : ''}
+        <div class="ticket-select-avail${remaining !== null && remaining > 0 && remaining <= 10 && !unavailable ? ' low' : ''}">${availText}</div>
       </div>
-      <div class="ticket-select-price">${soldOut ? '—' : `$${(tt.price_cents/100).toFixed(2)}`}</div>`;
+      <div class="ticket-select-price">${unavailable && state !== 'upcoming' ? '—' : `$${(tt.price_cents/100).toFixed(2)}`}</div>`;
     list.appendChild(row);
   });
-  // Auto-select first non-sold-out type
-  const firstAvail = ticketTypes.findIndex(tt => tt.quantity == null || (tt.quantity - (tt.sold||0)) > 0);
+  // Auto-select first tier that's on sale
+  const firstAvail = ticketTypes.findIndex(tt => tierState(tt).state === 'on_sale');
   if (firstAvail > 0) selectTicketType(firstAvail);
   else updateQtyForSelectedTicket();
 }
@@ -9093,8 +9416,10 @@ function updateQtyForSelectedTicket() {
   document.getElementById('detailPriceSub').textContent = 'Per person';
 }
 
+let _checkoutId = null;
 function openTicketSheet() {
   if (!selectedEvent) return;
+  _checkoutId = newCheckoutId(); // one PaymentIntent per checkout attempt
   const tt = selectedEvent.ticket_types?.[selectedTicketTypeIdx] ?? selectedEvent.ticket_types?.[0];
   const face = tt ? tt.price_cents * currentQty : 0;
   const pf   = Math.round(face * 0.07);
@@ -9167,6 +9492,8 @@ async function processPayment() {
         qty:          currentQty,
         buyerEmail:   currentUser?.email,
         couponCode: _appliedCoupon ? document.getElementById('couponInput')?.value.trim() : null,
+        ref:          getEventRef(selectedEvent.id),
+        checkoutId:   _checkoutId || (_checkoutId = newCheckoutId()),
       }),
     });
 
@@ -9790,6 +10117,7 @@ async function publishEvent() {
         venue_name:venueName, address, city, state, max_capacity:capacity?parseInt(capacity):null,
         online_url:onlineUrl||null,
         forum_enabled: document.getElementById('evForumEnabled')?.checked || false,
+        requires_approval: !isPaid && (document.getElementById('evRequiresApproval')?.checked || false),
       }),
     });
     if (!createRes.ok) { const e=await createRes.json(); throw new Error(e.error||'Failed to create'); }
@@ -9884,8 +10212,280 @@ async function publishEvent() {
 // ═══════════════════════════════════════════════════════════
 // COMMUNITY
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// HOST HUB — guest list, approvals, messaging, promoter links, insights
+// ═══════════════════════════════════════════════════════════
+const hh = { eventId: null, name: '', tab: 'guests', guests: null, audience: 'going' };
+
+function openHostHub(eventId, name) {
+  if (!currentSession) { openAuth('signin'); return; }
+  hh.eventId = eventId; hh.guests = null; hh.name = name || selectedEvent?.name || '';
+  document.getElementById('hhEventName').textContent = hh.name;
+  document.getElementById('hhGuestSearch').value = '';
+  hhSwitch('guests');
+  openSheet('hostHubSheet');
+}
+
+function hhSwitch(tab) {
+  hh.tab = tab;
+  document.querySelectorAll('.hh-tab').forEach(b => {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle('active', on); b.setAttribute('aria-selected', on);
+  });
+  document.querySelectorAll('.hh-panel').forEach(p => p.classList.toggle('active', p.id === `hhPanel-${tab}`));
+  if (tab === 'guests')   hhLoadGuests();
+  if (tab === 'message')  hhLoadMessages();
+  if (tab === 'links')    hhLoadLinks();
+  if (tab === 'insights') hhLoadInsights();
+}
+
+async function hhApi(path, opts = {}) {
+  const res = await fetch(`${API_BASE}/api/events/${hh.eventId}${path}`, {
+    ...opts,
+    headers: authHeaders(opts.body ? { 'Content-Type': 'application/json' } : {}),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Something went wrong');
+  return data;
+}
+
+function hhAvatar(p) {
+  const url = safeUrl(p.avatar_url);
+  const bg  = (p.avatar_color || '').replace(/[";<>]/g, '');
+  return `<div class="hh-av"${bg && !url ? ` style="background:${bg}"` : ''}>${url ? `<img alt="" src="${url}" loading="lazy">` : escapeHtml((p.full_name || '?').charAt(0).toUpperCase())}</div>`;
+}
+const hhAgo = iso => {
+  if (!iso) return '';
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return 'just now'; if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60); if (h < 24) return `${h}h ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+const hhMoney = c => `$${((c || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+// ── Guests ─────────────────────────────────────────────────
+async function hhLoadGuests() {
+  const list = document.getElementById('hhGuestList');
+  if (!hh.guests) list.innerHTML = '<div class="hh-loading"><div class="spinner spinner-gold"></div></div>';
+  try {
+    hh.guests = await hhApi('/guests');
+    const badge = document.getElementById('hhPendingBadge');
+    badge.textContent = hh.guests.pending.length; badge.hidden = !hh.guests.pending.length;
+    hhRenderGuests();
+  } catch (e) { list.innerHTML = `<div class="hh-empty">${escapeHtml(e.message)}</div>`; }
+}
+
+function hhRenderGuests() {
+  const g = hh.guests; if (!g) return;
+  const q = (document.getElementById('hhGuestSearch').value || '').toLowerCase().trim();
+  const match = p => !q || [p.full_name, p.email, p.code, p.city].some(v => (v || '').toLowerCase().includes(q));
+  const goingQty = g.going.reduce((s, p) => s + (p.quantity || 1), 0);
+  const checkedIn = g.going.filter(p => p.checked_in_at).reduce((s, p) => s + (p.quantity || 1), 0);
+  const cap = g.event.max_capacity;
+  document.getElementById('hhGuestStats').innerHTML = [
+    `<span class="hh-chip"><b>${goingQty}</b>${cap ? ` / ${cap}` : ''} going</span>`,
+    g.pending.length ? `<span class="hh-chip"><b>${g.pending.length}</b> pending</span>` : '',
+    g.waitlist.length ? `<span class="hh-chip"><b>${g.waitlist.length}</b> waitlist</span>` : '',
+    g.event.is_paid ? `<span class="hh-chip"><b>${checkedIn}</b> checked in</span>` : '',
+  ].join('');
+
+  const row = (p, sub, right = '') => `<div class="hh-row">${hhAvatar(p)}<div class="hh-row-main"><div class="hh-row-name">${escapeHtml(p.full_name || p.email || 'Guest')}</div><div class="hh-row-sub">${sub}</div></div>${right}</div>`;
+  let html = '';
+  const pending = g.pending.filter(match);
+  if (pending.length) {
+    html += `<div class="hh-section-title">Requests · ${pending.length}</div>`;
+    html += pending.map(p => row(p, `Requested ${hhAgo(p.requested_at)}${p.city ? ` · ${escapeHtml(p.city)}` : ''}`,
+      `<div class="hh-row-actions"><button class="hh-row-btn decline" onclick="hhDecide('${p.id}','decline',this)">Decline</button><button class="hh-row-btn approve" onclick="hhDecide('${p.id}','approve',this)">Approve</button></div>`)).join('');
+  }
+  const going = g.going.filter(match);
+  html += `<div class="hh-section-title">Going · ${goingQty}</div>`;
+  html += going.length ? going.map(p => {
+    const bits = [p.kind === 'ticket' ? `${p.quantity} ticket${p.quantity > 1 ? 's' : ''}${p.code ? ` · ${escapeHtml(p.code)}` : ''}` : 'RSVP'];
+    if (p.promoter) bits.push(`via ${escapeHtml(p.promoter)}`);
+    bits.push(hhAgo(p.joined_at));
+    const pill = p.kind === 'ticket' ? `<span class="hh-pill${p.checked_in_at ? ' in' : ''}">${p.checked_in_at ? 'In' : 'Not in'}</span>` : '';
+    return row(p, bits.join(' · '), pill);
+  }).join('') : `<div class="hh-empty">${q ? 'No guests match your search.' : 'No one yet — share your event to get the word out.'}</div>`;
+  const wait = g.waitlist.filter(match);
+  if (wait.length) {
+    html += `<div class="hh-section-title">Waitlist · ${wait.length}</div>`;
+    html += wait.map((p, i) => row(p, `#${i + 1} in line · joined ${hhAgo(p.joined_at)}${p.notified_at ? ' · notified' : ''}`)).join('');
+  }
+  const declined = g.declined.filter(match);
+  if (declined.length) {
+    html += `<div class="hh-section-title">Declined · ${declined.length}</div>`;
+    html += declined.map(p => row(p, `Declined ${hhAgo(p.declined_at)}`,
+      `<div class="hh-row-actions"><button class="hh-row-btn" onclick="hhDecide('${p.id}','approve',this)">Approve</button></div>`)).join('');
+  }
+  document.getElementById('hhGuestList').innerHTML = html;
+}
+
+async function hhDecide(rsvpId, action, btn) {
+  btn.disabled = true;
+  try {
+    await hhApi(`/guests/${rsvpId}/${action}`, { method: 'POST' });
+    showToast(action === 'approve' ? 'Guest approved — they’ve been notified' : 'Request declined', 'success');
+    hhLoadGuests();
+  } catch (e) { showToast(e.message, 'error'); btn.disabled = false; }
+}
+
+async function hhExportCsv(btn) {
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/events/${hh.eventId}/guests.csv`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Could not export guest list');
+    const url = URL.createObjectURL(await res.blob());
+    const a = Object.assign(document.createElement('a'), { href: url, download: `${(hh.name || 'event').replace(/[^a-z0-9]+/gi, '-')}-guests.csv` });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (e) { showToast(e.message, 'error'); }
+  finally { btn.disabled = false; }
+}
+
+// ── Message ────────────────────────────────────────────────
+function hhSetAudience(val) {
+  hh.audience = val;
+  document.querySelectorAll('#hhMsgAudience .hh-seg-btn').forEach(b => {
+    const on = b.dataset.val === val; b.classList.toggle('active', on); b.setAttribute('aria-checked', on);
+  });
+}
+
+async function hhLoadMessages() {
+  const box = document.getElementById('hhMsgHistory');
+  try {
+    const { messages } = await hhApi('/messages');
+    box.innerHTML = messages.length ? messages.map(m => `<div class="hh-msg">
+      <div class="hh-msg-subject">${escapeHtml(m.subject)}</div>
+      <div class="hh-msg-meta">${hhAgo(m.created_at)} · ${m.recipients_count} recipient${m.recipients_count === 1 ? '' : 's'} · ${{ going: 'Going', waitlist: 'Waitlist', all: 'Everyone' }[m.audience] || ''}</div>
+      <div class="hh-msg-body">${escapeHtml(m.body)}</div></div>`).join('') : '<div class="hh-muted">No messages yet.</div>';
+  } catch (e) { box.innerHTML = `<div class="hh-muted">${escapeHtml(e.message)}</div>`; }
+}
+
+async function hhSendMessage() {
+  const subject = document.getElementById('hhMsgSubject').value.trim();
+  const body    = document.getElementById('hhMsgBody').value.trim();
+  if (!subject || !body) { showToast('Add a subject and a message', 'error'); return; }
+  const btn = document.getElementById('hhMsgSend');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const d = await hhApi('/messages', { method: 'POST', body: JSON.stringify({
+      subject, body, audience: hh.audience, email: document.getElementById('hhMsgEmail').checked }) });
+    document.getElementById('hhMsgSubject').value = '';
+    document.getElementById('hhMsgBody').value = '';
+    showToast(`Sent to ${d.recipients} guest${d.recipients === 1 ? '' : 's'}`, 'success');
+    hhLoadMessages();
+  } catch (e) { showToast(e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Send Message'; }
+}
+
+// ── Promoter links ─────────────────────────────────────────
+async function hhLoadLinks() {
+  const box = document.getElementById('hhLinkList');
+  box.innerHTML = '<div class="hh-loading"><div class="spinner spinner-gold"></div></div>';
+  try {
+    const { promoters } = await hhApi('/promoters');
+    const active = promoters.filter(p => p.active);
+    box.innerHTML = active.length ? active.map(p => {
+      const url = buildShareUrl(hh.eventId, p.code);
+      return `<div class="hh-link">
+        <div class="hh-link-top"><div class="hh-link-name">${escapeHtml(p.label)}</div>
+          <button class="hh-row-btn" onclick="hhCopy('${escapeAttr(url)}')">Copy</button>
+          <button class="hh-row-btn decline" aria-label="Remove link" onclick="hhRemoveLink('${p.id}',this)">Remove</button></div>
+        <div class="hh-link-url">${escapeHtml(url)}</div>
+        <div class="hh-link-stats">
+          <div class="hh-stat-mini"><b>${p.clicks || 0}</b><span>Clicks</span></div>
+          <div class="hh-stat-mini"><b>${(p.tickets || 0) + (p.rsvps || 0)}</b><span>Joined</span></div>
+          <div class="hh-stat-mini"><b>${hhMoney(p.revenue_cents)}</b><span>Sales</span></div>
+        </div></div>`;
+    }).join('') : '<div class="hh-empty">No links yet. Create one for each promoter or channel.</div>';
+  } catch (e) { box.innerHTML = `<div class="hh-empty">${escapeHtml(e.message)}</div>`; }
+}
+
+async function hhCreateLink() {
+  const input = document.getElementById('hhLinkLabel');
+  const label = input.value.trim();
+  if (!label) { input.focus(); return; }
+  const btn = document.getElementById('hhLinkCreate');
+  btn.disabled = true;
+  try {
+    const { promoter } = await hhApi('/promoters', { method: 'POST', body: JSON.stringify({ label }) });
+    input.value = '';
+    hhCopy(buildShareUrl(hh.eventId, promoter.code), 'Link created and copied');
+    hhLoadLinks();
+  } catch (e) { showToast(e.message, 'error'); }
+  finally { btn.disabled = false; }
+}
+
+async function hhRemoveLink(id, btn) {
+  btn.disabled = true;
+  try { await hhApi(`/promoters/${id}`, { method: 'DELETE' }); hhLoadLinks(); }
+  catch (e) { showToast(e.message, 'error'); btn.disabled = false; }
+}
+
+function hhCopy(text, msg = 'Link copied') {
+  (navigator.clipboard?.writeText(text) || Promise.reject())
+    .then(() => showToast(msg, 'success'))
+    .catch(() => { window.prompt('Copy this link:', text); });
+}
+
+// ── Insights ───────────────────────────────────────────────
+async function hhLoadInsights() {
+  const box = document.getElementById('hhInsights');
+  box.innerHTML = '<div class="hh-loading"><div class="spinner spinner-gold"></div></div>';
+  try {
+    const a = await hhApi('/analytics');
+    const max = Math.max(1, ...a.series.map(d => d.count));
+    const fmtDay = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const kpi = (val, label) => `<div class="hh-kpi"><div class="hh-kpi-val">${val}</div><div class="hh-kpi-label">${label}</div></div>`;
+    box.innerHTML = `
+      <div class="hh-kpis">
+        ${kpi(a.views.toLocaleString(), 'Page views')}
+        ${kpi(`${a.going.toLocaleString()}${a.capacity ? `<span style="font-size:13px;color:var(--muted2)"> / ${a.capacity}</span>` : ''}`, 'Going')}
+        ${kpi(a.conversion_rate != null ? `${a.conversion_rate}%` : '—', 'View → going')}
+        ${kpi(a.revenue_cents ? hhMoney(a.revenue_cents) : '—', 'Gross sales')}
+      </div>
+      <div class="hh-chips">
+        ${a.pending_requests ? `<span class="hh-chip"><b>${a.pending_requests}</b> pending requests</span>` : ''}
+        <span class="hh-chip"><b>${a.waitlist}</b> on waitlist</span>
+        ${a.checked_in ? `<span class="hh-chip"><b>${a.checked_in}</b> checked in</span>` : ''}
+        ${a.host_earnings_cents ? `<span class="hh-chip"><b>${hhMoney(a.host_earnings_cents)}</b> your earnings</span>` : ''}
+        ${a.refunded_tickets ? `<span class="hh-chip"><b>${a.refunded_tickets}</b> refunded</span>` : ''}
+      </div>
+      <div class="hh-section-title">New guests · last 30 days</div>
+      <div class="hh-bars" role="img" aria-label="New guests per day over the last 30 days">
+        ${a.series.map(d => `<div class="hh-bar${d.count ? '' : ' zero'}" style="height:${d.count ? Math.max(6, (d.count / max) * 100) : 3}%" title="${fmtDay(d.day)}: ${d.count}"></div>`).join('')}
+      </div>
+      <div class="hh-bars-axis"><span>${fmtDay(a.series[0].day)}</span><span>Today</span></div>
+      ${a.tiers.length ? `<div class="hh-section-title">Ticket tiers</div>${a.tiers.map(t => `
+        <div class="hh-tier"><div class="hh-tier-top"><span>${escapeHtml(t.name)} · ${hhMoney(t.price_cents)}</span><span>${t.sold}${t.quantity ? ` / ${t.quantity}` : ''} sold</span></div>
+        ${t.quantity ? `<div class="hh-meter"><i style="width:${Math.min(100, (t.sold / t.quantity) * 100)}%"></i></div>` : ''}</div>`).join('')}` : ''}
+      <div class="hh-section-title">Where guests came from</div>
+      <table class="hh-table"><thead><tr><th>Source</th><th>Clicks</th><th>Guests</th><th>Sales</th></tr></thead><tbody>
+        ${a.sources.map(src => `<tr><td>${escapeHtml(src.label)}</td><td>${src.clicks ?? '—'}</td><td>${src.conversions}</td><td>${src.revenue_cents != null ? hhMoney(src.revenue_cents) : '—'}</td></tr>`).join('')}
+      </tbody></table>
+      <p class="hh-help" style="margin-top:12px">Create tracking links in the <a href="#" onclick="event.preventDefault();hhSwitch('links')" style="color:var(--gold)">Links</a> tab to see which promoters and channels bring people in.</p>`;
+  } catch (e) { box.innerHTML = `<div class="hh-empty">${escapeHtml(e.message)}</div>`; }
+}
+
 function escapeHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+// Only allow http(s) URLs into src/href attributes
+function safeUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  try { const u = new URL(url, location.origin); return /^https?:$/.test(u.protocol) ? u.href.replace(/"/g, '%22') : ''; }
+  catch { return ''; }
+}
+// Authorization header when signed in (public endpoints use it to return viewer-specific state)
+function authHeaders(extra = {}) {
+  return currentSession?.access_token ? { ...extra, 'Authorization': `Bearer ${currentSession.access_token}` } : { ...extra };
+}
+// Promoter referral code captured from a /e/:id?ref=CODE share link
+function getEventRef(eventId) {
+  try { return sessionStorage.getItem(`cl_ref_${eventId}`) || null; } catch { return null; }
+}
+function newCheckoutId() {
+  try { return crypto.randomUUID(); } catch { return `co-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`; }
 }
 // Escape text for use inside HTML attribute values (onclick strings)
 function escapeAttr(str) {
@@ -10570,16 +11170,18 @@ async function openNotifSheet() {
       return `<div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);${n.read?'opacity:.6':''}">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0">${typeIcon[n.type] || '<svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M16 4 C11 4 8 8 8 13 L8 20 L5 23 L27 23 L24 20 L24 13 C24 8 21 4 16 4Z" stroke="#C9A84C" stroke-width="2" stroke-linejoin="round"/><path d="M13 23 C13 24.7 14.3 26 16 26 C17.7 26 19 24.7 19 23" stroke="#C9A84C" stroke-width="2"/></svg>'}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:${n.read?'500':'700'};color:var(--text);margin-bottom:3px">${n.title}</div>
-          ${n.body ? `<div style="font-size:13px;color:var(--muted2);line-height:1.5">${n.body}</div>` : ''}
+          <div style="font-size:14px;font-weight:${n.read?'500':'700'};color:var(--text);margin-bottom:3px">${escapeHtml(n.title)}</div>
+          ${n.body ? `<div style="font-size:13px;color:var(--muted2);line-height:1.5;white-space:pre-wrap">${escapeHtml(n.body)}</div>` : ''}
           <div style="font-size:11px;color:var(--muted);margin-top:4px">${ago}</div>
           ${n.type === 'refund_request' && n.data?.refund_request_id ? `
             <div style="display:flex;gap:8px;margin-top:10px">
               <button onclick="handleRefundRequest('${n.data.refund_request_id}','approve',this)" style="padding:7px 18px;background:rgba(78,201,140,.1);color:#4EC98C;border:1px solid rgba(78,201,140,.3);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">Approve</button>
               <button onclick="handleRefundRequest('${n.data.refund_request_id}','deny',this)" style="padding:7px 18px;background:rgba(239,68,68,.07);color:#ef4444;border:1px solid rgba(239,68,68,.2);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">Deny</button>
             </div>` : ''}
-          ${n.type === 'event_invite' && n.data?.event_id ? `
-            <button onclick="viewEventFromNotif('${n.data.event_id}')" style="margin-top:9px;padding:7px 18px;background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.25);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">View Event →</button>
+          ${n.type === 'rsvp_request' && n.data?.event_id ? `
+            <button onclick="closeSheet('notifSheet');openHostHub('${escapeAttr(n.data.event_id)}')" style="margin-top:9px;padding:7px 18px;background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.25);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">Review Requests →</button>
+          ` : n.data?.event_id && n.type !== 'refund_request' && n.type !== 'ticket_sale' ? `
+            <button onclick="viewEventFromNotif('${escapeAttr(n.data.event_id)}')" style="margin-top:9px;padding:7px 18px;background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.25);border-radius:var(--r-full);font-size:13px;font-weight:600;cursor:pointer">View Event →</button>
           ` : ''}
         </div>
       </div>`;
@@ -11070,8 +11672,9 @@ const SHARE_PLATFORMS = [
 function enc(str) { return encodeURIComponent(str || ''); }
 
 // Build the share URL for an event
-function buildShareUrl(eventId) {
-  return `${location.origin}${location.pathname}#event/${eventId}`;
+function buildShareUrl(eventId, ref) {
+  // /e/:id is server-rendered with event Open Graph tags so links unfurl nicely
+  return `${location.origin}/e/${eventId}${ref ? `?ref=${encodeURIComponent(ref)}` : ''}`;
 }
 
 // Build share text
@@ -11986,7 +12589,7 @@ async function adminResetStripe(userId, btn) {
 
 function adminViewEvent(id) {
   closeSharePopover?.();
-  fetch(`${API_BASE}/api/events/${id}`)
+  fetch(`${API_BASE}/api/events/${id}`, { headers: authHeaders() })
     .then(r => r.json())
     .then(ev => { viewDetail(ev); goTo('event-detail'); })
     .catch(() => showToast('Could not load event', 'error'));

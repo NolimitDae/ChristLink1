@@ -109,10 +109,117 @@ const pmtLimiter  = rateLimit({ windowMs: 60*60*1000, max: 20,  message: { error
 app.use('/api', apiLimiter);
 
 // ─── HELPERS ────────────────────────────────────────────────
-// Strip all HTML tags to prevent stored XSS
-function sanitizeText(str) {
+// Strip all HTML tags (and any stray angle brackets, which can still form a tag
+// when the text is later concatenated into innerHTML) to prevent stored XSS.
+function sanitizeText(str, maxLen = 5000) {
   if (typeof str !== 'string') return str;
-  return str.replace(/<[^>]*>/g, '').trim();
+  return str.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, maxLen);
+}
+
+// Escape text for interpolation into server-generated HTML (emails, OG tags)
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Accept only absolute http(s) URLs without characters that break out of HTML attributes.
+// Returns the normalized URL, '' to clear the field, or null if invalid.
+function sanitizeUrl(str) {
+  if (str === null || str === '') return '';
+  if (typeof str !== 'string') return null;
+  const trimmed = str.trim();
+  if (!trimmed) return '';
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+    const out = u.toString();
+    return /["'<>`\s]/.test(out) ? null : out;
+  } catch { return null; }
+}
+
+// Colors are interpolated into inline styles, so only allow plain hex/rgb(a)/hsl(a)/simple gradients.
+function sanitizeColor(str) {
+  if (str === null || str === '') return '';
+  if (typeof str !== 'string') return null;
+  const s = str.trim();
+  const color = '(#[0-9a-fA-F]{3,8}|rgba?\\([\\d\\s.,%]+\\)|hsla?\\([\\d\\s.,%deg]+\\))';
+  const single = new RegExp(`^${color}$`);
+  const gradient = new RegExp(`^linear-gradient\\(\\s*\\d{1,3}deg\\s*(,\\s*${color}(\\s+\\d{1,3}%)?\\s*){2,4}\\)$`);
+  return single.test(s) || gradient.test(s) ? s : null;
+}
+
+// PostgREST .or()/.ilike() filters are string-built; strip characters that change filter syntax.
+function sanitizeSearch(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[,()*%\\:"']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+}
+
+const IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
+// Parse and validate a base64 image data URL. Returns { mimeType, buffer, ext } or { error, status }.
+function parseImageDataUrl(dataUrl, { maxBytes = 5 * 1024 * 1024, allowPdf = false } = {}) {
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) return { error: 'Invalid image data.', status: 400 };
+  const matches = dataUrl.match(/^data:([a-zA-Z0-9.+/-]+);base64,(.+)$/);
+  if (!matches) return { error: 'Bad data URL format.', status: 400 };
+  const mimeType = matches[1].toLowerCase();
+  if (!IMAGE_MIME.has(mimeType) && !(allowPdf && mimeType === 'application/pdf'))
+    return { error: 'Only JPEG, PNG, WebP or GIF images are allowed.', status: 415 };
+  const buffer = Buffer.from(matches[2], 'base64');
+  if (buffer.length > maxBytes) return { error: `File must be under ${Math.round(maxBytes / 1024 / 1024)}MB.`, status: 413 };
+  // Check magic bytes so a mislabeled HTML/SVG file can't be stored as an "image"
+  const sig = buffer.subarray(0, 12);
+  const isJpeg = sig[0] === 0xFF && sig[1] === 0xD8;
+  const isPng  = sig.subarray(0, 4).toString('hex') === '89504e47';
+  const isGif  = sig.subarray(0, 3).toString('ascii') === 'GIF';
+  const isWebp = sig.subarray(0, 4).toString('ascii') === 'RIFF' && sig.subarray(8, 12).toString('ascii') === 'WEBP';
+  const isPdf  = sig.subarray(0, 4).toString('ascii') === '%PDF';
+  const ok = { 'image/jpeg': isJpeg, 'image/png': isPng, 'image/gif': isGif, 'image/webp': isWebp, 'application/pdf': isPdf }[mimeType];
+  if (!ok) return { error: 'File contents do not match its type.', status: 415 };
+  const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp', 'application/pdf': 'pdf' }[mimeType];
+  return { mimeType, buffer, ext };
+}
+
+// Unambiguous, cryptographically random ticket code (no 0/O/1/I)
+function generateTicketCode(len = 8) {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.randomBytes(len);
+  let out = '';
+  for (let i = 0; i < len; i++) out += alphabet[bytes[i] % alphabet.length];
+  return out;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = v => typeof v === 'string' && UUID_RE.test(v);
+
+// Total spots taken for an event: confirmed RSVPs + confirmed ticket quantities
+async function countSpotsTaken(eventId) {
+  const [{ count: rsvpCount }, { data: ticketRows }] = await Promise.all([
+    supabaseAdmin.from('rsvps').select('*', { count: 'exact', head: true })
+      .eq('event_id', eventId).eq('status', 'confirmed'),
+    supabaseAdmin.from('tickets').select('quantity').eq('event_id', eventId).eq('status', 'confirmed'),
+  ]);
+  return (rsvpCount || 0) + (ticketRows || []).reduce((s, t) => s + (t.quantity || 1), 0);
+}
+
+// Resolve a promoter referral code (?ref=CODE) for an event → promoter id or null
+async function resolvePromoter(eventId, ref) {
+  if (!ref || typeof ref !== 'string') return null;
+  const code = ref.trim().toUpperCase().slice(0, 40);
+  if (!/^[A-Z0-9_-]+$/.test(code)) return null;
+  const { data } = await supabaseAdmin.from('event_promoters')
+    .select('id').eq('event_id', eventId).eq('code', code).eq('active', true).maybeSingle();
+  return data?.id || null;
+}
+
+// Optional auth: returns the user for a valid Bearer token, else null (never rejects)
+async function getOptionalUser(req) {
+  const auth = req.headers.authorization || '';
+  if (!auth.startsWith('Bearer ')) return null;
+  try {
+    const { data: { user } } = await supabase.auth.getUser(auth.replace('Bearer ', ''));
+    return user || null;
+  } catch { return null; }
 }
 
 function calcAmounts(priceCents, qty, absorb) {
@@ -378,15 +485,10 @@ app.get('/api/following/:userId', async (req, res) => {
 
 // POST /api/upload-banner — same dataUrl pattern as upload-avatar
 app.post('/api/upload-banner', requireAuth, async (req, res) => {
-  const { dataUrl } = req.body;
-  if (!dataUrl || !dataUrl.startsWith('data:')) return res.status(400).json({ error: 'Invalid image data.' });
+  const img = parseImageDataUrl(req.body.dataUrl);
+  if (img.error) return res.status(img.status).json({ error: img.error });
   try {
-    const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
-    if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
-    const mimeType = matches[1];
-    const buffer   = Buffer.from(matches[2], 'base64');
-    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
-    const ext      = mimeType.includes('png') ? 'png' : 'jpg';
+    const { mimeType, buffer, ext } = img;
     const path     = `banners/${req.userId}/banner.${ext}`;
     const { error: upErr } = await supabaseAdmin.storage
       .from('banner-images')
@@ -405,24 +507,46 @@ app.patch('/api/profile', requireAuth, async (req, res) => {
     hot_takes, hobbies, connect_tags, prayer_request, testimony,
   } = req.body;
   const updates = {};
-  if (full_name               !== undefined) updates.full_name               = full_name;
-  if (bio                     !== undefined) updates.bio                     = bio;
-  if (city                    !== undefined) updates.city                    = city;
-  if (avatar_url              !== undefined) updates.avatar_url              = avatar_url;
-  if (avatar_color            !== undefined) updates.avatar_color            = avatar_color;
-  if (avatar_ring_color       !== undefined) updates.avatar_ring_color       = avatar_ring_color;
-  if (instagram_url           !== undefined) updates.instagram_url           = instagram_url;
-  if (facebook_url            !== undefined) updates.facebook_url            = facebook_url;
-  if (tiktok_url              !== undefined) updates.tiktok_url              = tiktok_url;
-  if (banner_url              !== undefined) updates.banner_url              = banner_url;
-  if (bible_verse             !== undefined) updates.bible_verse             = bible_verse;
-  if (bible_verse_reference   !== undefined) updates.bible_verse_reference   = bible_verse_reference;
-  if (bible_version           !== undefined) updates.bible_version           = bible_version;
-  if (hot_takes               !== undefined) updates.hot_takes               = hot_takes;
-  if (hobbies                 !== undefined) updates.hobbies                 = hobbies;
-  if (connect_tags            !== undefined) updates.connect_tags            = Array.isArray(connect_tags) ? connect_tags : [];
-  if (prayer_request          !== undefined) updates.prayer_request          = prayer_request;
-  if (testimony               !== undefined) updates.testimony               = testimony;
+  const text = { full_name: 80, bio: 1000, city: 80, bible_verse: 1000, bible_verse_reference: 80,
+    bible_version: 20, hot_takes: 1000, hobbies: 500, prayer_request: 1000, testimony: 3000 };
+  for (const [key, max] of Object.entries(text)) {
+    const v = req.body[key];
+    if (v === undefined) continue;
+    updates[key] = v === null ? null : sanitizeText(String(v), max);
+  }
+  // Image URLs come from our own upload endpoints; silently ignore anything malformed
+  for (const key of ['avatar_url', 'banner_url']) {
+    const v = req.body[key];
+    if (v === undefined) continue;
+    const url = sanitizeUrl(v);
+    if (url !== null) updates[key] = url || null;
+  }
+  // Social links are typed by the user: accept "instagram.com/me", "@me" or a full URL
+  const SOCIAL_HOSTS = { instagram_url: 'instagram.com', facebook_url: 'facebook.com', tiktok_url: 'tiktok.com' };
+  for (const [key, host] of Object.entries(SOCIAL_HOSTS)) {
+    let v = req.body[key];
+    if (v === undefined) continue;
+    if (typeof v === 'string') {
+      v = v.trim();
+      if (/^@[\w.]+$/.test(v)) v = `https://${host}/${key === 'tiktok_url' ? v : v.slice(1)}`;
+      else if (v && !/^https?:\/\//i.test(v)) v = `https://${v}`;
+    }
+    const url = sanitizeUrl(v);
+    if (url === null) return res.status(400).json({ error: `Please enter a valid ${host} link.` });
+    updates[key] = url || null;
+  }
+  // Colors are interpolated into inline styles — drop anything that isn't a plain color/gradient
+  for (const key of ['avatar_color', 'avatar_ring_color']) {
+    const v = req.body[key];
+    if (v === undefined) continue;
+    const color = sanitizeColor(v);
+    if (color !== null) updates[key] = color || null;
+  }
+  if (connect_tags !== undefined) {
+    updates.connect_tags = Array.isArray(connect_tags)
+      ? connect_tags.filter(t => typeof t === 'string').slice(0, 20).map(t => sanitizeText(t, 40)).filter(Boolean)
+      : [];
+  }
   updates.updated_at = new Date().toISOString();
   // Try update first (profile should exist from signup trigger)
   let { data, error } = await supabaseAdmin
@@ -460,15 +584,10 @@ app.post('/api/profile/prayer-support', requireAuth, async (req, res) => {
 
 // Upload avatar via server (bypasses Supabase storage RLS)
 app.post('/api/upload-avatar', requireAuth, async (req, res) => {
-  const { dataUrl } = req.body;
-  if (!dataUrl || !dataUrl.startsWith('data:')) return res.status(400).json({ error: 'Invalid image data.' });
+  const img = parseImageDataUrl(req.body.dataUrl);
+  if (img.error) return res.status(img.status).json({ error: img.error });
   try {
-    const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
-    if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
-    const mimeType = matches[1];
-    const buffer   = Buffer.from(matches[2], 'base64');
-    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
-    const ext      = mimeType.includes('png') ? 'png' : 'jpg';
+    const { mimeType, buffer, ext } = img;
     const path     = `avatars/${req.userId}/avatar-${Date.now()}.${ext}`;
     const { error: upErr } = await supabaseAdmin.storage
       .from('avatars')
@@ -481,16 +600,12 @@ app.post('/api/upload-avatar', requireAuth, async (req, res) => {
 
 // Upload event image via server (bypasses Supabase storage RLS)
 app.post('/api/upload-event-image', requireAuth, async (req, res) => {
-  const { dataUrl, type } = req.body; // type: 'cover' | 'gallery'
-  if (!dataUrl || !dataUrl.startsWith('data:')) return res.status(400).json({ error: 'Invalid image data.' });
+  const { type } = req.body; // type: 'cover' | 'gallery'
+  const img = parseImageDataUrl(req.body.dataUrl);
+  if (img.error) return res.status(img.status).json({ error: img.error });
   try {
-    const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
-    if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
-    const mimeType = matches[1];
-    const buffer   = Buffer.from(matches[2], 'base64');
-    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
-    const ext      = mimeType.includes('png') ? 'png' : 'jpg';
-    const suffix   = type === 'cover' ? 'cover' : `gallery-${Math.random().toString(36).slice(2)}`;
+    const { mimeType, buffer, ext } = img;
+    const suffix   = type === 'cover' ? 'cover' : `gallery-${crypto.randomBytes(6).toString('hex')}`;
     const path     = `events/${req.userId}/${Date.now()}-${suffix}.${ext}`;
     const { error: upErr } = await supabaseAdmin.storage
       .from('event-images')
@@ -503,16 +618,11 @@ app.post('/api/upload-event-image', requireAuth, async (req, res) => {
 
 // Upload forum image via server (bypasses Supabase storage RLS)
 app.post('/api/upload-forum-image', requireAuth, async (req, res) => {
-  const { dataUrl } = req.body;
-  if (!dataUrl || !dataUrl.startsWith('data:')) return res.status(400).json({ error: 'Invalid image data.' });
+  const img = parseImageDataUrl(req.body.dataUrl);
+  if (img.error) return res.status(img.status).json({ error: img.error });
   try {
-    const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
-    if (!matches) return res.status(400).json({ error: 'Bad data URL format.' });
-    const mimeType = matches[1];
-    const buffer   = Buffer.from(matches[2], 'base64');
-    if (buffer.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Image must be under 5MB.' });
-    const ext      = mimeType.includes('png') ? 'png' : 'jpg';
-    const path     = `forum/${req.userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { mimeType, buffer, ext } = img;
+    const path     = `forum/${req.userId}/${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
     const { error: upErr } = await supabaseAdmin.storage
       .from('event-images')
       .upload(path, buffer, { upsert: false, contentType: mimeType });
@@ -549,7 +659,10 @@ async function geocodeAddress(parts) {
 }
 
 app.get('/api/events', async (req, res) => {
-  const { city, type, is_paid, q, format, host_id, lat, lng, radius = 100 } = req.query;
+  const { is_paid, format, host_id, lat, lng, radius = 100 } = req.query;
+  const city = sanitizeSearch(req.query.city);
+  const type = sanitizeSearch(req.query.type);
+  const q    = sanitizeSearch(req.query.q);
   const limit  = Math.min(Math.max(parseInt(req.query.limit)  || 50,  1), 200);
   const offset = Math.max(parseInt(req.query.offset) || 0, 0);
   const useRadius = lat && lng;
@@ -561,8 +674,8 @@ app.get('/api/events', async (req, res) => {
     .range(Number(offset), Number(offset) + (useRadius ? 499 : Number(limit) - 1));
   if (!useRadius && city) query = query.ilike('city', `%${city}%`);
   if (type)    query = query.ilike('event_type', `%${type}%`);
-  if (format)  query = query.eq('format', format);
-  if (host_id) query = query.eq('host_id', host_id);
+  if (format && ['in_person','online','hybrid'].includes(format)) query = query.eq('format', format);
+  if (host_id && isUuid(host_id)) query = query.eq('host_id', host_id);
   else if (req.query.include_past !== 'true') {
     // Public listings only show events that haven't ended yet
     const now = new Date().toISOString();
@@ -585,13 +698,113 @@ app.get('/api/events', async (req, res) => {
 });
 
 app.get('/api/events/:id', async (req, res) => {
+  if (!isUuid(req.params.id)) return res.status(404).json({ error: 'Event not found.' });
   const { data: ev, error } = await supabaseAdmin
     .from('events_with_details').select('*').eq('id', req.params.id).single();
   if (error || !ev) return res.status(404).json({ error: 'Event not found.' });
-  const { data: ticketTypes } = await supabaseAdmin.from('ticket_types').select('*').eq('event_id', req.params.id);
-  // View now has explicit cover_url and forum_enabled — no aliasing needed.
-  res.json({ ...ev, ticket_types: ticketTypes || [] });
+
+  const viewer = await getOptionalUser(req);
+  const isHost = viewer?.id === ev.host_id;
+  // Drafts are private to their host (and admins)
+  if (ev.status === 'draft' && !isHost) {
+    let isAdmin = false;
+    if (viewer) {
+      const { data: prof } = await supabaseAdmin.from('profiles').select('role').eq('id', viewer.id).single();
+      isAdmin = prof?.role === 'admin';
+    }
+    if (!isAdmin) return res.status(404).json({ error: 'Event not found.' });
+  }
+
+  const [{ data: ticketTypes }, spotsTaken, viewerRsvp, viewerWaitlist] = await Promise.all([
+    supabaseAdmin.from('ticket_types').select('*').eq('event_id', req.params.id)
+      .order('sort_order', { ascending: true }).order('price_cents', { ascending: true }),
+    countSpotsTaken(req.params.id),
+    viewer ? supabaseAdmin.from('rsvps').select('status').eq('event_id', req.params.id).eq('user_id', viewer.id).maybeSingle() : { data: null },
+    viewer ? supabaseAdmin.from('event_waitlist').select('id').eq('event_id', req.params.id).eq('user_id', viewer.id).maybeSingle() : { data: null },
+  ]);
+
+  // Count a page view (not the host's own views); fire-and-forget
+  if (!isHost && ev.status === 'published') {
+    supabaseAdmin.rpc('increment_event_views', { p_event_id: ev.id }).then(() => {}, () => {});
+  }
+
+  const now = Date.now();
+  const tiers = (ticketTypes || []).map(tt => {
+    const remaining = tt.quantity != null ? Math.max(0, tt.quantity - (tt.sold || 0)) : null;
+    let sale_state = 'on_sale';
+    if (tt.sales_start && new Date(tt.sales_start).getTime() > now) sale_state = 'upcoming';
+    else if (tt.sales_end && new Date(tt.sales_end).getTime() < now) sale_state = 'ended';
+    else if (remaining === 0) sale_state = 'sold_out';
+    return { ...tt, remaining, sale_state };
+  });
+  const spotsLeft = ev.max_capacity ? Math.max(0, ev.max_capacity - spotsTaken) : null;
+
+  // Hide host-only fields from everyone else
+  const { listing_payment_id, view_count, ...publicEv } = ev;
+  res.json({
+    ...publicEv,
+    ...(isHost && { listing_payment_id, view_count }),
+    ticket_types: tiers,
+    spots_taken: spotsTaken,
+    spots_left:  spotsLeft,
+    is_full:     spotsLeft === 0,
+    viewer: viewer ? {
+      rsvp_status: viewerRsvp?.data?.status || null,
+      on_waitlist: !!viewerWaitlist?.data,
+      is_host:     isHost,
+    } : null,
+  });
 });
+
+// Normalize host-editable event fields. Returns { fields } or { error }.
+function normalizeEventFields(body) {
+  const fields = {};
+  const text = { name: 140, description: 8000, event_type: 60, age_group: 40, denomination: 80,
+    venue_name: 140, address: 200, city: 80, state: 40, zip: 20 };
+  for (const [k, max] of Object.entries(text)) {
+    if (body[k] !== undefined) fields[k] = body[k] === null ? null : sanitizeText(String(body[k]), max);
+  }
+  if (body.format !== undefined) {
+    if (!['in_person', 'online', 'hybrid'].includes(body.format)) return { error: 'Invalid event format.' };
+    fields.format = body.format;
+  }
+  if (body.tags !== undefined) {
+    fields.tags = Array.isArray(body.tags)
+      ? body.tags.filter(t => typeof t === 'string').slice(0, 15).map(t => sanitizeText(t, 40)).filter(Boolean)
+      : null;
+  }
+  for (const k of ['cover_url', 'online_url']) {
+    if (body[k] === undefined) continue;
+    const url = sanitizeUrl(body[k]);
+    if (url === null) return { error: `${k === 'cover_url' ? 'Cover image' : 'Online link'} must be a valid http(s) URL.` };
+    fields[k] = url || null;
+  }
+  if (body.gallery_urls !== undefined) {
+    const urls = Array.isArray(body.gallery_urls) ? body.gallery_urls.slice(0, 12).map(sanitizeUrl) : [];
+    if (urls.some(u => u === null)) return { error: 'Gallery images must be valid URLs.' };
+    fields.gallery_urls = urls.filter(Boolean);
+  }
+  for (const k of ['start_date', 'end_date', 'sales_cutoff', 'publish_at']) {
+    if (body[k] === undefined) continue;
+    if (body[k] === null || body[k] === '') { fields[k] = null; continue; }
+    const d = new Date(body[k]);
+    if (isNaN(d.getTime())) return { error: `Invalid ${k.replace('_', ' ')}.` };
+    fields[k] = d.toISOString();
+  }
+  if (fields.start_date && fields.end_date && new Date(fields.end_date) < new Date(fields.start_date))
+    return { error: 'End time must be after the start time.' };
+  if (body.max_capacity !== undefined) {
+    if (body.max_capacity === null || body.max_capacity === '' || body.max_capacity === 0) fields.max_capacity = null;
+    else {
+      const n = parseInt(body.max_capacity, 10);
+      if (!n || n < 1 || n > 1000000) return { error: 'Capacity must be a positive number.' };
+      fields.max_capacity = n;
+    }
+  }
+  if (body.forum_enabled !== undefined)     fields.forum_enabled     = !!body.forum_enabled;
+  if (body.requires_approval !== undefined) fields.requires_approval = !!body.requires_approval;
+  return { fields };
+}
 
 app.post('/api/events', requireAuth, async (req, res) => {
   const {
@@ -600,28 +813,31 @@ app.post('/api/events', requireAuth, async (req, res) => {
     start_date, end_date, sales_cutoff, venue_name, address, city, state, zip, online_url, max_capacity,
     forum_enabled, publish_at,
   } = req.body;
-  if (!name) return res.status(400).json({ error: 'Event name is required.' });
-  const safeName        = sanitizeText(name);
-  const safeDescription = sanitizeText(description);
+  const norm = normalizeEventFields(req.body);
+  if (norm.error) return res.status(400).json({ error: norm.error });
+  const f = norm.fields;
+  if (!f.name) return res.status(400).json({ error: 'Event name is required.' });
   await supabaseAdmin.from('profiles').update({ role: 'host' }).eq('id', req.userId).eq('role', 'attendee');
   // Geocode address to lat/lng for Near Me radius search
   const coords = format !== 'online' ? await geocodeAddress([address, city, state, zip]) : null;
   const { data, error } = await supabaseAdmin.from('events').insert({
-    host_id: req.userId, name: safeName, description: safeDescription,
-    cover_url: cover_url || null,
-    gallery_urls: gallery_urls || [],
-    event_type,
-    age_group: age_group || 'All Ages',
-    format: format || 'in_person',
-    denomination, tags,
-    is_paid: is_paid || false,
+    host_id: req.userId, name: f.name, description: f.description || null,
+    cover_url: f.cover_url || null,
+    gallery_urls: f.gallery_urls || [],
+    event_type: f.event_type || null,
+    age_group: f.age_group || 'All Ages',
+    format: f.format || 'in_person',
+    denomination: f.denomination || null, tags: f.tags || null,
+    is_paid: is_paid === true,
     absorb_stripe_fee: absorb_stripe_fee !== false,
-    start_date: start_date || null, end_date: end_date || null,
-    sales_cutoff: sales_cutoff || end_date || null,
-    venue_name, address, city, state, zip, online_url,
-    max_capacity: max_capacity || null,
+    start_date: f.start_date || null, end_date: f.end_date || null,
+    sales_cutoff: f.sales_cutoff || f.end_date || null,
+    venue_name: f.venue_name || null, address: f.address || null, city: f.city || null,
+    state: f.state || null, zip: f.zip || null, online_url: f.online_url || null,
+    max_capacity: f.max_capacity || null,
     forum_enabled: forum_enabled !== false,
-    publish_at: publish_at || null,
+    requires_approval: f.requires_approval === true,
+    publish_at: f.publish_at || null,
     status: 'draft',
     lat: coords?.lat || null, lng: coords?.lng || null,
   }).select().single();
@@ -634,17 +850,10 @@ app.patch('/api/events/:id', requireAuth, async (req, res) => {
     .from('events').select('id, host_id')
     .eq('id', req.params.id).eq('host_id', req.userId).single();
   if (!ev) return res.status(404).json({ error: 'Event not found or not yours.' });
-  const allowed = [
-    'name','description','event_type','age_group','format','denomination','tags',
-    'start_date','end_date','sales_cutoff','venue_name','address','city','state','zip','online_url',
-    'max_capacity','gallery_urls','forum_enabled',
-  ];
-  const updates = {};
-  for (const key of allowed) {
-    if (req.body[key] !== undefined) updates[key] = req.body[key];
-  }
-  // cover_url is now the canonical column name; add it to allowed fields
-  if (req.body.cover_url !== undefined) updates.cover_url = req.body.cover_url;
+  const norm = normalizeEventFields(req.body);
+  if (norm.error) return res.status(400).json({ error: norm.error });
+  const { publish_at: _ignored, ...updates } = norm.fields; // scheduling goes through /schedule
+  if (updates.name === '' || updates.name === null) return res.status(400).json({ error: 'Event name is required.' });
   if (!Object.keys(updates).length) return res.status(400).json({ error: 'No fields to update.' });
   // Re-geocode if any address field changed (use req.body.format — updates.format is only set if format was in the PATCH body)
   const addrChanged = ['address','city','state','zip','venue_name'].some(k => req.body[k] !== undefined);
@@ -656,6 +865,8 @@ app.patch('/api/events/:id', requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('events').update(updates).eq('id', req.params.id).select().single();
   if (error) return res.status(400).json({ error: error.message });
+  // Raising (or removing) capacity can free spots for people on the waitlist
+  if (updates.max_capacity !== undefined) promoteWaitlist(req.params.id).catch(() => {});
   res.json(data);
 });
 
@@ -847,10 +1058,14 @@ app.delete('/api/events/:id', requireAuth, async (req, res) => {
 app.patch('/api/events/:id/toggle-visibility', requireAuth, async (req, res) => {
   try {
     const { data: ev } = await supabaseAdmin
-      .from('events').select('id, status, host_id').eq('id', req.params.id).single();
+      .from('events').select('id, status, host_id, is_paid, listing_fee_paid').eq('id', req.params.id).single();
     if (!ev) return res.status(404).json({ error: 'Event not found.' });
     if (ev.host_id !== req.userId) return res.status(403).json({ error: 'Not your event.' });
+    if (!['published', 'draft'].includes(ev.status))
+      return res.status(400).json({ error: `A ${ev.status} event can't be republished.` });
     const newStatus = ev.status === 'published' ? 'draft' : 'published';
+    if (newStatus === 'published' && ev.is_paid && !ev.listing_fee_paid)
+      return res.status(402).json({ error: 'Listing fee required.' });
     const { error } = await supabaseAdmin
       .from('events').update({ status: newStatus }).eq('id', req.params.id);
     if (error) throw error;
@@ -872,13 +1087,15 @@ app.post('/api/events/:id/duplicate', requireAuth, async (req, res) => {
     if (ev.host_id !== req.userId) return res.status(403).json({ error: 'Not your event.' });
 
     // Create new event as draft, strip IDs and timestamps
-    const { id, created_at, updated_at, listing_fee_paid, listing_payment_id, ...rest } = ev;
+    const { id, created_at, updated_at, listing_fee_paid, listing_payment_id, image_url,
+      rsvp_count, view_count, publish_at, ...rest } = ev;
     const { data: newEv, error } = await supabaseAdmin.from('events').insert({
       ...rest,
-      name:   `${ev.name} (Copy)`,
+      name:   `${ev.name} (Copy)`.slice(0, 140),
       status: 'draft',
       listing_fee_paid:    false,
       listing_payment_id:  null,
+      publish_at:          null,
     }).select().single();
     if (error) throw error;
 
@@ -887,8 +1104,8 @@ app.post('/api/events/:id/duplicate', requireAuth, async (req, res) => {
       .from('ticket_types').select('*').eq('event_id', id);
     if (tts?.length) {
       const newTts = tts.map(tt => {
-        const { id: ttId, created_at: ttCa, tickets_sold, ...ttRest } = tt;
-        return { ...ttRest, event_id: newEv.id, tickets_sold: 0 };
+        const { id: ttId, created_at: ttCa, sold, ...ttRest } = tt;
+        return { ...ttRest, event_id: newEv.id, sold: 0 };
       });
       await supabaseAdmin.from('ticket_types').insert(newTts);
     }
@@ -946,8 +1163,11 @@ app.get('/api/events/:id/forum', requireAuth, async (req, res) => {
 // POST a message
 app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
   try {
-    const { content, image_url, message_type = 'text' } = req.body;
-    if (!content?.trim() && !image_url)
+    const content      = typeof req.body.content === 'string' ? sanitizeText(req.body.content, 2000) : '';
+    const image_url    = req.body.image_url ? sanitizeUrl(req.body.image_url) : '';
+    const message_type = req.body.message_type === 'image' ? 'image' : 'text';
+    if (image_url === null) return res.status(400).json({ error: 'Invalid image.' });
+    if (!content && !image_url)
       return res.status(400).json({ error: 'Message content or image required.' });
 
     const { data: ev } = await supabaseAdmin
@@ -960,7 +1180,7 @@ app.post('/api/events/:id/forum', requireAuth, async (req, res) => {
       user_id:      req.userId,
       image_url:    image_url || null,
       message_type: message_type,
-      content:      content?.trim() || null,
+      content:      content || null,
       created_at:   new Date().toISOString(),
     };
 
@@ -1007,15 +1227,82 @@ app.delete('/api/events/:eventId/forum/:postId', requireAuth, async (req, res) =
 // ════════════════════════════════════════════════════════════
 // TICKET TYPES
 // ════════════════════════════════════════════════════════════
+// Validate host-supplied ticket tier fields. Returns { fields } or { error }.
+function normalizeTicketTypeFields(body, { partial = false } = {}) {
+  const fields = {};
+  if (body.name !== undefined || !partial) {
+    const name = sanitizeText(String(body.name || ''), 80);
+    if (!name) return { error: 'Ticket name is required.' };
+    fields.name = name;
+  }
+  if (body.description !== undefined) fields.description = body.description ? sanitizeText(String(body.description), 500) : null;
+  if (body.price_cents !== undefined || !partial) {
+    const price = parseInt(body.price_cents, 10);
+    if (!price || price < 50 || price > 1000000) return { error: 'Price must be between $0.50 and $10,000.' };
+    fields.price_cents = price;
+  }
+  if (body.quantity !== undefined) {
+    if (body.quantity === null || body.quantity === '') fields.quantity = null;
+    else {
+      const q = parseInt(body.quantity, 10);
+      if (!q || q < 1) return { error: 'Quantity must be a positive number.' };
+      fields.quantity = q;
+    }
+  }
+  for (const k of ['sales_start', 'sales_end']) {
+    if (body[k] === undefined) continue;
+    if (!body[k]) { fields[k] = null; continue; }
+    const d = new Date(body[k]);
+    if (isNaN(d.getTime())) return { error: 'Invalid sales window date.' };
+    fields[k] = d.toISOString();
+  }
+  if (fields.sales_start && fields.sales_end && new Date(fields.sales_end) <= new Date(fields.sales_start))
+    return { error: 'Sales end must be after sales start.' };
+  if (body.sort_order !== undefined) fields.sort_order = parseInt(body.sort_order, 10) || 0;
+  return { fields };
+}
+
 app.post('/api/ticket-types', requireAuth, async (req, res) => {
-  const { event_id, name, price_cents, quantity } = req.body;
-  if (!event_id || !name || !price_cents) return res.status(400).json({ error: 'event_id, name, price_cents required.' });
+  const { event_id } = req.body;
+  if (!isUuid(event_id)) return res.status(400).json({ error: 'event_id required.' });
+  const norm = normalizeTicketTypeFields(req.body);
+  if (norm.error) return res.status(400).json({ error: norm.error });
   const { data: ev } = await supabaseAdmin.from('events').select('id').eq('id', event_id).eq('host_id', req.userId).single();
   if (!ev) return res.status(403).json({ error: 'Not your event.' });
   const { data, error } = await supabaseAdmin.from('ticket_types')
-    .insert({ event_id, name, price_cents, quantity: quantity || null, sold: 0 }).select().single();
+    .insert({ ...norm.fields, event_id, sold: 0 }).select().single();
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
+});
+
+// PATCH a ticket tier (host only). Price can't change once tickets have sold.
+app.patch('/api/ticket-types/:id', requireAuth, async (req, res) => {
+  const { data: tt } = await supabaseAdmin.from('ticket_types').select('id, event_id, sold').eq('id', req.params.id).single();
+  if (!tt) return res.status(404).json({ error: 'Ticket type not found.' });
+  const { data: ev } = await supabaseAdmin.from('events').select('host_id').eq('id', tt.event_id).single();
+  if (!ev || ev.host_id !== req.userId) return res.status(403).json({ error: 'Not your event.' });
+  const norm = normalizeTicketTypeFields(req.body, { partial: true });
+  if (norm.error) return res.status(400).json({ error: norm.error });
+  if (norm.fields.price_cents !== undefined && (tt.sold || 0) > 0)
+    return res.status(400).json({ error: "Price can't be changed after tickets have sold. Add a new tier instead." });
+  if (norm.fields.quantity != null && norm.fields.quantity < (tt.sold || 0))
+    return res.status(400).json({ error: `Quantity can't be lower than the ${tt.sold} already sold.` });
+  if (!Object.keys(norm.fields).length) return res.status(400).json({ error: 'No fields to update.' });
+  const { data, error } = await supabaseAdmin.from('ticket_types').update(norm.fields).eq('id', tt.id).select().single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+// DELETE a ticket tier (host only, only if nothing sold)
+app.delete('/api/ticket-types/:id', requireAuth, async (req, res) => {
+  const { data: tt } = await supabaseAdmin.from('ticket_types').select('id, event_id, sold').eq('id', req.params.id).single();
+  if (!tt) return res.status(404).json({ error: 'Ticket type not found.' });
+  const { data: ev } = await supabaseAdmin.from('events').select('host_id').eq('id', tt.event_id).single();
+  if (!ev || ev.host_id !== req.userId) return res.status(403).json({ error: 'Not your event.' });
+  if ((tt.sold || 0) > 0) return res.status(400).json({ error: "Tiers with sales can't be deleted. Set its quantity to the number sold to close it." });
+  const { error } = await supabaseAdmin.from('ticket_types').delete().eq('id', tt.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ success: true });
 });
 
 // ── COUPONS ──────────────────────────────────────────────
@@ -1036,6 +1323,14 @@ app.post('/api/events/:id/coupons', requireAuth, async (req, res) => {
   const { code, discount_type, discount_value, max_uses, expires_at } = req.body;
   if (!code || !discount_type || !discount_value)
     return res.status(400).json({ error: 'code, discount_type, discount_value required.' });
+  const cleanCode = String(code).trim().toUpperCase();
+  if (!/^[A-Z0-9_-]{3,30}$/.test(cleanCode))
+    return res.status(400).json({ error: 'Code must be 3–30 letters, numbers, dashes or underscores.' });
+  if (!['percent', 'amount'].includes(discount_type))
+    return res.status(400).json({ error: 'discount_type must be percent or amount.' });
+  const val = Number(discount_value);
+  if (!isFinite(val) || val <= 0) return res.status(400).json({ error: 'Discount must be a positive number.' });
+  if (discount_type === 'percent' && val > 100) return res.status(400).json({ error: 'Percent discount cannot exceed 100.' });
   const { data: ev } = await supabaseAdmin
     .from('events').select('host_id').eq('id', req.params.id).single();
   if (!ev || ev.host_id !== req.userId)
@@ -1043,10 +1338,10 @@ app.post('/api/events/:id/coupons', requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin.from('coupons').insert({
     event_id:       req.params.id,
     host_id:        req.userId,
-    code:           code.trim().toUpperCase(),
+    code:           cleanCode,
     discount_type,
-    discount_value: Number(discount_value),
-    max_uses:       max_uses || null,
+    discount_value: val,
+    max_uses:       max_uses ? Math.max(1, parseInt(max_uses, 10) || 1) : null,
     expires_at:     expires_at || null,
     active:         true,
   }).select().single();
@@ -1078,10 +1373,10 @@ app.post('/api/events/:id/validate-coupon', async (req, res) => {
     return res.status(400).json({ error: 'This coupon has expired.' });
   if (coupon.max_uses && coupon.uses >= coupon.max_uses)
     return res.status(400).json({ error: 'This coupon has reached its usage limit.' });
-  const face = ticketPriceCents * (qty || 1);
+  const face = Math.max(0, parseInt(ticketPriceCents, 10) || 0) * Math.max(1, Math.min(20, parseInt(qty, 10) || 1));
   const discountCents = coupon.discount_type === 'percent'
-    ? Math.round(face * coupon.discount_value / 100)
-    : Math.min(coupon.discount_value * 100, face);
+    ? Math.round(face * Math.min(100, coupon.discount_value) / 100)
+    : Math.min(Math.round(coupon.discount_value * 100), face);
   res.json({
     valid:         true,
     couponId:      coupon.id,
@@ -1109,7 +1404,7 @@ app.get('/api/my-rsvps', requireAuth, async (req, res) => {
     .from('rsvps')
     .select('*')
     .eq('user_id', req.userId)
-    .eq('status', 'confirmed')
+    .in('status', ['confirmed', 'pending'])
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
   if (!rsvpRows || rsvpRows.length === 0) return res.json({ rsvps: [] });
@@ -1131,137 +1426,486 @@ app.get('/api/my-rsvps', requireAuth, async (req, res) => {
 });
 
 app.post('/api/rsvp', requireAuth, async (req, res) => {
-  const { eventId } = req.body;
-  if (!eventId) return res.status(400).json({ error: 'Event ID required.' });
-  const { data: ev } = await supabaseAdmin.from('events').select('id, max_capacity, status, end_date, sales_cutoff').eq('id', eventId).single();
+  const { eventId, ref } = req.body;
+  if (!isUuid(eventId)) return res.status(400).json({ error: 'Event ID required.' });
+  const { data: ev } = await supabaseAdmin.from('events')
+    .select('id, name, host_id, is_paid, status, start_date, end_date, sales_cutoff, requires_approval')
+    .eq('id', eventId).single();
   if (!ev || ev.status !== 'published') return res.status(404).json({ error: 'Event not found.' });
+  if (ev.is_paid) return res.status(400).json({ error: 'This event requires a ticket.' });
   const cutoff = ev.sales_cutoff || ev.end_date;
   if (cutoff && new Date() > new Date(cutoff)) return res.status(400).json({ error: 'RSVPs for this event are now closed.' });
-  if (ev.max_capacity) {
-    const { count } = await supabaseAdmin.from('rsvps').select('*', { count: 'exact' })
-      .eq('event_id', eventId).eq('status', 'confirmed');
-    if (count >= ev.max_capacity) return res.status(400).json({ error: 'Event is at full capacity.' });
+
+  const promoterId = await resolvePromoter(eventId, ref);
+  const { data: result, error } = await supabaseAdmin.rpc('claim_rsvp', {
+    p_event_id: eventId, p_user_id: req.userId, p_promoter_id: promoterId,
+  });
+  if (error) return res.status(500).json({ error: error.message });
+
+  switch (result) {
+    case 'confirmed':
+      return res.json({ success: true, status: 'confirmed' });
+    case 'pending': {
+      const { data: guest } = await supabaseAdmin.from('profiles').select('full_name').eq('id', req.userId).single();
+      createNotification(ev.host_id, {
+        type: 'rsvp_request',
+        title: `New request — ${ev.name}`,
+        body: `${guest?.full_name || 'Someone'} asked to join your event.`,
+        data: { event_id: ev.id },
+      }).catch(() => {});
+      return res.json({ success: true, status: 'pending', message: 'Request sent — the host will review it.' });
+    }
+    case 'full':
+      return res.status(409).json({ error: 'This event is full. Join the waitlist to get notified if a spot opens.', full: true });
+    case 'declined':
+      return res.status(403).json({ error: "The host wasn't able to approve your request for this event." });
+    default:
+      return res.status(400).json({ error: 'RSVPs for this event are closed.' });
   }
-  const { data, error } = await supabaseAdmin.from('rsvps')
-    .upsert({ event_id: eventId, user_id: req.userId, status: 'confirmed' }, { onConflict: 'event_id,user_id' })
-    .select().single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.json({ success: true, rsvp: data });
 });
 
 app.delete('/api/rsvp/:eventId', requireAuth, async (req, res) => {
-  await supabaseAdmin.from('rsvps').update({ status: 'cancelled' })
-    .eq('event_id', req.params.eventId).eq('user_id', req.userId);
+  const { data: prev } = await supabaseAdmin.from('rsvps')
+    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+    .eq('event_id', req.params.eventId).eq('user_id', req.userId)
+    .in('status', ['confirmed', 'pending'])
+    .select('status');
+  // A confirmed spot just opened up — offer it to the waitlist
+  if (prev?.some(r => r.status === 'confirmed')) promoteWaitlist(req.params.eventId).catch(() => {});
   res.json({ success: true });
 });
 
+// ════════════════════════════════════════════════════════════
+// WAITLIST
+// ════════════════════════════════════════════════════════════
+// When spots open: free events auto-confirm the next people in line;
+// paid events notify the next people in line so they can buy.
+async function promoteWaitlist(eventId) {
+  const { data: ev } = await supabaseAdmin.from('events')
+    .select('id, name, is_paid, max_capacity, status, requires_approval').eq('id', eventId).single();
+  if (!ev || ev.status !== 'published') return;
+  const taken = await countSpotsTaken(eventId);
+  let open = ev.max_capacity ? ev.max_capacity - taken : 25;
+  if (open <= 0) return;
+  const { data: queue } = await supabaseAdmin.from('event_waitlist')
+    .select('id, user_id, notified_at').eq('event_id', eventId)
+    .is('notified_at', null)
+    .order('created_at', { ascending: true }).limit(Math.min(open, 25));
+  for (const w of queue || []) {
+    if (!ev.is_paid && !ev.requires_approval) {
+      const { data: result } = await supabaseAdmin.rpc('claim_rsvp', { p_event_id: eventId, p_user_id: w.user_id, p_promoter_id: null });
+      if (result === 'full') break;
+      if (result === 'confirmed') {
+        await createNotification(w.user_id, {
+          type: 'waitlist_confirmed', title: "You're in! 🎉",
+          body: `A spot opened up and you're now going to "${ev.name}".`, data: { event_id: eventId },
+        });
+        notifyByEmail(w.user_id, `You're in: ${ev.name}`,
+          `<p>A spot opened up at <strong>${escapeHtml(ev.name)}</strong> and we've reserved it for you.</p>`, eventId);
+      }
+    } else {
+      await supabaseAdmin.from('event_waitlist').update({ notified_at: new Date().toISOString() }).eq('id', w.id);
+      await createNotification(w.user_id, {
+        type: 'waitlist_spot', title: 'A spot opened up',
+        body: `${ev.is_paid ? 'Tickets are' : 'A spot is'} available again for "${ev.name}" — grab it before it's gone.`,
+        data: { event_id: eventId },
+      });
+      notifyByEmail(w.user_id, `A spot opened up: ${ev.name}`,
+        `<p>${ev.is_paid ? 'Tickets are' : 'A spot is'} available again for <strong>${escapeHtml(ev.name)}</strong>. First come, first served.</p>`, eventId);
+    }
+  }
+}
+
+app.post('/api/events/:id/waitlist', requireAuth, async (req, res) => {
+  const { data: ev } = await supabaseAdmin.from('events')
+    .select('id, status, max_capacity, host_id').eq('id', req.params.id).single();
+  if (!ev || ev.status !== 'published') return res.status(404).json({ error: 'Event not found.' });
+  if (ev.host_id === req.userId) return res.status(400).json({ error: "You're the host of this event." });
+  const { error } = await supabaseAdmin.from('event_waitlist')
+    .upsert({ event_id: ev.id, user_id: req.userId, notified_at: null }, { onConflict: 'event_id,user_id' });
+  if (error) return res.status(500).json({ error: error.message });
+  const { count } = await supabaseAdmin.from('event_waitlist').select('*', { count: 'exact', head: true }).eq('event_id', ev.id);
+  res.json({ success: true, on_waitlist: true, waitlist_count: count || 0 });
+});
+
+app.delete('/api/events/:id/waitlist', requireAuth, async (req, res) => {
+  await supabaseAdmin.from('event_waitlist').delete().eq('event_id', req.params.id).eq('user_id', req.userId);
+  res.json({ success: true, on_waitlist: false });
+});
+
+// ════════════════════════════════════════════════════════════
+// HOST GUEST LIST (approve / decline / export)
+// ════════════════════════════════════════════════════════════
+async function requireEventHost(req, res) {
+  if (!isUuid(req.params.id)) { res.status(404).json({ error: 'Event not found.' }); return null; }
+  const { data: ev } = await supabaseAdmin.from('events')
+    .select('id, name, host_id, is_paid, max_capacity, requires_approval, status, start_date, view_count')
+    .eq('id', req.params.id).single();
+  if (!ev) { res.status(404).json({ error: 'Event not found.' }); return null; }
+  if (ev.host_id !== req.userId) { res.status(403).json({ error: 'Not your event.' }); return null; }
+  return ev;
+}
+
+app.get('/api/events/:id/guests', requireAuth, async (req, res) => {
+  const ev = await requireEventHost(req, res); if (!ev) return;
+  const [{ data: rsvps }, { data: tickets }, { data: waitlist }, { data: checkins }, { data: promoters }] = await Promise.all([
+    supabaseAdmin.from('rsvps').select('id, user_id, status, promoter_id, created_at, updated_at')
+      .eq('event_id', ev.id).neq('status', 'cancelled').order('created_at', { ascending: true }),
+    supabaseAdmin.from('tickets').select('id, user_id, quantity, status, code, buyer_email, ticket_type_id, promoter_id, created_at')
+      .eq('event_id', ev.id).eq('status', 'confirmed').order('created_at', { ascending: true }),
+    supabaseAdmin.from('event_waitlist').select('id, user_id, notified_at, created_at')
+      .eq('event_id', ev.id).order('created_at', { ascending: true }),
+    supabaseAdmin.from('ticket_checkins').select('ticket_id, checked_in_at').eq('event_id', ev.id),
+    supabaseAdmin.from('event_promoters').select('id, label, code').eq('event_id', ev.id),
+  ]);
+  const userIds = [...new Set([...(rsvps || []), ...(tickets || []), ...(waitlist || [])].map(r => r.user_id).filter(Boolean))];
+  const { data: profiles } = userIds.length
+    ? await supabaseAdmin.from('profiles').select('id, full_name, email, avatar_url, avatar_color, city').in('id', userIds)
+    : { data: [] };
+  const pm = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+  const promoMap = Object.fromEntries((promoters || []).map(p => [p.id, p.label]));
+  const checkMap = Object.fromEntries((checkins || []).map(c => [c.ticket_id, c.checked_in_at]));
+  const person = id => {
+    const p = pm[id] || {};
+    return { user_id: id, full_name: p.full_name || null, email: p.email || null,
+      avatar_url: p.avatar_url || null, avatar_color: p.avatar_color || null, city: p.city || null };
+  };
+  res.json({
+    event: { id: ev.id, name: ev.name, is_paid: ev.is_paid, max_capacity: ev.max_capacity, requires_approval: ev.requires_approval },
+    going: [
+      ...(rsvps || []).filter(r => r.status === 'confirmed').map(r => ({
+        ...person(r.user_id), kind: 'rsvp', id: r.id, quantity: 1, joined_at: r.created_at,
+        promoter: promoMap[r.promoter_id] || null })),
+      ...(tickets || []).map(t => ({
+        ...person(t.user_id), kind: 'ticket', id: t.id, quantity: t.quantity || 1, code: t.code,
+        email: pm[t.user_id]?.email || t.buyer_email || null, joined_at: t.created_at,
+        checked_in_at: checkMap[t.id] || null, promoter: promoMap[t.promoter_id] || null })),
+    ],
+    pending:  (rsvps || []).filter(r => r.status === 'pending').map(r => ({ ...person(r.user_id), id: r.id, requested_at: r.created_at })),
+    declined: (rsvps || []).filter(r => r.status === 'declined').map(r => ({ ...person(r.user_id), id: r.id, declined_at: r.updated_at })),
+    waitlist: (waitlist || []).map(w => ({ ...person(w.user_id), id: w.id, joined_at: w.created_at, notified_at: w.notified_at })),
+  });
+});
+
+app.post('/api/events/:id/guests/:rsvpId/approve', requireAuth, async (req, res) => {
+  const ev = await requireEventHost(req, res); if (!ev) return;
+  const { data: r } = await supabaseAdmin.from('rsvps').select('id, user_id, event_id, status').eq('id', req.params.rsvpId).single();
+  if (!r || r.event_id !== ev.id) return res.status(404).json({ error: 'Request not found.' });
+  // Hosts can change their mind about a declined guest
+  if (r.status === 'declined') await supabaseAdmin.from('rsvps').update({ status: 'pending' }).eq('id', r.id);
+  const { data: result, error } = await supabaseAdmin.rpc('approve_rsvp', { p_rsvp_id: r.id });
+  if (error) return res.status(500).json({ error: error.message });
+  if (result === 'full') return res.status(409).json({ error: 'Event is at capacity. Raise the capacity to approve more guests.' });
+  if (result !== 'confirmed') return res.status(400).json({ error: 'This request was already handled.' });
+  await createNotification(r.user_id, {
+    type: 'rsvp_approved', title: "You're approved! 🎉",
+    body: `The host approved your request for "${ev.name}". See you there!`, data: { event_id: ev.id },
+  });
+  notifyByEmail(r.user_id, `You're approved for ${ev.name}`,
+    `<p>Good news — the host approved your request to attend <strong>${escapeHtml(ev.name)}</strong>.</p>`, ev.id);
+  res.json({ success: true, status: 'confirmed' });
+});
+
+app.post('/api/events/:id/guests/:rsvpId/decline', requireAuth, async (req, res) => {
+  const ev = await requireEventHost(req, res); if (!ev) return;
+  const { data: updated } = await supabaseAdmin.from('rsvps')
+    .update({ status: 'declined', updated_at: new Date().toISOString() })
+    .eq('id', req.params.rsvpId).eq('event_id', ev.id).in('status', ['pending', 'confirmed'])
+    .select('user_id, status');
+  if (!updated?.length) return res.status(404).json({ error: 'Request not found.' });
+  await createNotification(updated[0].user_id, {
+    type: 'rsvp_declined', title: 'Request not approved',
+    body: `The host wasn't able to approve your request for "${ev.name}".`, data: { event_id: ev.id },
+  });
+  res.json({ success: true, status: 'declined' });
+});
+
+// CSV export of the guest list (host only)
+app.get('/api/events/:id/guests.csv', requireAuth, async (req, res) => {
+  const ev = await requireEventHost(req, res); if (!ev) return;
+  const [{ data: rsvps }, { data: tickets }, { data: checkins }, { data: ticketTypes }] = await Promise.all([
+    supabaseAdmin.from('rsvps').select('id, user_id, status, created_at').eq('event_id', ev.id).in('status', ['confirmed', 'pending']),
+    supabaseAdmin.from('tickets').select('id, user_id, quantity, code, buyer_email, ticket_type_id, created_at').eq('event_id', ev.id).eq('status', 'confirmed'),
+    supabaseAdmin.from('ticket_checkins').select('ticket_id, checked_in_at').eq('event_id', ev.id),
+    supabaseAdmin.from('ticket_types').select('id, name').eq('event_id', ev.id),
+  ]);
+  const ids = [...new Set([...(rsvps || []), ...(tickets || [])].map(r => r.user_id))];
+  const { data: profiles } = ids.length ? await supabaseAdmin.from('profiles').select('id, full_name, email').in('id', ids) : { data: [] };
+  const pm = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+  const tm = Object.fromEntries((ticketTypes || []).map(t => [t.id, t.name]));
+  const cm = Object.fromEntries((checkins || []).map(c => [c.ticket_id, c.checked_in_at]));
+  // Prefix cells that spreadsheet apps would treat as formulas
+  const cell = v => {
+    let str = String(v ?? '');
+    if (/^[=+\-@\t\r]/.test(str)) str = `'${str}`;
+    return `"${str.replace(/"/g, '""')}"`;
+  };
+  const rows = [['Name', 'Email', 'Type', 'Status', 'Quantity', 'Ticket code', 'Checked in', 'Joined']];
+  for (const r of rsvps || []) rows.push([pm[r.user_id]?.full_name, pm[r.user_id]?.email, 'RSVP', r.status, 1, '', '', r.created_at]);
+  for (const t of tickets || []) rows.push([pm[t.user_id]?.full_name, pm[t.user_id]?.email || t.buyer_email,
+    tm[t.ticket_type_id] || 'Ticket', 'confirmed', t.quantity || 1, t.code || '', cm[t.id] || '', t.created_at]);
+  const safeName = ev.name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40) || 'event';
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeName}-guests.csv"`);
+  res.send(rows.map(r => r.map(cell).join(',')).join('\r\n'));
+});
+
+// ════════════════════════════════════════════════════════════
+// HOST MESSAGING (blast to guests)
+// ════════════════════════════════════════════════════════════
+const messageLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 10, message: { error: 'Message limit reached — try again in an hour.' } });
+
+app.get('/api/events/:id/messages', requireAuth, async (req, res) => {
+  const ev = await requireEventHost(req, res); if (!ev) return;
+  const { data } = await supabaseAdmin.from('event_messages')
+    .select('id, subject, body, audience, recipients_count, created_at')
+    .eq('event_id', ev.id).order('created_at', { ascending: false }).limit(50);
+  res.json({ messages: data || [] });
+});
+
+app.post('/api/events/:id/messages', messageLimiter, requireAuth, async (req, res) => {
+  const ev = await requireEventHost(req, res); if (!ev) return;
+  const subject  = sanitizeText(String(req.body.subject || ''), 120);
+  const body     = sanitizeText(String(req.body.body || ''), 3000);
+  const audience = ['going', 'waitlist', 'all'].includes(req.body.audience) ? req.body.audience : 'going';
+  const sendEmailToo = req.body.email !== false;
+  if (!subject || !body) return res.status(400).json({ error: 'Subject and message are required.' });
+
+  const wantGoing = audience !== 'waitlist', wantWait = audience !== 'going';
+  const [{ data: rsvps }, { data: tickets }, { data: waitlist }] = await Promise.all([
+    wantGoing ? supabaseAdmin.from('rsvps').select('user_id').eq('event_id', ev.id).eq('status', 'confirmed') : { data: [] },
+    wantGoing ? supabaseAdmin.from('tickets').select('user_id').eq('event_id', ev.id).eq('status', 'confirmed') : { data: [] },
+    wantWait  ? supabaseAdmin.from('event_waitlist').select('user_id').eq('event_id', ev.id) : { data: [] },
+  ]);
+  const recipients = [...new Set([...(rsvps || []), ...(tickets || []), ...(waitlist || [])]
+    .map(r => r.user_id).filter(id => id && id !== req.userId))];
+  if (!recipients.length) return res.status(400).json({ error: 'No guests to message yet.' });
+
+  const { data: host } = await supabaseAdmin.from('profiles').select('full_name').eq('id', req.userId).single();
+  const hostName = host?.full_name || 'The host';
+  const { error: logErr } = await supabaseAdmin.from('event_messages').insert({
+    event_id: ev.id, host_id: req.userId, subject, body, audience, recipients_count: recipients.length,
+  });
+  if (logErr) return res.status(500).json({ error: logErr.message });
+
+  // In-app notifications in batches
+  for (let i = 0; i < recipients.length; i += 500) {
+    await supabaseAdmin.from('notifications').insert(recipients.slice(i, i + 500).map(uid => ({
+      user_id: uid, type: 'host_message', title: `${ev.name}: ${subject}`,
+      body: body.slice(0, 280), data: { event_id: ev.id },
+    })));
+  }
+  res.json({ success: true, recipients: recipients.length });
+
+  // Emails go out after responding so the host isn't left waiting
+  if (sendEmailToo) {
+    const html = `<p style="margin:0 0 6px;color:#666;font-size:13px">Message from ${escapeHtml(hostName)} · ${escapeHtml(ev.name)}</p>
+      <h2 style="margin:0 0 14px">${escapeHtml(subject)}</h2>
+      <p style="white-space:pre-wrap;margin:0">${escapeHtml(body)}</p>`;
+    for (const uid of recipients) {
+      await notifyByEmail(uid, `${subject} — ${ev.name}`, html, ev.id);
+    }
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// PROMOTER / REFERRAL LINKS
+// ════════════════════════════════════════════════════════════
+app.get('/api/events/:id/promoters', requireAuth, async (req, res) => {
+  const ev = await requireEventHost(req, res); if (!ev) return;
+  const [{ data: promoters }, { data: tickets }, { data: rsvps }] = await Promise.all([
+    supabaseAdmin.from('event_promoters').select('*').eq('event_id', ev.id).order('created_at', { ascending: true }),
+    supabaseAdmin.from('tickets').select('promoter_id, quantity, total_charged_cents')
+      .eq('event_id', ev.id).eq('status', 'confirmed').not('promoter_id', 'is', null),
+    supabaseAdmin.from('rsvps').select('promoter_id')
+      .eq('event_id', ev.id).eq('status', 'confirmed').not('promoter_id', 'is', null),
+  ]);
+  const stats = {};
+  for (const t of tickets || []) {
+    const st = stats[t.promoter_id] ||= { tickets: 0, revenue_cents: 0, rsvps: 0 };
+    st.tickets += t.quantity || 1; st.revenue_cents += t.total_charged_cents || 0;
+  }
+  for (const r of rsvps || []) (stats[r.promoter_id] ||= { tickets: 0, revenue_cents: 0, rsvps: 0 }).rsvps += 1;
+  res.json({ promoters: (promoters || []).map(p => ({ ...p, ...(stats[p.id] || { tickets: 0, revenue_cents: 0, rsvps: 0 }) })) });
+});
+
+app.post('/api/events/:id/promoters', requireAuth, async (req, res) => {
+  const ev = await requireEventHost(req, res); if (!ev) return;
+  const label = sanitizeText(String(req.body.label || ''), 60);
+  if (!label) return res.status(400).json({ error: 'Give this link a name (e.g. "Youth group" or "Instagram").' });
+  let code = String(req.body.code || label).toUpperCase().replace(/[^A-Z0-9]+/g, '').slice(0, 16);
+  if (code.length < 3) code = `${code}${generateTicketCode(4)}`;
+  const { data: clash } = await supabaseAdmin.from('event_promoters').select('id').eq('event_id', ev.id).eq('code', code).maybeSingle();
+  if (clash) code = `${code.slice(0, 12)}${generateTicketCode(4)}`;
+  const { data, error } = await supabaseAdmin.from('event_promoters')
+    .insert({ event_id: ev.id, label, code }).select().single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ promoter: { ...data, tickets: 0, revenue_cents: 0, rsvps: 0 } });
+});
+
+app.delete('/api/events/:id/promoters/:promoterId', requireAuth, async (req, res) => {
+  const ev = await requireEventHost(req, res); if (!ev) return;
+  await supabaseAdmin.from('event_promoters').update({ active: false })
+    .eq('id', req.params.promoterId).eq('event_id', ev.id);
+  res.json({ success: true });
+});
+
+// ════════════════════════════════════════════════════════════
+// HOST ANALYTICS (per event)
+// ════════════════════════════════════════════════════════════
+app.get('/api/events/:id/analytics', requireAuth, async (req, res) => {
+  const ev = await requireEventHost(req, res); if (!ev) return;
+  const [{ data: tickets }, { data: rsvps }, { count: waitlistCount }, { count: checkins }, { data: types }, { data: promoters }] = await Promise.all([
+    supabaseAdmin.from('tickets').select('quantity, total_charged_cents, host_receives_cents, status, ticket_type_id, promoter_id, created_at')
+      .eq('event_id', ev.id).in('status', ['confirmed', 'refunded']),
+    supabaseAdmin.from('rsvps').select('status, promoter_id, created_at').eq('event_id', ev.id),
+    supabaseAdmin.from('event_waitlist').select('*', { count: 'exact', head: true }).eq('event_id', ev.id),
+    supabaseAdmin.from('ticket_checkins').select('*', { count: 'exact', head: true }).eq('event_id', ev.id),
+    supabaseAdmin.from('ticket_types').select('id, name, quantity, sold, price_cents').eq('event_id', ev.id),
+    supabaseAdmin.from('event_promoters').select('id, label, clicks').eq('event_id', ev.id),
+  ]);
+  const confirmed = (tickets || []).filter(t => t.status === 'confirmed');
+  const ticketQty = confirmed.reduce((s, t) => s + (t.quantity || 1), 0);
+  const goingRsvps = (rsvps || []).filter(r => r.status === 'confirmed').length;
+  const going = ticketQty + goingRsvps;
+  const views = ev.view_count || 0;
+
+  // Daily series (last 30 days) of new attendees
+  const days = {};
+  const add = (iso, n) => { const d = String(iso).slice(0, 10); days[d] = (days[d] || 0) + n; };
+  confirmed.forEach(t => add(t.created_at, t.quantity || 1));
+  (rsvps || []).filter(r => r.status === 'confirmed').forEach(r => add(r.created_at, 1));
+  const series = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    series.push({ day: d, count: days[d] || 0 });
+  }
+
+  const promoterRows = (promoters || []).map(p => {
+    const pt = confirmed.filter(t => t.promoter_id === p.id);
+    const pr = (rsvps || []).filter(r => r.promoter_id === p.id && r.status === 'confirmed').length;
+    const conv = pt.reduce((s, t) => s + (t.quantity || 1), 0) + pr;
+    return { id: p.id, label: p.label, clicks: p.clicks || 0, conversions: conv,
+      revenue_cents: pt.reduce((s, t) => s + (t.total_charged_cents || 0), 0) };
+  });
+  const attributed = promoterRows.reduce((s, p) => s + p.conversions, 0);
+
+  res.json({
+    views,
+    going,
+    capacity: ev.max_capacity,
+    conversion_rate: views ? Math.round((going / views) * 1000) / 10 : null,
+    pending_requests: (rsvps || []).filter(r => r.status === 'pending').length,
+    waitlist: waitlistCount || 0,
+    checked_in: checkins || 0,
+    revenue_cents: confirmed.reduce((s, t) => s + (t.total_charged_cents || 0), 0),
+    host_earnings_cents: confirmed.reduce((s, t) => s + (t.host_receives_cents || 0), 0),
+    refunded_tickets: (tickets || []).filter(t => t.status === 'refunded').reduce((s, t) => s + (t.quantity || 1), 0),
+    tiers: (types || []).map(t => ({ id: t.id, name: t.name, sold: t.sold || 0, quantity: t.quantity, price_cents: t.price_cents })),
+    sources: [...promoterRows, { id: null, label: 'Direct / other', clicks: null, conversions: Math.max(0, going - attributed), revenue_cents: null }],
+    series,
+  });
+});
+
 // ── Public Attendee List ─────────────────────────────────────
+// Shows who's going (first names + avatars). Only for published events;
+// the host's full guest list with emails lives at /guests.
 app.get('/api/events/:id/attendees', async (req, res) => {
+  if (!isUuid(req.params.id)) return res.json({ attendees: [], total: 0 });
+  const { data: ev } = await supabaseAdmin.from('events').select('id, status').eq('id', req.params.id).single();
+  if (!ev || ev.status !== 'published') return res.json({ attendees: [], total: 0 });
   const [{ data: rsvpRows }, { data: ticketRows }] = await Promise.all([
-    supabaseAdmin.from('rsvps').select('user_id').eq('event_id', req.params.id).eq('status', 'confirmed').limit(100),
-    supabaseAdmin.from('tickets').select('user_id').eq('event_id', req.params.id).eq('status', 'confirmed').limit(100),
+    supabaseAdmin.from('rsvps').select('user_id').eq('event_id', req.params.id).eq('status', 'confirmed')
+      .order('created_at', { ascending: false }).limit(200),
+    supabaseAdmin.from('tickets').select('user_id').eq('event_id', req.params.id).eq('status', 'confirmed')
+      .order('created_at', { ascending: false }).limit(200),
   ]);
   const userIds = [...new Set([...(rsvpRows || []), ...(ticketRows || [])].map(r => r.user_id).filter(Boolean))];
   if (userIds.length === 0) return res.json({ attendees: [], total: 0 });
   const { data: profiles } = await supabaseAdmin
     .from('profiles')
-    .select('id, full_name, bio, city, avatar_url, avatar_color, instagram_url, facebook_url, tiktok_url')
-    .in('id', userIds);
-  res.json({ attendees: profiles || [], total: (profiles || []).length });
+    .select('id, full_name, city, avatar_url, avatar_color')
+    .in('id', userIds.slice(0, 100));
+  res.json({ attendees: profiles || [], total: userIds.length });
 });
 
 // ── Ticket Verification (scanner) ───────────────────────────
+// Host (only) scans a QR / types a code. The ticket must belong to an event the requester hosts.
 app.post('/api/tickets/verify', requireAuth, async (req, res) => {
-  const { ticketId, code, eventId } = req.body;
+  const { ticketId, eventId } = req.body;
+  const code = typeof req.body.code === 'string' ? req.body.code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
   if (!ticketId && !code) return res.status(400).json({ valid: false, error: 'Ticket ID or code required.' });
+  if (ticketId && !isUuid(ticketId)) return res.json({ valid: false, error: 'Ticket not found.' });
+  if (eventId && !isUuid(eventId)) return res.status(400).json({ valid: false, error: 'Invalid event.' });
+  if (!ticketId && !eventId) return res.status(400).json({ valid: false, error: 'Select an event to scan for.' });
 
   try {
-    // First verify the requesting user is the host of this event
     if (eventId) {
-      const { data: ev } = await supabaseAdmin
-        .from('events').select('host_id').eq('id', eventId).single();
-      if (!ev || ev.host_id !== req.userId) {
+      const { data: ev } = await supabaseAdmin.from('events').select('host_id').eq('id', eventId).single();
+      if (!ev || ev.host_id !== req.userId)
         return res.status(403).json({ valid: false, error: 'Only the event host can verify tickets.' });
+    }
+
+    // 1. Find the ticket (by id, by short code, or by legacy payment-intent suffix)
+    let ticket = null;
+    const cols = 'id, event_id, ticket_type_id, user_id, quantity, status, code, stripe_payment_intent, buyer_email';
+    if (ticketId) {
+      ({ data: ticket } = await supabaseAdmin.from('tickets').select(cols).eq('id', ticketId).maybeSingle());
+    } else {
+      ({ data: ticket } = await supabaseAdmin.from('tickets').select(cols)
+        .eq('event_id', eventId).eq('code', code).maybeSingle());
+      if (!ticket && code.length >= 6) {
+        const { data: legacy } = await supabaseAdmin.from('tickets').select(cols)
+          .eq('event_id', eventId).ilike('stripe_payment_intent', `%${code}`).limit(2);
+        if (legacy?.length === 1) ticket = legacy[0];
       }
     }
+    if (!ticket || (eventId && ticket.event_id !== eventId))
+      return res.json({ valid: false, error: 'Ticket not found for this event.' });
 
-    // Look up the ticket
-    let query = supabaseAdmin
-      .from('tickets')
-      .select('*, events(name,start_date,city), ticket_types(name)')
-      .eq('status', 'confirmed');
+    // 2. Requester must host the ticket's event (covers ticketId-only scans)
+    const [{ data: ev }, { data: tt }, { data: holder }] = await Promise.all([
+      supabaseAdmin.from('events').select('host_id, name, start_date').eq('id', ticket.event_id).single(),
+      ticket.ticket_type_id
+        ? supabaseAdmin.from('ticket_types').select('name').eq('id', ticket.ticket_type_id).single()
+        : { data: null },
+      supabaseAdmin.from('profiles').select('full_name').eq('id', ticket.user_id).single(),
+    ]);
+    if (!ev || ev.host_id !== req.userId)
+      return res.status(403).json({ valid: false, error: 'Only the event host can verify tickets.' });
 
-    if (ticketId) query = query.eq('id', ticketId);
-    else {
-      // Match against dedicated code column first, fall back to payment intent suffix
-      const { data: byCode } = await supabaseAdmin
-        .from('tickets')
-        .select('*, events(name,start_date,city), ticket_types(name)')
-        .eq('status', 'confirmed')
-        .ilike('code', code)
-        .eq('event_id', eventId || '')
-        .maybeSingle();
-      if (byCode) {
-        // Found by code — skip the rest of query building
-        const ticket = byCode;
-        const { data: existingCheckin } = await supabaseAdmin.from('ticket_checkins').select('id,checked_in_at').eq('ticket_id', ticket.id).single();
-        if (existingCheckin) {
-          return res.json({ valid: false, already_checked_in: true, message: `Already checked in at ${new Date(existingCheckin.checked_in_at).toLocaleTimeString()}`, ticket: { ...ticket, code: ticket.code, event_name: ticket.events?.name } });
-        }
-        await supabaseAdmin.from('ticket_checkins').insert({ ticket_id: ticket.id, event_id: ticket.event_id, checked_in_by: req.userId });
-        return res.json({ valid: true, message: `${ticket.quantity} ticket${ticket.quantity !== 1 ? 's' : ''} checked in successfully.`, ticket: { ...ticket, code: ticket.code, event_name: ticket.events?.name, ticket_type_name: ticket.ticket_types?.name } });
-      }
-      // Fall back to payment intent suffix match
-      query = query.ilike('stripe_payment_intent', `%${code}`);
+    const displayCode = ticket.code || (ticket.stripe_payment_intent || ticket.id).replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase();
+    const info = {
+      id: ticket.id, quantity: ticket.quantity, code: displayCode, buyer_email: ticket.buyer_email,
+      holder_name: holder?.full_name || null, event_name: ev.name, event_start_date: ev.start_date,
+      ticket_type_name: tt?.name || null, status: ticket.status,
+    };
+    if (ticket.status !== 'confirmed') {
+      const why = { refunded: 'This ticket was refunded.', pending: 'Payment for this ticket has not completed.',
+        failed: 'Payment for this ticket failed.', disputed: 'This ticket is under a payment dispute.' }[ticket.status];
+      return res.json({ valid: false, error: why || 'Ticket is not valid.', ticket: info });
     }
 
-    if (eventId) query = query.eq('event_id', eventId);
-
-    const { data: ticket } = await query.single();
-
-    if (!ticket) {
-      return res.json({ valid: false, error: 'Ticket not found or not confirmed for this event.' });
-    }
-
-    // Check if already checked in
-    const { data: existingCheckin } = await supabaseAdmin
-      .from('ticket_checkins')
-      .select('id, checked_in_at')
-      .eq('ticket_id', ticket.id)
-      .single();
-
-    if (existingCheckin) {
-      return res.json({
-        valid: false,
-        error: `Already checked in at ${new Date(existingCheckin.checked_in_at).toLocaleTimeString()}`,
-        ticket: {
-          ...ticket,
-          code: (ticket.stripe_payment_intent || ticket.id).replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase(),
-          event_name: ticket.events?.name,
-        }
-      });
-    }
-
-    // Record check-in
-    await supabaseAdmin.from('ticket_checkins').insert({
-      ticket_id:     ticket.id,
-      event_id:      ticket.event_id,
-      checked_in_by: req.userId,
+    // 3. Record check-in; the unique(ticket_id) constraint makes double-scans safe
+    const { error: insErr } = await supabaseAdmin.from('ticket_checkins').insert({
+      ticket_id: ticket.id, event_id: ticket.event_id, checked_in_by: req.userId,
       checked_in_at: new Date().toISOString(),
     });
-
+    if (insErr) {
+      const { data: existing } = await supabaseAdmin.from('ticket_checkins')
+        .select('checked_in_at').eq('ticket_id', ticket.id).maybeSingle();
+      if (existing) {
+        const msg = `Already checked in at ${new Date(existing.checked_in_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+        return res.json({ valid: false, already_checked_in: true, error: msg, message: msg, ticket: info });
+      }
+      throw insErr;
+    }
     res.json({
       valid: true,
       message: `${ticket.quantity} ticket${ticket.quantity !== 1 ? 's' : ''} checked in successfully.`,
-      ticket: {
-        ...ticket,
-        code: (ticket.stripe_payment_intent || ticket.id).replace(/[^a-zA-Z0-9]/g,'').slice(-8).toUpperCase(),
-        event_name:       ticket.events?.name,
-        event_start_date: ticket.events?.start_date,
-        ticket_type_name: ticket.ticket_types?.name,
-      }
+      ticket: info,
     });
-  } catch(e) {
+  } catch (e) {
     console.error('Verify error:', e.message);
     res.status(500).json({ valid: false, error: 'Verification failed. Try again.' });
   }
@@ -1392,9 +2036,11 @@ app.post('/api/charge-listing-fee', pmtLimiter, requireAuth, async (req, res) =>
 });
 
 app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res) => {
-  const { eventId, ticketTypeId, qty = 1, buyerEmail } = req.body;
+  const { eventId, ticketTypeId, qty = 1, ref } = req.body;
   const parsedQty = parseInt(qty, 10);
-  if (!eventId || !ticketTypeId)
+  const typedEmail = typeof req.body.buyerEmail === 'string' ? req.body.buyerEmail.trim().slice(0, 254) : '';
+  const buyerEmail = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(typedEmail) ? typedEmail : req.user.email;
+  if (!isUuid(eventId) || !isUuid(ticketTypeId))
     return res.status(400).json({ error: 'Event ID and ticket type required.' });
   if (!parsedQty || parsedQty < 1 || parsedQty > 20)
     return res.status(400).json({ error: 'Quantity must be between 1 and 20.' });
@@ -1445,7 +2091,7 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
     // ── 3. Fetch ticket type ──────────────────────────────────────
     const { data: tt, error: ttErr } = await supabaseAdmin
       .from('ticket_types')
-      .select('id, name, price_cents, quantity, sold')
+      .select('id, name, price_cents, quantity, sold, sales_start, sales_end')
       .eq('id', ticketTypeId)
       .eq('event_id', eventId)
       .single();
@@ -1453,40 +2099,66 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
     if (ttErr || !tt)
       return res.status(404).json({ error: 'Ticket type not found for this event.' });
 
+    if (tt.sales_start && new Date(tt.sales_start) > new Date())
+      return res.status(400).json({ error: `${tt.name} goes on sale ${new Date(tt.sales_start).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.` });
+    if (tt.sales_end && new Date(tt.sales_end) < new Date())
+      return res.status(400).json({ error: `${tt.name} is no longer on sale.` });
+
     const remaining = tt.quantity != null ? tt.quantity - (tt.sold || 0) : Infinity;
-    if (qty > remaining)
-      return res.status(400).json({ error: `Only ${remaining} ticket${remaining !== 1 ? 's' : ''} remaining.` });
+    if (parsedQty > remaining)
+      return res.status(409).json({
+        error: remaining > 0 ? `Only ${remaining} ticket${remaining !== 1 ? 's' : ''} remaining.` : 'This ticket is sold out.',
+        sold_out: remaining <= 0,
+      });
+
+    // Event-wide capacity (tickets + RSVPs) applies across all tiers
+    if (ev.max_capacity) {
+      const taken = await countSpotsTaken(eventId);
+      const left  = ev.max_capacity - taken;
+      if (parsedQty > left)
+        return res.status(409).json({
+          error: left > 0 ? `Only ${left} spot${left !== 1 ? 's' : ''} left for this event.` : 'This event is sold out.',
+          sold_out: left <= 0,
+        });
+    }
+    const promoterId = await resolvePromoter(eventId, ref);
 
     // ── 4. Calculate amounts ──────────────────────────────────────
     // Apply coupon discount if provided
-    let adjustedPriceCents = tt.price_cents;
-    let couponId           = null;
-    let discountCents      = 0;
-    if (req.body.couponCode) {
+    // Discount applies to the whole order (matches /validate-coupon shown at checkout)
+    const faceCents   = tt.price_cents * parsedQty;
+    let couponId      = null;
+    let discountCents = 0;
+    if (typeof req.body.couponCode === 'string' && req.body.couponCode.trim()) {
       const { data: coupon } = await supabaseAdmin
         .from('coupons')
         .select('*')
         .eq('event_id', eventId)
         .eq('code', req.body.couponCode.trim().toUpperCase())
         .eq('active', true)
-        .single();
+        .maybeSingle();
       if (coupon && !(coupon.expires_at && new Date(coupon.expires_at) < new Date())
         && !(coupon.max_uses && coupon.uses >= coupon.max_uses)) {
         couponId      = coupon.id;
         discountCents = coupon.discount_type === 'percent'
-          ? Math.round(tt.price_cents * coupon.discount_value / 100)
-          : Math.min(coupon.discount_value * 100, tt.price_cents);
-        adjustedPriceCents = Math.max(0, tt.price_cents - discountCents);
+          ? Math.round(faceCents * Math.min(100, coupon.discount_value) / 100)
+          : Math.min(Math.round(coupon.discount_value * 100), faceCents);
       }
     }
-    const amounts        = calcAmounts(adjustedPriceCents, Number(qty), ev.absorb_stripe_fee !== false);
-    const idempotencyKey = `pi-${req.userId}-${eventId}-${ticketTypeId}-${qty}`;
+    let discountedFace = Math.max(0, faceCents - discountCents);
+    // Stripe can't charge less than $0.50 — round tiny post-discount totals up to free
+    if (discountedFace > 0 && discountedFace < 50) { discountCents = faceCents; discountedFace = 0; }
+    const amounts = discountedFace === 0
+      ? { face: 0, chargeAmount: 0, platformFee: 0, stripeFee: 0, hostReceives: 0 }
+      : calcAmounts(discountedFace, 1, ev.absorb_stripe_fee !== false);
+    // The client sends a fresh checkoutId per checkout attempt, so double-taps reuse one
+    // PaymentIntent but a second purchase of the same tier gets its own.
+    const checkoutId = typeof req.body.checkoutId === 'string' && /^[A-Za-z0-9-]{8,64}$/.test(req.body.checkoutId)
+      ? req.body.checkoutId : crypto.randomUUID();
+    const idempotencyKey = `pi-${req.userId}-${checkoutId}-${amounts.chargeAmount}`;
 
     // ── 6. Generate short ticket code ────────────────────────────
-    const ticketCode = (
-      Math.random().toString(36).slice(2, 6) +
-      Math.random().toString(36).slice(2, 6)
-    ).toUpperCase();
+    const ticketCode = generateTicketCode();
 
     // ── 5a. FREE PATH — coupon discounts to $0, skip Stripe entirely ──
     if (amounts.chargeAmount === 0) {
@@ -1496,7 +2168,7 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
           event_id:               eventId,
           ticket_type_id:         ticketTypeId,
           user_id:                req.userId,
-          quantity:               Number(qty),
+          quantity:               parsedQty,
           unit_price_cents:       tt.price_cents,
           total_charged_cents:    0,
           platform_fee_cents:     0,
@@ -1505,27 +2177,24 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
           stripe_payment_intent:  null,
           stripe_idempotency_key: null,
           status:                 'confirmed',
-          buyer_email:            buyerEmail || req.user.email,
+          buyer_email:            buyerEmail,
           code:                   ticketCode,
           coupon_id:              couponId      || null,
           discount_cents:         discountCents || 0,
+          promoter_id:            promoterId,
         })
         .select('id, code')
         .single();
       if (insertErr) throw insertErr;
 
-      if (couponId) {
-        await supabaseAdmin.rpc('increment_coupon_uses', { p_coupon_id: couponId });
-      }
-      await supabaseAdmin.rpc('increment_tickets_sold', { p_ticket_type_id: ticketTypeId, p_qty: Number(qty) });
-
-      // Fire-and-forget host sale notification
-      notifyHostOfSale({
+      await onTicketConfirmed({
         event_id:            eventId,
+        ticket_type_id:      ticketTypeId,
+        coupon_id:           couponId,
         user_id:             req.userId,
-        quantity:            Number(qty),
+        quantity:            parsedQty,
         total_charged_cents: 0,
-        buyer_email:         buyerEmail || req.user.email,
+        buyer_email:         buyerEmail,
       });
 
       return res.json({
@@ -1540,27 +2209,32 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
       amount:               amounts.chargeAmount,
       currency:             'usd',
       payment_method_types: ['card'],
-      receipt_email:        buyerEmail || req.user.email,
-      description:          `${qty}x ${tt.name} — ${ev.name}`,
+      receipt_email:        buyerEmail,
+      description:          `${parsedQty}x ${tt.name} — ${ev.name}`,
       metadata: {
         event_id:       eventId,
         ticket_type_id: ticketTypeId,
         buyer_id:       req.userId,
-        qty:            String(qty),
+        qty:            String(parsedQty),
         platform_fee:   String(amounts.platformFee),
       },
       transfer_data:          { destination: stripeAcct.stripe_account_id },
       application_fee_amount: amounts.platformFee,
     }, { idempotencyKey });
 
-    // ── 7. Create pending ticket record ──────────────────────────
-    const { data: insertedTicket } = await supabaseAdmin
+    // ── 7. Create pending ticket record (a retried request reuses the same intent) ─
+    const { data: existingTicket } = await supabaseAdmin
+      .from('tickets').select('id, code').eq('stripe_payment_intent', intent.id).maybeSingle();
+    if (existingTicket) {
+      return res.json({ clientSecret: intent.client_secret, breakdown: amounts, intentId: intent.id, ticketCode: existingTicket.code });
+    }
+    const { data: insertedTicket, error: pendingErr } = await supabaseAdmin
       .from('tickets')
       .insert({
         event_id:               eventId,
         ticket_type_id:         ticketTypeId,
         user_id:                req.userId,
-        quantity:               Number(qty),
+        quantity:               parsedQty,
         unit_price_cents:       tt.price_cents,
         total_charged_cents:    amounts.chargeAmount,
         platform_fee_cents:     amounts.platformFee,
@@ -1569,18 +2243,15 @@ app.post('/api/create-payment-intent', pmtLimiter, requireAuth, async (req, res)
         stripe_payment_intent:  intent.id,
         stripe_idempotency_key: idempotencyKey,
         status:                 'pending',
-        buyer_email:            buyerEmail || req.user.email,
+        buyer_email:            buyerEmail,
         code:                   ticketCode,
         coupon_id:      couponId      || null,
         discount_cents: discountCents || 0,
+        promoter_id:    promoterId,
       })
       .select('id, code')
       .single();
-
-    // Increment coupon use count
-    if (couponId) {
-      await supabaseAdmin.rpc('increment_coupon_uses', { p_coupon_id: couponId });
-    }
+    if (pendingErr) throw pendingErr;
 
     res.json({
       clientSecret: intent.client_secret,
@@ -1689,7 +2360,8 @@ app.post('/api/connect-sync', requireAuth, async (req, res) => {
       await supabaseAdmin
         .from('profiles')
         .update({ role: 'host' })
-        .eq('id', req.userId);
+        .eq('id', req.userId)
+        .eq('role', 'attendee');
     }
 
     res.json({
@@ -1740,12 +2412,9 @@ app.post('/api/identity/submit', requireAuth, async (req, res) => {
   if (!legal_name?.trim()) return res.status(400).json({ error: 'Legal name is required.' });
   if (!id_doc_base64)       return res.status(400).json({ error: 'ID document photo is required.' });
   try {
-    const matches = id_doc_base64.match(/^data:(.+);base64,(.+)$/);
-    if (!matches) return res.status(400).json({ error: 'Invalid image data.' });
-    const mimeType = matches[1];
-    const buffer   = Buffer.from(matches[2], 'base64');
-    if (buffer.length > 10 * 1024 * 1024) return res.status(413).json({ error: 'ID document must be under 10 MB.' });
-    const ext  = mimeType.includes('png') ? 'png' : mimeType.includes('pdf') ? 'pdf' : 'jpg';
+    const doc = parseImageDataUrl(id_doc_base64, { maxBytes: 10 * 1024 * 1024, allowPdf: true });
+    if (doc.error) return res.status(doc.status).json({ error: doc.error });
+    const { mimeType, buffer, ext } = doc;
     const path = `${req.userId}/id-${Date.now()}.${ext}`;
     const { error: upErr } = await supabaseAdmin.storage
       .from('identity-docs')
@@ -1859,23 +2528,10 @@ app.post('/api/tickets/confirm-by-intent', requireAuth, async (req, res) => {
       .eq('stripe_payment_intent', paymentIntentId)
       .eq('user_id', req.userId)
       .eq('status', 'pending')
-      .select('id, code, quantity, ticket_type_id, event_id, total_charged_cents');
+      .select('id, code, quantity, ticket_type_id, event_id, total_charged_cents, coupon_id');
     if (error) throw error;
-    // Increment sold count only if we actually updated a pending ticket (prevents double-count with webhook)
-    if (tickets?.length > 0 && tickets[0].ticket_type_id) {
-      await supabaseAdmin.rpc('increment_tickets_sold', {
-        p_ticket_type_id: tickets[0].ticket_type_id,
-        p_qty: tickets[0].quantity || 1,
-      });
-      // Notify host of sale (fire-and-forget)
-      notifyHostOfSale({
-        event_id:            tickets[0].event_id,
-        user_id:             req.userId,
-        quantity:            tickets[0].quantity || 1,
-        total_charged_cents: tickets[0].total_charged_cents,
-        buyer_email:         req.user.email,
-      });
-    }
+    // Only runs if we actually flipped a pending ticket (prevents double-count with webhook)
+    if (tickets?.length > 0) await onTicketConfirmed({ ...tickets[0], user_id: req.userId, buyer_email: req.user.email });
     res.json({ confirmed: true, tickets: tickets || [] });
   } catch (e) {
     console.error('[confirm-by-intent]', e.message);
@@ -1907,7 +2563,9 @@ app.post('/api/tickets/:ticketId/refund', pmtLimiter, requireAuth, async (req, r
     const intent = await stripe.paymentIntents.retrieve(ticket.stripe_payment_intent);
     if (!intent.latest_charge) return res.status(400).json({ error: 'No charge found for this payment.' });
 
-    const refund = await stripe.refunds.create({ charge: intent.latest_charge });
+    const refund = await stripe.refunds.create(
+      { charge: intent.latest_charge, reverse_transfer: true },
+      { idempotencyKey: `refund-${ticketId}` });
 
     const { data: updatedTicket } = await supabaseAdmin
       .from('tickets')
@@ -1923,6 +2581,7 @@ app.post('/api/tickets/:ticketId/refund', pmtLimiter, requireAuth, async (req, r
         p_qty: -(ticket.quantity || 1),
       });
     }
+    promoteWaitlist(ticket.event_id).catch(() => {});
 
     // Notify attendee of refund
     if (updatedTicket?.user_id) {
@@ -1944,7 +2603,7 @@ app.post('/api/tickets/:ticketId/refund', pmtLimiter, requireAuth, async (req, r
         subject: `Refund issued for "${evData?.name}"`,
         html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
           <h2 style="margin:0 0 16px">Refund Issued ✅</h2>
-          <p style="font-size:15px;margin:0 0 10px">The host has issued a refund of <strong>${amt}</strong> for <strong>"${evData?.name}"</strong>.</p>
+          <p style="font-size:15px;margin:0 0 10px">The host has issued a refund of <strong>${amt}</strong> for <strong>"${escapeHtml(evData?.name)}"</strong>.</p>
           <p style="font-size:14px;color:#555;margin:0 0 10px">It may take 5–10 business days to appear on your statement.</p>
         </div>`,
       });
@@ -1983,6 +2642,43 @@ async function createNotification(userId, { type, title, body, data }) {
     .insert({ user_id: userId, type, title, body: body || null, data: data || null });
 }
 
+// Wrap pre-escaped inner HTML in the standard ChristLink email layout
+function emailLayout(innerHtml, eventId) {
+  const appUrl = (process.env.APP_URL || '').split(',')[0].trim().replace(/\/$/, '');
+  const cta = eventId && appUrl
+    ? `<p style="margin:24px 0 0"><a href="${escapeHtml(`${appUrl}/e/${eventId}`)}" style="display:inline-block;background:#C9A84C;color:#0A0A0F;padding:12px 20px;border-radius:10px;font-weight:700;text-decoration:none">View event</a></p>`
+    : '';
+  return `<div style="font-family:-apple-system,Segoe UI,sans-serif;max-width:560px;margin:0 auto;color:#111;font-size:15px;line-height:1.5">
+    ${innerHtml}${cta}
+    <p style="color:#888;font-size:12px;margin:28px 0 0">ChristLink · Faith Events Platform</p>
+  </div>`;
+}
+
+// Email a user by id (looks up their address). innerHtml must already be escaped.
+async function notifyByEmail(userId, subject, innerHtml, eventId) {
+  try {
+    const { data: p } = await supabaseAdmin.from('profiles').select('email').eq('id', userId).single();
+    if (p?.email) await sendEmail({ to: p.email, subject, html: emailLayout(innerHtml, eventId) });
+  } catch (e) { console.error('[notifyByEmail]', e.message); }
+}
+
+// Runs exactly once per ticket when it flips pending → confirmed (webhook OR client confirm).
+async function onTicketConfirmed(ticket) {
+  try {
+    if (ticket.ticket_type_id) {
+      await supabaseAdmin.rpc('increment_tickets_sold', { p_ticket_type_id: ticket.ticket_type_id, p_qty: ticket.quantity || 1 });
+    }
+    // Coupon uses are only counted for completed purchases (abandoned checkouts don't burn uses)
+    if (ticket.coupon_id) await supabaseAdmin.rpc('increment_coupon_uses', { p_coupon_id: ticket.coupon_id });
+    if (ticket.user_id) {
+      await supabaseAdmin.from('event_waitlist').delete().eq('event_id', ticket.event_id).eq('user_id', ticket.user_id);
+    }
+  } catch (e) {
+    console.error('[onTicketConfirmed]', e.message);
+  }
+  notifyHostOfSale(ticket);
+}
+
 // Helper: notify host when a ticket sale is confirmed
 async function notifyHostOfSale(ticket) {
   try {
@@ -2000,6 +2696,7 @@ async function notifyHostOfSale(ticket) {
       ? `$${(ticket.total_charged_cents / 100).toFixed(2)}`
       : 'Free';
     const buyerName = buyer?.full_name || ticket.buyer_email || 'A guest';
+    const evName    = escapeHtml(ev.name);
 
     await createNotification(ev.host_id, {
       type:  'ticket_sale',
@@ -2013,8 +2710,8 @@ async function notifyHostOfSale(ticket) {
       subject: `New ticket sale for "${ev.name}"`,
       html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
         <h2 style="margin:0 0 16px">New Ticket Sale 🎟️</h2>
-        <p style="margin:0 0 10px;font-size:15px"><strong>${buyerName}</strong> just purchased
-          <strong>${qty} ticket${qty > 1 ? 's' : ''}</strong> to <strong>${ev.name}</strong>.</p>
+        <p style="margin:0 0 10px;font-size:15px"><strong>${escapeHtml(buyerName)}</strong> just purchased
+          <strong>${qty} ticket${qty > 1 ? 's' : ''}</strong> to <strong>${evName}</strong>.</p>
         <p style="font-size:15px;margin:0 0 10px">Amount: <strong>${amount}</strong></p>
         <p style="font-size:13px;color:#888;margin:24px 0 0">View your sales in the ChristLink host dashboard.</p>
       </div>`,
@@ -2027,7 +2724,7 @@ async function notifyHostOfSale(ticket) {
 // POST /api/tickets/:ticketId/request-refund
 // Attendee submits a refund request — notifies host in-app and by email
 app.post('/api/tickets/:ticketId/request-refund', requireAuth, async (req, res) => {
-  const { reason } = req.body;
+  const safeReason = typeof req.body.reason === 'string' ? sanitizeText(req.body.reason, 1000) : '';
   const { ticketId } = req.params;
   try {
     // Fetch ticket + event + host info in one round
@@ -2058,7 +2755,7 @@ app.post('/api/tickets/:ticketId/request-refund', requireAuth, async (req, res) 
         event_id:     ev.id,
         requester_id: req.userId,
         host_id:      ev.host_id,
-        reason:       reason?.trim() || null,
+        reason:       safeReason || null,
         status:       'pending',
       }, { onConflict: 'ticket_id' })
       .select()
@@ -2072,7 +2769,7 @@ app.post('/api/tickets/:ticketId/request-refund', requireAuth, async (req, res) 
     await createNotification(ev.host_id, {
       type:  'refund_request',
       title: `Refund request — ${ev.name}`,
-      body:  `${requesterName} requested a refund (${amount}).${reason ? ' Reason: ' + reason.trim() : ''}`,
+      body:  `${requesterName} requested a refund (${amount}).${safeReason ? ' Reason: ' + safeReason : ''}`,
       data:  { refund_request_id: request.id, ticket_id: ticketId, event_id: ev.id },
     });
 
@@ -2083,11 +2780,11 @@ app.post('/api/tickets/:ticketId/request-refund', requireAuth, async (req, res) 
       html: `
         <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
           <h2 style="color:#C9A84C">Refund Request</h2>
-          <p><strong>${requesterName}</strong> has requested a refund for their ticket to <strong>${ev.name}</strong>.</p>
+          <p><strong>${escapeHtml(requesterName)}</strong> has requested a refund for their ticket to <strong>${escapeHtml(ev.name)}</strong>.</p>
           <table style="width:100%;border-collapse:collapse;margin:16px 0">
             <tr><td style="padding:8px 0;color:#555">Amount:</td><td style="padding:8px 0;font-weight:600">${amount}</td></tr>
-            <tr><td style="padding:8px 0;color:#555">Ticket code:</td><td style="padding:8px 0;font-family:monospace">${ticket.code || ticketId.slice(0,8).toUpperCase()}</td></tr>
-            ${reason ? `<tr><td style="padding:8px 0;color:#555;vertical-align:top">Reason:</td><td style="padding:8px 0">${reason.trim()}</td></tr>` : ''}
+            <tr><td style="padding:8px 0;color:#555">Ticket code:</td><td style="padding:8px 0;font-family:monospace">${escapeHtml(ticket.code || ticketId.slice(0,8).toUpperCase())}</td></tr>
+            ${safeReason ? `<tr><td style="padding:8px 0;color:#555;vertical-align:top">Reason:</td><td style="padding:8px 0">${escapeHtml(safeReason)}</td></tr>` : ''}
           </table>
           <p>Log in to ChristLink to approve or deny this request from your event's Sales section.</p>
           <p style="color:#888;font-size:12px">ChristLink · Faith Events Platform</p>
@@ -2118,7 +2815,9 @@ app.post('/api/refund-requests/:id/approve', pmtLimiter, requireAuth, async (req
 
     const intent = await stripe.paymentIntents.retrieve(ticket.stripe_payment_intent);
     if (!intent.latest_charge) return res.status(400).json({ error: 'No charge found.' });
-    const refund = await stripe.refunds.create({ charge: intent.latest_charge });
+    const refund = await stripe.refunds.create(
+      { charge: intent.latest_charge, reverse_transfer: true },
+      { idempotencyKey: `refund-${ticket.id}` });
 
     await Promise.all([
       supabaseAdmin.from('tickets').update({ status: 'refunded' }).eq('id', ticket.id),
@@ -2126,6 +2825,7 @@ app.post('/api/refund-requests/:id/approve', pmtLimiter, requireAuth, async (req
       ticket.ticket_type_id
         ? supabaseAdmin.rpc('increment_tickets_sold', { p_ticket_type_id: ticket.ticket_type_id, p_qty: -(ticket.quantity || 1) })
         : Promise.resolve(),
+      promoteWaitlist(request.event_id).catch(() => {}),
       createNotification(ticket.user_id, {
         type:  'refund_approved',
         title: 'Refund approved',
@@ -2144,7 +2844,7 @@ app.post('/api/refund-requests/:id/approve', pmtLimiter, requireAuth, async (req
       subject: `Your refund for "${ev?.name}" has been approved`,
       html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
         <h2 style="color:#4EC98C">Refund Approved ✓</h2>
-        <p>Your refund of <strong>$${((ticket.total_charged_cents||0)/100).toFixed(2)}</strong> for <strong>${ev?.name}</strong> has been approved.</p>
+        <p>Your refund of <strong>$${((ticket.total_charged_cents||0)/100).toFixed(2)}</strong> for <strong>${escapeHtml(ev?.name)}</strong> has been approved.</p>
         <p>It may take <strong>5–10 business days</strong> to appear on your statement.</p>
         <p style="color:#888;font-size:12px">ChristLink · Faith Events Platform</p>
       </div>`,
@@ -2186,7 +2886,7 @@ app.post('/api/refund-requests/:id/deny', requireAuth, async (req, res) => {
       subject: `Update on your refund request for "${evName}"`,
       html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
         <h2 style="color:#ef4444">Refund Not Approved</h2>
-        <p>Your refund request for <strong>${evName}</strong> was not approved by the host.</p>
+        <p>Your refund request for <strong>${escapeHtml(evName)}</strong> was not approved by the host.</p>
         <p>If you have questions, please contact the event host directly.</p>
         <p style="color:#888;font-size:12px">ChristLink · Faith Events Platform</p>
       </div>`,
@@ -2231,11 +2931,17 @@ app.post('/api/events/:eventId/invite', requireAuth, async (req, res) => {
       .from('events').select('id, name, host_id').eq('id', eventId).single();
     if (error || !ev) return res.status(404).json({ error: 'Event not found.' });
     if (ev.host_id !== req.userId) return res.status(403).json({ error: 'Only the host can send invites.' });
+    // Only actual followers can be invited (prevents notification spam to arbitrary users)
+    const { data: follows } = await supabaseAdmin.from('user_follows')
+      .select('follower_id').eq('following_id', req.userId)
+      .in('follower_id', followerIds.filter(isUuid));
+    const allowed = [...new Set((follows || []).map(f => f.follower_id))];
+    if (!allowed.length) return res.status(400).json({ error: 'Select people who follow you.' });
     const { data: host } = await supabaseAdmin
       .from('profiles').select('full_name').eq('id', req.userId).single();
     const hostName = host?.full_name || 'Someone';
     await supabaseAdmin.from('notifications').insert(
-      followerIds.map(uid => ({
+      allowed.map(uid => ({
         user_id: uid,
         type: 'event_invite',
         title: `${hostName} invited you to an event`,
@@ -2243,7 +2949,7 @@ app.post('/api/events/:eventId/invite', requireAuth, async (req, res) => {
         data: { event_id: ev.id, event_name: ev.name }
       }))
     );
-    res.json({ sent: followerIds.length });
+    res.json({ sent: allowed.length });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -2296,7 +3002,10 @@ async function handleWebhook(req, res) {
   if (existing) {
     return res.json({ received: true, duplicate: true });
   }
-  await supabaseAdmin.from('webhook_events').insert({ stripe_event_id: event.id, event_type: event.type });
+  const { error: claimErr } = await supabaseAdmin.from('webhook_events')
+    .insert({ stripe_event_id: event.id, event_type: event.type });
+  // Unique violation = another delivery of this event is already being processed
+  if (claimErr?.code === '23505') return res.json({ received: true, duplicate: true });
 
   try {
     switch (event.type) {
@@ -2312,22 +3021,16 @@ async function handleWebhook(req, res) {
           .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
           .eq('stripe_payment_intent', pi.id)
           .eq('status', 'pending')
-          .select('id, event_id, user_id, quantity, total_charged_cents, buyer_email');
+          .select('id, event_id, user_id, quantity, total_charged_cents, buyer_email, ticket_type_id, coupon_id');
         if (ticketErr) console.error('[webhook] ticket update error:', ticketErr.message);
         console.log('[webhook] confirmed tickets:', updatedTickets?.length || 0);
-        if (pi.metadata.ticket_type_id && updatedTickets?.length > 0) {
-          await supabaseAdmin.rpc('increment_tickets_sold', {
-            p_ticket_type_id: pi.metadata.ticket_type_id,
-            p_qty: parseInt(pi.metadata.qty) || 1,
-          });
-          // Notify host (fire-and-forget — webhook already responded to Stripe)
-          notifyHostOfSale(updatedTickets[0]);
-        }
+        if (updatedTickets?.length > 0) await onTicketConfirmed(updatedTickets[0]);
         break;
       }
       case 'payment_intent.payment_failed':
+      case 'payment_intent.canceled':
         await supabaseAdmin.from('tickets').update({ status: 'failed' })
-          .eq('stripe_payment_intent', event.data.object.id);
+          .eq('stripe_payment_intent', event.data.object.id).eq('status', 'pending');
         break;
       case 'account.updated': {
         const acct = event.data.object;
@@ -2358,24 +3061,41 @@ async function handleWebhook(req, res) {
           .eq('stripe_account_id', acct.id);
 
         if (acct.payouts_enabled && existing.user_id) {
+          // Only promote attendees — never downgrade admins or verified users
           await supabaseAdmin
             .from('profiles')
             .update({ role: 'host' })
-            .eq('id', existing.user_id);
+            .eq('id', existing.user_id)
+            .eq('role', 'attendee');
         }
 
         console.log('[webhook] account.updated: DB synced for', acct.id);
         break;
       }
-      case 'charge.refunded':
-        await supabaseAdmin.from('tickets').update({ status: 'refunded' })
-          .eq('stripe_payment_intent', event.data.object.payment_intent);
+      case 'charge.refunded': {
+        // Refunds issued from the Stripe dashboard: sync status + inventory
+        const { data: refunded } = await supabaseAdmin.from('tickets').update({ status: 'refunded' })
+          .eq('stripe_payment_intent', event.data.object.payment_intent)
+          .eq('status', 'confirmed')
+          .select('event_id, ticket_type_id, quantity');
+        for (const t of refunded || []) {
+          if (t.ticket_type_id) await supabaseAdmin.rpc('increment_tickets_sold', { p_ticket_type_id: t.ticket_type_id, p_qty: -(t.quantity || 1) });
+          promoteWaitlist(t.event_id).catch(() => {});
+        }
+        break;
+      }
+      case 'charge.dispute.created':
+        if (event.data.object.payment_intent)
+          await supabaseAdmin.from('tickets').update({ status: 'disputed' })
+            .eq('stripe_payment_intent', event.data.object.payment_intent);
         break;
     }
     res.json({ received: true });
   } catch (e) {
+    // Release the idempotency claim so Stripe's retry gets processed
     console.error('Webhook error:', e.message);
-    res.json({ received: true, warning: e.message });
+    await supabaseAdmin.from('webhook_events').delete().eq('stripe_event_id', event.id);
+    res.status(500).json({ received: false });
   }
 }
 
@@ -2902,7 +3622,8 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
       .select('id, full_name, email, role, city, created_at, avatar_url, avatar_color, host_stripe_accounts(stripe_account_id)')
       .order('created_at', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
-    if (q)    query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
+    const safeQ = sanitizeSearch(q);
+    if (safeQ) query = query.or(`full_name.ilike.%${safeQ}%,email.ilike.%${safeQ}%`);
     if (role) query = query.eq('role', role);
     const { data, error } = await query;
     if (error) throw error;
@@ -3087,6 +3808,75 @@ setInterval(async () => {
     console.error('[scheduler] Auto-publish check failed:', e.message);
   }
 }, 60_000);
+
+// ─── SHAREABLE EVENT LINKS (/e/:id) ─────────────────────────
+// Serves the SPA with event-specific Open Graph tags so links unfurl with the
+// event's title, date and cover image in iMessage, WhatsApp, Instagram, etc.
+// ?ref=CODE attributes the visit to a promoter link.
+const fs = require('fs');
+let indexHtmlCache = null;
+function getIndexHtml() {
+  if (!indexHtmlCache || process.env.NODE_ENV !== 'production') {
+    indexHtmlCache = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+  }
+  return indexHtmlCache;
+}
+
+app.get('/e/:id', async (req, res) => {
+  const id = req.params.id;
+  const html = getIndexHtml();
+  if (!isUuid(id)) return res.redirect(302, '/');
+  try {
+    const { data: ev } = await supabaseAdmin.from('events')
+      .select('id, name, description, cover_url, start_date, city, state, venue_name, status')
+      .eq('id', id).single();
+    if (!ev || ev.status === 'draft') return res.redirect(302, '/');
+
+    const ref = typeof req.query.ref === 'string' ? req.query.ref : '';
+    if (ref) {
+      const promoterId = await resolvePromoter(ev.id, ref);
+      if (promoterId) supabaseAdmin.rpc('increment_promoter_clicks', { p_promoter_id: promoterId }).then(() => {}, () => {});
+    }
+
+    const when = ev.start_date
+      ? new Date(ev.start_date).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })
+      : '';
+    const where = [ev.venue_name, ev.city, ev.state].filter(Boolean).join(', ');
+    const desc  = [when, where, (ev.description || '').slice(0, 160)].filter(Boolean).join(' · ');
+    const base  = `${req.protocol}://${req.get('host')}`;
+    const url   = `${base}/e/${ev.id}`;
+    const image = sanitizeUrl(ev.cover_url) || `${base}/icon-logo.png`;
+    const title = `${ev.name} | Christ Link`;
+
+    const meta = `<title>${escapeHtml(title)}</title>
+<meta name="description" content="${escapeHtml(desc)}">
+<link rel="canonical" href="${escapeHtml(url)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Christ Link">
+<meta property="og:url" content="${escapeHtml(url)}">
+<meta property="og:title" content="${escapeHtml(ev.name)}">
+<meta property="og:description" content="${escapeHtml(desc)}">
+<meta property="og:image" content="${escapeHtml(image)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(ev.name)}">
+<meta name="twitter:description" content="${escapeHtml(desc)}">
+<meta name="twitter:image" content="${escapeHtml(image)}">
+<script>try{var r=${JSON.stringify(/^[A-Za-z0-9_-]{1,40}$/.test(ref) ? ref : '')};if(r)sessionStorage.setItem('cl_ref_${ev.id}',r);}catch(e){}history.replaceState(null,'','/#event/${ev.id}');</script>`;
+
+    // Swap the generic head tags for event-specific ones
+    const out = html
+      .replace(/<title>[\s\S]*?<\/title>\s*/, '')
+      .replace(/<meta name="description"[^>]*>\s*/, '')
+      .replace(/<meta property="og:[^"]+"[^>]*>\s*/g, '')
+      .replace(/<meta name="twitter:[^"]+"[^>]*>\s*/g, '')
+      .replace('<meta charset="UTF-8">', `<meta charset="UTF-8">\n${meta}`);
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.send(out);
+  } catch (e) {
+    console.error('[share page]', e.message);
+    res.redirect(302, `/#event/${id}`);
+  }
+});
 
 // ─── SPA FALLBACK ───────────────────────────────────────────
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));

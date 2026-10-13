@@ -246,7 +246,8 @@ end $$;
 -- ─── EVENTS VIEW (with host info + ticket types) ─────────────
 -- NOTE: uses explicit column list so e.* expansion stays stable
 -- as columns are added. Always recreate this view after schema changes.
-create or replace view public.events_with_details as
+drop view if exists public.events_with_details;
+create view public.events_with_details as
 select
   e.id, e.host_id, e.name, e.description,
   e.cover_url,          -- canonical column name (was image_url before migration)
@@ -383,7 +384,8 @@ end $$;
 
 -- 2. Recreate events_with_details view with explicit column list so
 --    forum_enabled and cover_url are always present (run after rename above).
-create or replace view public.events_with_details as
+drop view if exists public.events_with_details;
+create view public.events_with_details as
 select
   e.id, e.host_id, e.name, e.description,
   e.cover_url, e.gallery_urls,
@@ -416,17 +418,7 @@ create table if not exists public.event_forum_posts (
   created_at timestamptz not null default now()
 );
 alter table public.event_forum_posts enable row level security;
-do $$ begin
-  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Anyone can read forum posts') then
-    create policy "Anyone can read forum posts" on public.event_forum_posts for select using (true);
-  end if;
-  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Authenticated users can post') then
-    create policy "Authenticated users can post" on public.event_forum_posts for insert with check (auth.uid() = author_id);
-  end if;
-  if not exists (select 1 from pg_policies where tablename='event_forum_posts' and policyname='Authors can delete own forum posts') then
-    create policy "Authors can delete own forum posts" on public.event_forum_posts for delete using (auth.uid() = author_id);
-  end if;
-end $$;
+-- (Client-side forum policies removed: all forum access goes through server.js — see migrations/001.)
 
 -- 4. Forum backfill — enable forum on all published events (one-time, idempotent)
 update public.events set forum_enabled = true
@@ -546,7 +538,8 @@ end;
 $$ language plpgsql security definer;
 
 -- ─── UPDATE events_with_details VIEW (add lat/lng/publish_at) ─
-create or replace view public.events_with_details as
+drop view if exists public.events_with_details;
+create view public.events_with_details as
 select
   e.id, e.host_id, e.name, e.description,
   e.cover_url,
@@ -705,3 +698,9 @@ end $$;
 -- Migration: add sales_cutoff to events
 -- Run in Supabase SQL editor:
 -- alter table public.events add column if not exists sales_cutoff timestamptz;
+
+-- ════════════════════════════════════════════════════════════
+-- NEWER MIGRATIONS live in /migrations — run them in order after this file:
+--   migrations/001_security_lockdown.sql  (RLS lockdown — required)
+--   migrations/002_event_features.sql     (waitlist, approvals, promoters, analytics)
+-- ════════════════════════════════════════════════════════════

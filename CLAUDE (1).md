@@ -54,6 +54,13 @@ Repo:     C:\Users\David\ChristLink1
 - Font size on all inputs/textareas must be `16px` minimum — prevents iOS Safari zoom
 - `visualViewport` API handles iOS keyboard push-up in forum page
 
+### Security model (since migrations/001)
+- The browser holds the public anon key, so the database denies ALL direct client access except Auth and the realtime read on `community_posts`
+- Every read/write goes through `server.js` with `supabaseAdmin`; never add RLS policies with `using (true)` and never add client write policies
+- Validate user input server-side: `sanitizeText` (strips `<`/`>`), `sanitizeUrl`, `sanitizeColor`, `parseImageDataUrl` (MIME + magic bytes)
+- Escape anything interpolated into server HTML (emails, `/e/:id` OG tags) with `escapeHtml`; on the frontend use `escapeHtml` / `safeUrl` before `innerHTML`
+- New SQL goes in `migrations/NNN_*.sql` and must be run in the Supabase SQL editor before deploying code that depends on it
+
 ### Database
 - Forum posts table: always write BOTH `author_id` AND `user_id` on every insert
 - Events cover photo column: `cover_url` (was renamed from `image_url`)
@@ -78,7 +85,10 @@ Repo:     C:\Users\David\ChristLink1
 - `events` — events (id, host_id, name, cover_url, is_paid, forum_enabled, status, listing_fee_paid)
 - `ticket_types` — ticket tiers per event (id, event_id, name, price_cents, quantity, sold)
 - `tickets` — purchased tickets (id, event_id, user_id, status, code, stripe_payment_intent, coupon_id)
-- `rsvps` — free event RSVPs (id, event_id, user_id, status)
+- `rsvps` — free event RSVPs (id, event_id, user_id, status: confirmed|pending|declined|cancelled, promoter_id)
+- `event_waitlist` — waitlist per event (auto-promoted on free events when spots open)
+- `event_promoters` — tracking links (`/e/:id?ref=CODE`), attributed on tickets/rsvps via `promoter_id`
+- `event_messages` — host message blasts log
 - `event_forum_posts` — forum messages (id, event_id, author_id, user_id, body, image_url, message_type)
 - `coupons` — discount codes (id, event_id, host_id, code, discount_type, discount_value, uses)
 - `host_stripe_accounts` — Stripe Connect accounts (id, user_id, stripe_account_id, payouts_enabled)
