@@ -69,14 +69,21 @@ app.use(cors({
     : ['http://localhost:4242', 'http://127.0.0.1:4242'],
   credentials: true,
 }));
-app.use(express.json({ limit: '15mb' }));
+// Only image/ID-upload routes need large bodies; everything else is capped at 1 MB
+app.use(
+  ['/api/upload-avatar', '/api/upload-banner', '/api/upload-event-image', '/api/upload-forum-image', '/api/identity/submit'],
+  express.json({ limit: '15mb' })
+);
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders(res, filePath) {
     if (/\.html?$/.test(filePath)) {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(filePath)) {
       res.setHeader('Cache-Control', 'public, max-age=2592000, immutable'); // 30 days
-    } else if (/\.(js|css|woff2?)$/i.test(filePath)) {
+    } else if (/\.(js|css)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'no-cache'); // always revalidate (ETag) so HTML and JS/CSS never go out of sync
+    } else if (/\.woff2?$/i.test(filePath)) {
       res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
     } else if (/\.json$/.test(filePath)) {
       res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour
@@ -2376,7 +2383,9 @@ async function handleWebhook(req, res) {
     res.json({ received: true });
   } catch (e) {
     console.error('Webhook error:', e.message);
-    res.json({ received: true, warning: e.message });
+    // Un-record the event so Stripe's retry is processed instead of skipped as a duplicate
+    await supabaseAdmin.from('webhook_events').delete().eq('stripe_event_id', event.id);
+    res.status(500).json({ received: false, error: e.message });
   }
 }
 

@@ -12,7 +12,7 @@ Repo:     C:\Users\David\ChristLink1
 
 ## Stack
 - **Backend:**  Node.js + Express (`server.js`)
-- **Frontend:** Single file PWA (`public/index.html`) — vanilla JS, no React, ~4000+ lines
+- **Frontend:** PWA — `public/index.html` + `public/css/app.css` + `public/js/app.js` — vanilla JS, no React, ~12k lines
 - **Database:** Supabase (Postgres + Auth + Storage)
 - **Payments:** Stripe Connect Express
 - **Hosting:**  Railway (auto-deploys on git push)
@@ -24,7 +24,9 @@ Repo:     C:\Users\David\ChristLink1
 | File | Purpose |
 |------|---------|
 | `server.js` | ALL backend API routes |
-| `public/index.html` | ENTIRE frontend — HTML + CSS + JS in one file |
+| `public/index.html` | Frontend markup |
+| `public/css/app.css` | All frontend CSS |
+| `public/js/app.js` | All frontend JS |
 | `CLAUDE.md` | This file — project context for Claude Code |
 
 ---
@@ -47,7 +49,7 @@ Repo:     C:\Users\David\ChristLink1
 - Stripe webhook route must use `express.raw()` middleware, not `express.json()`
 - After payment succeeds, call `/api/tickets/confirm-by-intent` immediately — never rely solely on webhook
 
-### Frontend (public/index.html)
+### Frontend (public/index.html, css/app.css, js/app.js)
 - `#page-forum` default CSS must be `display:none` — the router sets visibility
 - `goTo('forum')` must set `display:flex` not `display:block` — forum uses flex layout
 - All `.page` divs default to `display:none` — router controls which is visible

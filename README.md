@@ -7,7 +7,8 @@ Faith-based events marketplace (PWA): discover and RSVP to events, host free or 
 | Path | What it is |
 |------|------------|
 | `server.js` | Express API (auth, events, tickets, payments, forum, admin) + static hosting |
-| `public/index.html` | The entire frontend (HTML, CSS and JS in one file) |
+| `public/index.html` | Frontend markup |
+| `public/css/app.css`, `public/js/app.js` | Frontend styles and application code |
 | `public/` | Static assets, `manifest.json`, `robots.txt` |
 | `schema.sql` | Full Supabase/Postgres schema, RLS policies and migrations |
 | `railway.json` | Railway deploy config (health check at `/health`) |
