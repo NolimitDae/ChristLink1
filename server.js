@@ -553,6 +553,7 @@ app.get('/api/events', async (req, res) => {
   const limit  = Math.min(Math.max(parseInt(req.query.limit)  || 50,  1), 200);
   const offset = Math.max(parseInt(req.query.offset) || 0, 0);
   const useRadius = lat && lng;
+  const qSafe = q ? String(q).replace(/[%,()*\\]/g, ' ').trim().slice(0, 100) : '';
   let query = supabaseAdmin
     .from('events_with_details').select('*')
     .eq('status', 'published')
@@ -569,7 +570,7 @@ app.get('/api/events', async (req, res) => {
     query = query.or(`end_date.gte.${now},start_date.gte.${now},and(start_date.is.null,end_date.is.null)`);
   }
   if (is_paid !== undefined) query = query.eq('is_paid', is_paid === 'true');
-  if (q)       query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%,event_type.ilike.%${q}%`);
+  if (qSafe)   query = query.or(`name.ilike.%${qSafe}%,description.ilike.%${qSafe}%,city.ilike.%${qSafe}%,event_type.ilike.%${qSafe}%`);
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
   let events = data || [];
@@ -2902,7 +2903,8 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
       .select('id, full_name, email, role, city, created_at, avatar_url, avatar_color, host_stripe_accounts(stripe_account_id)')
       .order('created_at', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
-    if (q)    query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
+    const qs = q ? String(q).replace(/[%,()*\\]/g, ' ').trim().slice(0, 100) : '';
+    if (qs)   query = query.or(`full_name.ilike.%${qs}%,email.ilike.%${qs}%`);
     if (role) query = query.eq('role', role);
     const { data, error } = await query;
     if (error) throw error;
@@ -3089,6 +3091,7 @@ setInterval(async () => {
 }, 60_000);
 
 // ─── SPA FALLBACK ───────────────────────────────────────────
+app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ─── GLOBAL ERROR HANDLER ────────────────────────────────────
