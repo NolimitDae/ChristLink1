@@ -705,3 +705,9 @@ end $$;
 -- Migration: add sales_cutoff to events
 -- Run in Supabase SQL editor:
 -- alter table public.events add column if not exists sales_cutoff timestamptz;
+
+-- Migration: enable RLS on webhook_events (v2.3+)
+-- Only the server (service role, which bypasses RLS) reads/writes this table.
+-- With RLS on and no policies, anon/authenticated clients get no access.
+-- Run in Supabase SQL editor:
+alter table public.webhook_events enable row level security;
