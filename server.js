@@ -563,6 +563,11 @@ app.get('/api/events', async (req, res) => {
   if (type)    query = query.ilike('event_type', `%${type}%`);
   if (format)  query = query.eq('format', format);
   if (host_id) query = query.eq('host_id', host_id);
+  else if (req.query.include_past !== 'true') {
+    // Public listings only show events that haven't ended yet
+    const now = new Date().toISOString();
+    query = query.or(`end_date.gte.${now},start_date.gte.${now},and(start_date.is.null,end_date.is.null)`);
+  }
   if (is_paid !== undefined) query = query.eq('is_paid', is_paid === 'true');
   if (q)       query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%,event_type.ilike.%${q}%`);
   const { data, error } = await query;
